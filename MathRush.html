@@ -149,6 +149,18 @@ body{padding-left:0;padding-right:0}
 .range{display:block;width:100%;max-width:100%;box-sizing:border-box;margin:8px 0 2px;touch-action:pan-y}
 .ticks span{line-height:1.2;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.ticks{padding-left:12px;padding-right:12px;font-size:12px}.range{height:42px}.question{font-size:clamp(30px,8vw,44px)}}
+
+
+/* Choix de réponse plus grands : zones tactiles généreuses sur tous les écrans */
+.choices{gap:14px}
+.choice{min-height:86px;padding:20px 14px;font-size:clamp(22px,5vw,27px);line-height:1.25;border-radius:17px;display:flex;align-items:center;justify-content:center;text-align:center;touch-action:manipulation}
+.answer-input{width:min(260px,80%);font-size:32px;padding:18px}
+@media(max-width:520px){
+ .choices{gap:12px}
+ .choice{min-height:92px;font-size:clamp(21px,6.5vw,27px);padding:16px 10px}
+ .answer-input{font-size:28px}
+}
+@media(max-width:360px){.choice{min-height:80px;font-size:20px}}
 </style>
 </head>
 <body>
@@ -250,7 +262,15 @@ function makeVisualExercise(type){
 }
 function buildExercise(){
  const q=makeMath(),types=['slider','choice','fill','pattern','line','choice','fill','slider','pattern','choice','line','fill','percent','model','factors','equation','choice','slider','model','factors','equation','percent','pattern','fill','choice'],type=types[exIndex];
- if(type==='slider'||type==='line'){const step=difficultyRank()<=1?5:difficultyRank()<=2?10:difficultyRank()<=4?20:50,max=Math.max(step*4,Math.ceil(q.ans*1.35/step)*step);const ticks=max%4===0?[0,max/4,max/2,max*3/4,max]:[0,max];return{...q,type,max,ticks};}
+ if(type==='slider'||type==='line'){
+  const step=difficultyRank()<=1?5:difficultyRank()<=2?10:difficultyRank()<=4?20:50;
+  // L'échelle commence au premier repère (réponse moins deux pas) et se termine au dernier,
+  // avec exactement 5 repères répartis uniformément entre les deux bornes.
+  const min=Math.max(0,Math.floor((q.ans-2*step)/step)*step);
+  const max=Math.max(min+4*step,Math.ceil((q.ans+2*step)/step)*step);
+  const ticks=[0,1,2,3,4].map(i=>min+(max-min)*i/4);
+  return{...q,type,min,max,ticks};
+ }
  if(type==='choice'){let opts=new Set([q.ans]);while(opts.size<4){let n=q.ans+rand(-Math.max(6,Math.round(q.ans*.3)),Math.max(6,Math.round(q.ans*.3)));if(n>=0)opts.add(n);}return{...q,type,opts:shuffle([...opts])};}
  if(type==='fill')return{...q,type};
  if(['percent','model','factors','equation'].includes(type))return makeVisualExercise(type);
@@ -263,7 +283,7 @@ function renderSolo(){
  $('soloPoints').textContent='⭐ '+points;$('soloStreak').textContent='🔥 '+streak;$('soloFeedback').className='feedback';$('soloFeedback').innerHTML='';$('soloValidate').textContent='Valider';$('soloValidate').disabled=true;
  const q=$('soloQuestion');
  if(['slider','line'].includes(exercise.type)){
-  q.innerHTML=`<div class="question"><small>${exercise.type==='line'?'Place le résultat sur la droite graduée':'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="0" max="${exercise.max}" value="${rand(0,exercise.max)}"><div class="ticks">${exercise.ticks.map(n=>`<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
+  q.innerHTML=`<div class="question"><small>${exercise.type==='line'?'Place le résultat sur la droite graduée':'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="1" value="${rand(exercise.min,exercise.max)}"><div class="ticks">${exercise.ticks.map(n=>`<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
   $('soloRange').oninput=e=>{choice=Number(e.target.value);$('soloValidate').disabled=false;};
  }else if(exercise.type==='choice'){
   q.innerHTML=`<div class="question"><small>Choisis la bonne réponse</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
