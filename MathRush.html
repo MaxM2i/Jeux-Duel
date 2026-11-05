@@ -161,6 +161,12 @@ body{padding-left:0;padding-right:0}
  .answer-input{font-size:28px}
 }
 @media(max-width:360px){.choice{min-height:80px;font-size:20px}}
+
+
+/* Burger Quiz : questions culture déjantée */
+.burger-cat{display:inline-block;background:var(--gold);color:#5c3d00;border-radius:99px;padding:7px 14px;font-weight:950;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;margin:4px auto 0}
+.burger-q{font-size:clamp(21px,5vw,29px);letter-spacing:-.4px;font-weight:950;text-align:center;margin:16px 0;line-height:1.35;overflow-wrap:anywhere}
+#duelOptions .choice{min-height:72px;font-size:clamp(16px,3.5vw,19px);line-height:1.3}
 </style>
 </head>
 <body>
@@ -195,8 +201,10 @@ body{padding-left:0;padding-right:0}
 
 <section class="screen" id="duelSetup">
  <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Multijoueur</span></div>
- <div class="panel"><div class="kicker">Défi à deux</div><h2>Choisis la difficulté</h2><p>Le créateur du salon choisit le niveau pour les deux joueurs.</p>
- <select class="field" id="difficulty"><option value="0">Très facile</option><option value="1">Facile</option><option value="0" selected>Très facile</option><option value="3">Difficile</option><option value="4">Très difficile</option><option value="5">Expert</option></select>
+ <div class="panel"><div class="kicker">Défi à deux</div><h2>Choisis le mode et la difficulté</h2><p>Le créateur du salon choisit le mode et le niveau pour les deux joueurs.</p>
+ <label class="small-note" style="display:block;text-align:left;margin:8px 0 0">Mode de jeu</label>
+ <select class="field" id="duelGameMode"><option value="calc">Calculs rapides</option><option value="burger">Burger Quiz · culture déjantée</option></select>
+ <select class="field" id="difficulty"><option value="0">Très facile</option><option value="1">Facile</option><option value="2">Normal</option><option value="3">Difficile</option><option value="4">Très difficile</option><option value="5">Expert</option></select>
  <button class="btn btn-main full" id="createRoom">Créer un salon</button>
  <div class="small-note">Ou rejoins un ami avec son code</div><input class="field" id="joinCode" placeholder="Code du salon" autocomplete="off"><button class="btn btn-soft full" id="joinRoom">Rejoindre le duel</button>
  <div class="status" id="networkStatus">En attente de connexion.</div><div class="section-gap"><h3>Mes amis</h3><div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div></div></div>
@@ -371,12 +379,43 @@ function duelQuestion(){
  const d=duelDiff,base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),ans=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(ans*(.15+d*.06)));
  return{a,b,op,ans,opts:shuffle([...new Set([ans,Math.max(0,ans-delta),ans+delta,ans+2*delta])]).slice(0,4)};
 }
+/* BURGER QUIZ : questions informatives/humoristiques sur le modèle de l'émission.
+   Chaque entrée : cat (KETCHUP/MOUTARDE/MAYO), q (question), opts (A-D), a (index de la bonne réponse). */
+const BURGER_QUIZ=[
+ {cat:'KETCHUP',q:"Pourquoi les flamants roses sont-ils roses ?",opts:["À cause des crevettes qu'ils bouffent en masse","C'est un maquillage naturel de compétition","Ils naissent roses, comme les bonbons","Le stress permanent de la migration"],a:0},
+ {cat:'MOUTARDE',q:"Combien de temps un escargot peut-il dormir d'affilée ?",opts:["Une nuit bien méritée","Jusqu'à 3 ans : champion du monde de la sieste","6 mois maximum, comme l'ours","Il ne dort jamais vraiment"],a:1},
+ {cat:'MAYO',q:"Que pèse un bébé panda à la naissance ?",opts:["Environ 100 g : moins qu'un téléphone","2 kilos de muscle tout mou","Rien, il naît déjà adulte","Le poids d'un chat moyen"],a:0},
+ {cat:'KETCHUP',q:"Quel aliment de 3000 ans, retrouvé intact dans des tombeaux égyptiens, était encore comestible ?",opts:["Du fromage au garde-à-vous","Des sardines momifiées","Du miel : il ne périme jamais","Des biscuits romains"],a:2},
+ {cat:'MOUTARDE',q:"Combien de cœurs possède une pieuvre ?",opts:["Un, comme tout le monde","Deux, un de secours","Trois : deux pour les branchies, un pour le reste","Elle n'en a pas, c'est bien connu"],a:2},
+ {cat:'MAYO',q:"Comment les dauphins dorment-ils ?",opts:["En radeau, les uns contre les autres","Un demi-cerveau à la fois, l'autre veille","Ils ne dorment pas, ils rêvent éveillés","Sous anesthésie naturelle"],a:1},
+ {cat:'KETCHUP',q:"Pourquoi la tour Eiffel est-elle plus haute en été ?",opts:["Elle gonfle de chaleur : jusqu'à 15 cm de plus","Elle fond un peu chaque année","C'est un effet d'optique","Elle rétrécit de froid, pas l'inverse"],a:0},
+ {cat:'MOUTARDE',q:"Quelle était la couleur d'origine des carottes, avant les sélections ?",opts:["Orange, évidemment","Violette, comme les aubergines","Blanche, comme les navets","Rose fluo, pour la classe"],a:1},
+ {cat:'MAYO',q:"Quelle est la particularité du cerveau d'un autruche ?",opts:["Il est plus petit que ses yeux","Il est plus lourd que son corps","Il est carré, comme une boîte","Il en a deux, un par œil"],a:0},
+ {cat:'KETCHUP',q:"De quelle couleur est la peau d'un ours polaire, sous la fourrure ?",opts:["Rose bonbon","Noire","Blanche, pour camoufler doublement","Grise, comme un vieux loup"],a:1},
+ {cat:'MOUTARDE',q:"Quelle forme ont les crottes du wombat, mystère scientifique ?",opts:["Des billes parfaitement rondes","Des cubes, personne ne sait trop pourquoi","Des pyramides, hommage égyptien","Des galettes, comme tout le monde"],a:1},
+ {cat:'MAYO',q:"Combien de fuseaux horaires gère la France, record mondial ?",opts:["Un : l'heure de Paris","Six, comme l'Europe entière","Douze, grâce aux territoires d'outre-mer","Tous : c'est nous qui décidons"],a:2},
+ {cat:'KETCHUP',q:"Combien a duré la guerre la plus courte de l'histoire (Royaume-Uni vs Zanzibar, 1896) ?",opts:["38 minutes, chrono en main","3 jours, le temps de débarquer","20 ans de bavardage","Une guerre courte n'existe pas"],a:0},
+ {cat:'MOUTARDE',q:"Que s'est-il passé à Strasbourg en 1518 ?",opts:["La première fête de la bière","Une épidémie de danse : des centaines de gens ont dansé jusqu'à l'épuisement","Une invasion de saucisses","L'invention du pâté voisin"],a:1},
+ {cat:'MAYO',q:"Quel pape a fait exhumer son prédécesseur pour le juger au procès ?",opts:["Jean VIII, le plus rancunier","François, le plus moderne","Étienne VI : le cadavre a même été condamné","Aucun : c'est une légende"],a:2},
+ {cat:'KETCHUP',q:"Pourquoi la première webcam de l'histoire a-t-elle été branchée à Cambridge ?",opts:["Pour espionner les étudiants","Pour surveiller une cafetière et éviter les déplacements inutiles","Pour filmer le labo en continu","Pour les premières visioconférences"],a:1},
+ {cat:'MOUTARDE',q:"Quelle était la taille réelle de Napoléon ?",opts:["1,52 m comme le dit la légende noire","1,58 m, tout petit en effet","1,68 m : dans la moyenne de son époque","2 m : c'était un géant"],a:2},
+ {cat:'MAYO',q:"Que se passe-t-il quand on sépare une vache de sa meilleure amie ?",opts:["Rien, c'est une vache","Son rythme cardiaque s'accélère : elle s'inquiète vraiment","Elle garde rancune à vie","Elle devient agressive"],a:1},
+ {cat:'KETCHUP',q:"Qui est apparu en premier : les requins ou les arbres ?",opts:["Les arbres, c'est évident","Les requins : plus vieux que les arbres d'environ 50 millions d'années","En même temps, pile","Aucun scientifique ne le sait"],a:1},
+ {cat:'MOUTARDE',q:"Quelle est la particularité de la langue d'un crocodile ?",opts:["Elle est fourchue comme un serpent","Impossible à sortir : elle est collée au fond de la bouche","Elle change de couleur selon l'humeur","Elle fait 50 cm de long"],a:1}
+];
+let duelMode='calc',burgerDeck=[],hostWrong=false,guestWrong=false;
+function burgerQuestion(){
+ const item=burgerDeck[(round-1)%burgerDeck.length];
+ return{burger:true,cat:item.cat,text:item.q,opts:item.opts,ansIdx:item.a};
+}
 function updateDuelScore(){$('myScore').textContent=duelMy;$('opScore').textContent=duelOpp;}
 function renderDuelQuestion(q){
- duelQ=q;roundEnded=false;answeredThisRound=false;$('duelRoundLabel').textContent=`Manche ${round} / 10`;$('duelCountdown').textContent='';$('duelFeedback').className='feedback';$('duelFeedback').textContent='';
- $('duelQuestion').innerHTML=`<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
- $('duelOptions').innerHTML=q.opts.map(n=>`<button class="choice">${n}</button>`).join('');
- $('duelOptions').querySelectorAll('button').forEach(b=>b.onclick=()=>answerDuel(Number(b.textContent)));
+ duelQ=q;roundEnded=false;answeredThisRound=false;hostWrong=false;guestWrong=false;$('duelRoundLabel').textContent=`Manche ${round} / 10`;$('duelCountdown').textContent='';$('duelFeedback').className='feedback';$('duelFeedback').textContent='';
+ $('duelQuestion').innerHTML=q.burger
+  ?`<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
+  :`<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
+ $('duelOptions').innerHTML=q.opts.map((n,i)=>q.burger?`<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>`:`<button class="choice" data-i="${i}">${n}</button>`).join('');
+ $('duelOptions').querySelectorAll('button').forEach(b=>b.onclick=()=>answerDuel(q.burger?Number(b.dataset.i):Number(b.textContent),b));
  updateDuelScore();
 }
 function startCountdown(){
@@ -387,16 +426,25 @@ function startCountdown(){
 }
 function hostNext(){
  if(round>=10){endDuel();return;}
- round++;duelQ=duelQuestion();conn.send({type:'question',round,q:duelQ});renderDuelQuestion(duelQ);
+ round++;duelQ=duelMode==='burger'?burgerQuestion():duelQuestion();conn.send({type:'question',round,q:duelQ,mode:duelMode});renderDuelQuestion(duelQ);
 }
-function answerDuel(value){
+function answerDuel(value,btn){
  if(roundEnded||answeredThisRound||!conn||!conn.open)return;
- const right=value===duelQ.ans;
+ const right=duelQ.burger?value===duelQ.ansIdx:value===duelQ.ans;
  if(right){
   answeredThisRound=true;
   $('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
   if(role==='host')closeRound('host');
   else conn.send({type:'answer',right:true});
+ }else if(duelQ.burger){
+  // Burger Quiz : une seule tentative par manche et par joueur.
+  $('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
+  if(role==='host'){hostWrong=true;if(guestWrong)closeRound('draw');}
+  else{
+   answeredThisRound=true;conn.send({type:'answer',right:false});
+   $('duelFeedback').className='feedback show bad';
+   $('duelFeedback').textContent='Raté ! Tu as consommé ta tentative pour cette manche…';
+  }
  }else{
   $('duelFeedback').className='feedback show bad';
   $('duelFeedback').textContent='Pas tout à fait ! Réessaie, tu peux encore trouver la bonne réponse.';
@@ -405,12 +453,13 @@ function answerDuel(value){
 function closeRound(winner){
  if(roundEnded)return;roundEnded=true;
  if(winner==='host')duelMy+=100;else if(winner==='guest')duelOpp+=100;
+ const goodAnswer=duelQ.burger?` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}`:duelQ.ans;
  $('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
  $('duelFeedback').className='feedback show '+(winner==='draw'?'near':'good');
- $('duelFeedback').innerHTML=(winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':'Manche terminée')+`<br>Bonne réponse : <b>${duelQ.ans}</b>`;
+ $('duelFeedback').innerHTML=(winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée')+`<br>Bonne réponse : <b>${escapeHtml(String(goodAnswer))}</b>`;
  updateDuelScore();
- conn.send({type:'roundEnd',winner,hostScore:role==='host'?duelMy:duelOpp,guestScore:role==='guest'?duelMy:duelOpp,answer:duelQ.ans});
- if(role==='host')setTimeout(hostNext,1500);
+ conn.send({type:'roundEnd',winner,hostScore:role==='host'?duelMy:duelOpp,guestScore:role==='guest'?duelMy:duelOpp,answer:goodAnswer});
+ if(role==='host')setTimeout(hostNext,2500);
 }
 function endDuel(){
  duelLive=false;conn.send({type:'finish',hostScore:duelMy,guestScore:duelOpp});
@@ -422,14 +471,18 @@ function showDuelSummary(message=''){
  $('duelResult').innerHTML=`<div class="big">${message?'👋':duelMy===duelOpp?'🤝':duelMy>duelOpp?'🏆':'💪'}</div><h2>${message?escapeHtml(message):result}</h2><p>Ton score : <b>${duelMy}</b></p><p>Score adverse : <b>${duelOpp}</b></p><p>${round} manches jouées</p>`;
 }
 function prepareRematch(){
- round=0;duelMy=0;duelOpp=0;opponentLeft=false;rematchPending=false;roundEnded=false;answeredThisRound=false;
+ round=0;duelMy=0;duelOpp=0;opponentLeft=false;rematchPending=false;roundEnded=false;answeredThisRound=false;hostWrong=false;guestWrong=false;
+ if(role==='host'&&duelMode==='burger')burgerDeck=shuffle([...BURGER_QUIZ]);
  $('duelFeedback').className='feedback';$('duelFeedback').textContent='';updateDuelScore();startCountdown();
 }
 function handleData(m){
  if(m.type==='ready'&&role==='host'){netStatus('Adversaire connecté ! Départ dans 3 secondes.');startCountdown();}
- if(m.type==='settings'&&role==='guest'){duelDiff=m.difficulty;round=0;duelMy=0;duelOpp=0;netStatus('Paramètres reçus. Départ dans 3 secondes.');updateDuelScore();startCountdown();}
- if(m.type==='question'&&role==='guest'){round=m.round;renderDuelQuestion(m.q);}
- if(m.type==='answer'&&role==='host'&&!roundEnded&&m.right)closeRound('guest');
+ if(m.type==='settings'&&role==='guest'){duelDiff=m.difficulty;duelMode=m.mode||'calc';round=0;duelMy=0;duelOpp=0;netStatus(duelMode==='burger'?'Burger Quiz ! Paramètres reçus, départ dans 3 secondes.':'Paramètres reçus. Départ dans 3 secondes.');updateDuelScore();startCountdown();}
+ if(m.type==='question'&&role==='guest'){round=m.round;if(m.mode)duelMode=m.mode;renderDuelQuestion(m.q);}
+ if(m.type==='answer'&&role==='host'&&!roundEnded){
+  if(m.right)closeRound('guest');
+  else if(duelQ&&duelQ.burger){guestWrong=true;if(hostWrong)closeRound('draw');}
+ }
  if(m.type==='roundEnd'&&role==='guest'){
   roundEnded=true;duelMy=m.guestScore;duelOpp=m.hostScore;updateDuelScore();
   $('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
@@ -466,12 +519,13 @@ function handleData(m){
 
 function wire(c){conn=c;c.on('open',()=>{
  netStatus('Connexion établie ! Préparation du duel…');
- if(role==='host'){conn.send({type:'settings',difficulty:duelDiff});startCountdown();}
+ if(role==='host'){conn.send({type:'settings',difficulty:duelDiff,mode:duelMode});startCountdown();}
  else conn.send({type:'ready'});
 });c.on('data',handleData);c.on('close',()=>{netStatus('La connexion avec ton adversaire a été interrompue.');if($('duel').classList.contains('active')&&!opponentLeft){$('duelFeedback').className='feedback show near';$('duelFeedback').textContent='La connexion avec ton adversaire a été interrompue.';}});c.on('error',()=>netStatus('Erreur de connexion au salon.'));}
 $('createRoom').onclick=()=>{
  if(!window.Peer){netStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}
- duelDiff=Number($('difficulty').value);round=0;duelMy=0;duelOpp=0;role='host';
+ duelDiff=Number($('difficulty').value);duelMode=$('duelGameMode').value;round=0;duelMy=0;duelOpp=0;role='host';hostWrong=false;guestWrong=false;
+ if(duelMode==='burger')burgerDeck=shuffle([...BURGER_QUIZ]);
  peer=new Peer('mathrush-'+Math.random().toString(36).slice(2,8));
  peer.on('open',id=>netStatus(`Salon créé ! Partage ce code : ${id.replace('mathrush-','').toUpperCase()}\nEn attente de ton adversaire…`));
  peer.on('connection',wire);peer.on('error',e=>netStatus('Erreur réseau : '+e.type+'. Essaie de recréer un salon.'));
