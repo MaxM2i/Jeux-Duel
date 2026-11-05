@@ -41,7 +41,7 @@ h1,h2,h3,p{margin-top:0}h2{font-size:25px;letter-spacing:-.7px;margin-bottom:8px
 .question{text-align:center;font-size:clamp(34px,9vw,48px);font-weight:1000;letter-spacing:-1.5px;margin:26px 0 22px}.question small{display:block;font-size:13px;letter-spacing:0;color:var(--muted);margin-bottom:12px}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.choice{border:2px solid var(--line);background:#fff;border-radius:15px;padding:15px 8px;font-size:21px;font-weight:900;color:var(--ink);min-height:58px}.choice.selected{border-color:var(--blue);background:#eef4ff;color:#245fc9}.choice:disabled{opacity:.7}
 .answer-input{display:block;width:min(190px,70%);margin:20px auto;border:2px solid var(--line);border-radius:15px;padding:14px;text-align:center;font-size:26px;font-weight:900;outline:none}
-.range{width:100%;height:34px;accent-color:var(--blue)}.ticks{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-weight:850}.range-value{text-align:center;font-size:25px;font-weight:950;color:#aab5c8;min-height:34px;margin:8px}
+.range{width:100%;height:34px;accent-color:var(--blue)}.ticks{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;justify-content:space-between;align-items:center;color:var(--muted);font-size:clamp(11px,3vw,14px);font-weight:850;white-space:nowrap;overflow:hidden;padding:0 10px;box-sizing:border-box}.range-value{text-align:center;font-size:25px;font-weight:950;color:#aab5c8;min-height:34px;margin:8px}
 .feedback{display:none;margin-top:18px;padding:15px;border-radius:15px;line-height:1.5;font-weight:750}.feedback.show{display:block}.good{background:#e9f8f0;color:#14764e}.near{background:#fff4df;color:#925b0c}.bad{background:#fff0f1;color:#a92f40}
 .levelchips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.chip{border-radius:99px;padding:7px 10px;background:#edf2fb;color:#586784;font-size:12px;font-weight:850}
 .field{width:100%;border:2px solid var(--line);border-radius:13px;padding:13px;background:white;color:var(--ink);margin:7px 0 12px;min-height:48px}
@@ -60,7 +60,7 @@ body{width:100%;overflow-x:hidden}
 button{-webkit-tap-highlight-color:transparent}
 .panel,.hero,.menu-card{min-width:0}
 .question,.status{overflow-wrap:anywhere}
-.ticks{gap:4px;flex-wrap:wrap}.ticks span{flex:1;text-align:center;min-width:0}
+.ticks{gap:0;flex-wrap:nowrap}.ticks span{text-align:center;min-width:0;overflow:visible}
 @media(max-width:520px){
  body{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
  .app{max-width:100%;padding-top:4px}
@@ -144,6 +144,11 @@ body{padding-left:0;padding-right:0}
  .percent-model{height:58px}
 }
 
+
+/* Graduation responsive : labels limited to endpoints or four equal intervals */
+.range{display:block;width:100%;max-width:100%;box-sizing:border-box;margin:8px 0 2px;touch-action:pan-y}
+.ticks span{line-height:1.2;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.ticks{padding-left:12px;padding-right:12px;font-size:12px}.range{height:42px}.question{font-size:clamp(30px,8vw,44px)}}
 </style>
 </head>
 <body>
@@ -179,7 +184,7 @@ body{padding-left:0;padding-right:0}
 <section class="screen" id="duelSetup">
  <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Multijoueur</span></div>
  <div class="panel"><div class="kicker">Défi à deux</div><h2>Choisis la difficulté</h2><p>Le créateur du salon choisit le niveau pour les deux joueurs.</p>
- <select class="field" id="difficulty"><option value="0">Très facile</option><option value="1">Facile</option><option value="2" selected>Moyen</option><option value="3">Difficile</option><option value="4">Très difficile</option><option value="5">Expert</option></select>
+ <select class="field" id="difficulty"><option value="0">Très facile</option><option value="1">Facile</option><option value="0" selected>Très facile</option><option value="3">Difficile</option><option value="4">Très difficile</option><option value="5">Expert</option></select>
  <button class="btn btn-main full" id="createRoom">Créer un salon</button>
  <div class="small-note">Ou rejoins un ami avec son code</div><input class="field" id="joinCode" placeholder="Code du salon" autocomplete="off"><button class="btn btn-soft full" id="joinRoom">Rejoindre le duel</button>
  <div class="status" id="networkStatus">En attente de connexion.</div><div class="section-gap"><h3>Mes amis</h3><div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div></div></div>
@@ -208,10 +213,11 @@ let saved=JSON.parse(localStorage.getItem('mathrush_app_save')||'{}');
 let section=saved.section||1,level=saved.level||1,points=saved.points||0,done=saved.done||[];
 let exIndex=0,streak=0,best=0,correctCount=0,exercise=null,choice=null,locked=false,startTime=0;
 function persist(){localStorage.setItem('mathrush_app_save',JSON.stringify({section,level,points,done}));$('totalPoints').textContent=points;$('homeProgress').textContent=`Section ${section} · Niveau ${level}`;}
-function difficultyRank(){return Math.min(6,1+Math.floor((level-1)/3)+Math.floor((section-1)/5));}
+function difficultyRank(){return Math.min(6,Math.floor((level-1)/4)+Math.floor((section-1)/6));}
 function makeMath(){
  const d=difficultyRank();let a,b,op,ans;
- if(d<=2){op=Math.random()<.5?'+':'×';if(op==='+'){a=[5,10,20,25][rand(0,3)];b=[5,10,20,25][rand(0,3)];ans=a+b;}else{a=[2,5,10][rand(0,2)];b=[2,5,10][rand(0,2)];ans=a*b;}}
+ if(d<=1){op=Math.random()<.7?'+':'×';if(op==='+'){a=rand(1,10);b=rand(1,10);ans=a+b;}else{a=rand(2,5);b=rand(2,5);ans=a*b;}}
+ else if(d<=2){op=Math.random()<.6?'+':'×';if(op==='+'){a=[5,10,20,25][rand(0,3)];b=[5,10,20,25][rand(0,3)];ans=a+b;}else{a=[2,5,10][rand(0,2)];b=[2,5,10][rand(0,2)];ans=a*b;}}
  else if(d<=4){op=['+','−','×'][rand(0,2)];if(op==='+'){a=rand(2,18)*5;b=rand(2,12)*5;ans=a+b;}else if(op==='−'){a=rand(5,25)*5;b=rand(1,a/5-1)*5;ans=a-b;}else{a=rand(2,10);b=rand(2,12)*5;ans=a*b;}}
  else{op=['+','−','×'][rand(0,2)];if(op==='+'){a=rand(10,150);b=rand(10,150);ans=a+b;}else if(op==='−'){a=rand(30,250);b=rand(1,a-1);ans=a-b;}else{a=rand(3,15);b=rand(3,15);ans=a*b;}}
  return {a,b,op,ans};
@@ -244,7 +250,7 @@ function makeVisualExercise(type){
 }
 function buildExercise(){
  const q=makeMath(),types=['slider','choice','fill','pattern','line','choice','fill','slider','pattern','choice','line','fill','percent','model','factors','equation','choice','slider','model','factors','equation','percent','pattern','fill','choice'],type=types[exIndex];
- if(type==='slider'||type==='line'){const step=difficultyRank()<=2?10:difficultyRank()<=4?20:50,max=Math.max(step*2,Math.ceil(q.ans*1.5/step)*step);return{...q,type,max,ticks:Array.from({length:Math.floor(max/step)+1},(_,i)=>i*step)};}
+ if(type==='slider'||type==='line'){const step=difficultyRank()<=1?5:difficultyRank()<=2?10:difficultyRank()<=4?20:50,max=Math.max(step*4,Math.ceil(q.ans*1.35/step)*step);const ticks=max%4===0?[0,max/4,max/2,max*3/4,max]:[0,max];return{...q,type,max,ticks};}
  if(type==='choice'){let opts=new Set([q.ans]);while(opts.size<4){let n=q.ans+rand(-Math.max(6,Math.round(q.ans*.3)),Math.max(6,Math.round(q.ans*.3)));if(n>=0)opts.add(n);}return{...q,type,opts:shuffle([...opts])};}
  if(type==='fill')return{...q,type};
  if(['percent','model','factors','equation'].includes(type))return makeVisualExercise(type);
