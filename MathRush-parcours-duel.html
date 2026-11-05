@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathRush — Le défi des maths</title>
+<style>
+:root{
+  --ink:#24304a;--muted:#71809a;--line:#e5eaf2;--bg:#f5f7fc;
+  --blue:#3978e8;--blue-dark:#245fc9;--green:#20a66b;--green-bg:#e9f8f0;
+  --orange:#e99425;--orange-bg:#fff4df;--red:#d94b55;--red-bg:#fff0f0;
+  --purple:#7958d8;--shadow:0 14px 40px rgba(35,55,95,.10)
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(145deg,#f3f7ff,#f8f7ff 55%,#f5fbfa);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);min-height:100vh;padding:24px 14px}
+button{font:inherit;cursor:pointer}
+.app{max-width:760px;margin:0 auto}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.brand{font-weight:900;font-size:22px;letter-spacing:-.7px;color:#315fc1;white-space:nowrap}
+.brand span{color:#f2a52d}
+.progress-wrap{flex:1;height:12px;background:#e5eaf4;border-radius:99px;overflow:hidden}
+.progress{height:100%;width:0;background:linear-gradient(90deg,#4a8af0,#38c58b);border-radius:99px;transition:width .35s}
+.stats{display:flex;gap:8px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-weight:800;font-size:13px;white-space:nowrap}
+.stat b{color:#e39a20}
+.card{background:#fff;border:1px solid rgba(220,228,240,.9);border-radius:24px;box-shadow:var(--shadow);padding:clamp(20px,5vw,36px)}
+.eyebrow{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:900}
+h1{font-size:clamp(24px,5vw,34px);line-height:1.15;margin:9px 0 8px;letter-spacing:-1px}
+.subtitle{color:var(--muted);margin:0 0 24px;font-size:15px}
+.exercise{min-height:285px}
+.question{font-size:clamp(30px,7vw,48px);font-weight:900;letter-spacing:-1.5px;text-align:center;margin:26px 0 22px}
+.question small{display:block;font-size:14px;letter-spacing:0;color:var(--muted);font-weight:650;margin-bottom:12px}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.answer{border:2px solid var(--line);background:#fff;border-radius:15px;padding:16px 12px;font-weight:850;font-size:20px;color:var(--ink);transition:.15s}
+.answer:hover{border-color:#9ab9f5;background:#f7faff}
+.answer.selected{border-color:var(--blue);background:#edf4ff;color:#245fc9}
+.answer.correct{border-color:var(--green);background:var(--green-bg)}
+.answer.wrong{border-color:var(--red);background:var(--red-bg)}
+.slider-box{padding:12px 4px 0}
+.slider-readout{font-size:30px;font-weight:900;text-align:center;color:#52627d;min-height:42px;margin:6px 0 18px}
+.slider-readout.hidden-value{color:#a8b2c3}
+.range{width:100%;accent-color:var(--blue);height:12px;cursor:pointer}
+.ticks{display:flex;justify-content:space-between;color:#71809a;font-size:13px;font-weight:800;margin-top:12px}
+.tick-line{height:9px;display:flex;justify-content:space-between;padding:0 2px;margin-top:-20px;pointer-events:none}
+.tick-line i{width:2px;height:9px;background:#b9c4d6;border-radius:2px}
+.scale-note{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+.inline-input{display:flex;justify-content:center;align-items:center;gap:10px;margin:26px auto}
+.inline-input input{width:130px;border:2px solid var(--line);border-radius:14px;padding:13px;text-align:center;font-size:25px;font-weight:850;color:var(--ink);outline:none}
+.inline-input input:focus{border-color:var(--blue)}
+.feedback{display:none;border-radius:15px;padding:15px 17px;margin-top:22px;font-weight:750;line-height:1.5}
+.feedback.show{display:block}
+.feedback.good{background:var(--green-bg);color:#16784e}
+.feedback.near{background:var(--orange-bg);color:#9b5b08}
+.feedback.bad{background:var(--red-bg);color:#a82e39}
+.feedback strong{font-size:18px}
+.actions{display:flex;gap:12px;margin-top:25px}
+.primary,.secondary{border:0;border-radius:14px;padding:15px 20px;font-weight:900;flex:1}
+.primary{background:var(--blue);color:#fff;box-shadow:0 5px 0 var(--blue-dark)}
+.primary:hover:not(:disabled){filter:brightness(1.05);transform:translateY(-1px)}
+.primary:disabled{background:#cbd3e0;box-shadow:0 5px 0 #b7c1d0;color:#f8f9fb;cursor:not-allowed}
+.secondary{background:#eef2f8;color:#4d5c75}
+.footer{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;margin-top:18px}
+.level-pill{background:#f0edff;color:#684ac6;border-radius:99px;padding:6px 10px;font-weight:850}
+.result{text-align:center;padding:22px 0}
+.result .emoji{font-size:64px}
+.result h2{font-size:30px;margin:12px 0 8px}
+.result p{color:var(--muted)}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0}
+.result-grid div{background:#f5f7fc;border-radius:14px;padding:14px 8px}
+.result-grid b{display:block;font-size:24px;color:#315fc1}
+.result-grid span{font-size:12px;color:var(--muted);font-weight:750}
+@media(max-width:520px){body{padding:14px 10px}.top{gap:8px;flex-wrap:wrap}.brand{font-size:19px}.stats{margin-left:auto}.stat{padding:7px 9px}.top .progress-wrap{order:3;flex-basis:100%}.card{border-radius:20px}.answers{gap:9px}.answer{font-size:18px;padding:14px 8px}.footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Math<span>Rush</span> ⚡</div>
+    <div class="progress-wrap" aria-label="Progression"><div class="progress" id="progress"></div></div>
+    <div class="stats">
+      <div class="stat">⭐ <b id="points">0</b></div>
+      <div class="stat">🔥 <b id="streak">0</b></div>
+    </div>
+  </header>
+
+  <main class="card" id="game">
+    <div class="eyebrow" id="eyebrow">Série 1 · Échauffement</div>
+    <h1 id="title">À toi de jouer !</h1>
+    <p class="subtitle" id="subtitle">Réponds à 10 exercices. La difficulté augmente progressivement.</p>
+    <section class="exercise" id="exercise"></section>
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+    <div class="actions">
+      <button class="secondary" id="skip">Passer</button>
+      <button class="primary" id="validate" disabled>VALIDER</button>
+    </div>
+    <div class="footer">
+      <span id="exerciseCount">Exercice 1 / 10</span>
+      <span class="level-pill" id="level">Niveau 1 · Facile</span>
+    </div>
+  </main>
+<section class="card" style="margin-top:18px">
+ <div class="eyebrow">Parcours MathRush</div><h2 style="margin:6px 0">15 sections · 15 niveaux par section</h2>
+ <p class="subtitle">Chaque niveau comprend 15 exercices. Ta progression est sauvegardée sur cet appareil.</p>
+ <div id="pathInfo" style="font-weight:850;color:#315fc1">Section actuelle : </div>
+ <button class="secondary" style="width:100%;margin-top:12px" onclick="document.getElementById('pathInfo').textContent='Progression : '+localStorage.getItem('mr_section')+' / 15 sections · niveau '+localStorage.getItem('mr_level')+' / 15'">Voir ma progression</button>
+</section>
+<section class="card" style="margin-top:18px">
+ <div class="eyebrow">Mode multijoueur</div><h2 style="margin:6px 0">⚔️ Défi en direct à 2</h2>
+ <p class="subtitle">Crée un salon et partage le code à ton adversaire, ou rejoins son salon. Nécessite une connexion internet.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="createRoom" style="flex:1">Créer un salon</button><input id="roomCode" placeholder="Code du salon" style="min-width:0;flex:1;padding:12px;border:2px solid #e5eaf2;border-radius:12px"><button class="secondary" id="joinRoom">Rejoindre</button></div>
+ <div id="roomStatus" style="background:#f4f7fc;padding:12px;border-radius:12px;margin-top:12px;white-space:pre-line">Prêt à jouer ? Crée ou rejoins un salon.</div>
+ <div id="duelArea" style="display:none"><div id="duelPrompt" class="question"></div><div id="duelChoices" class="answers"></div><p id="duelScore" style="font-weight:850"></p></div>
+</section>
+</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(() => {
+  const TOTAL = 15;
+  const LEVELS = 15, SECTIONS = 15;
+  let section = Number(localStorage.getItem("mr_section")||1), levelNumber = Number(localStorage.getItem("mr_level")||1);
+  let index=0, points=0, streak=0, best=0, level=1, current=null;
+  let selected=null, submitted=false, startedAt=0, earned=0, correctCount=0;
+  const $ = id => document.getElementById(id);
+  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const shuffle=a=>a.sort(()=>Math.random()-.5);
+  const clean=n=>Number.isInteger(n)?String(n):String(Number(n.toFixed(1)));
+  function updateStats(){
+    $('points').textContent=points; $('streak').textContent=streak;
+    $('progress').style.width=(index/TOTAL*100)+'%';
+    $('exerciseCount').textContent=`Exercice ${Math.min(index+1,TOTAL)} / ${TOTAL}`;
+    level=Math.min(8,1+Math.floor((levelNumber-1)/2)+Math.floor((section-1)/3));
+    const labels=['Facile','Facile','Débutant +','Intermédiaire','Intermédiaire +','Confirmé','Avancé','Expert'];
+    $('level').textContent=`Section ${section} · Niveau ${levelNumber}`;
+  }
+  function arithmetic(){
+    let a,b,op,ans;
+    if(level<=2){
+      const pool=[5,10,20,25,50];
+      op=rand(0,1)?'+':'×';
+      if(op==='+'){a=pool[rand(0,3)];b=pool[rand(0,3)];ans=a+b;}
+      else {a=[2,5,10][rand(0,2)];b=[2,5,10][rand(0,2)];ans=a*b;}
+    }else if(level<=4){
+      op=['+','−','×'][rand(0,2)];
+      if(op==='+'){a=rand(2,12)*5;b=rand(1,10)*5;ans=a+b;}
+      else if(op==='−'){a=rand(4,20)*5;b=rand(1,a/5-1)*5;ans=a-b;}
+      else {a=rand(2,9);b=rand(2,10)*5;ans=a*b;}
+    }else{
+      op=['+','−','×'][rand(0,2)];
+      if(op==='+'){a=rand(10,90);b=rand(10,90);ans=a+b;}
+      else if(op==='−'){a=rand(20,150);b=rand(1,a-1);ans=a-b;}
+      else {a=rand(3,12);b=rand(3,12);ans=a*b;}
+    }
+    return {a,b,op,ans};
+  }
+  function makeScale(target){
+    const step = level<=2?10:level<=4?20:level<=6?40:100;
+    const max=Math.max(step*2,Math.ceil((target*1.5)/step)*step);
+    const ticks=[]; for(let n=0;n<=max;n+=step)ticks.push(n);
+    return {max,ticks};
+  }
+  function makeExercise(){
+    const q=arithmetic();
+    const types=level<=2?['slider','choice','fill','slider','pattern','choice','line','fill','slider','choice']:
+      ['slider','choice','fill','line','pattern','choice','slider','fill','line','pattern'];
+    const type=types[index%types.length];
+    if(type==='slider'||type==='line') return {type,...q,target:q.ans};
+    if(type==='choice'){
+      const opts=new Set([q.ans]);
+      while(opts.size<4){let v=q.ans+rand(-Math.max(5,Math.ceil(q.ans*.35)),Math.max(5,Math.ceil(q.ans*.35)));if(v>=0)opts.add(v);}
+      return {type,...q,options:shuffle([...opts])};
+    }
+    if(type==='fill') return {type,...q};
+    const start=level<=2?2:3, step=level<=2?2:rand(3,8);
+    const seq=[start,start+step,start+step*2,start+step*3];
+    return {type:'pattern',seq,answer:start+step*4};
+  }
+  function render(){
+    submitted=false; selected=null; earned=0; startedAt=Date.now();
+    current=makeExercise(); updateStats();
+    $('feedback').className='feedback'; $('feedback').innerHTML='';
+    $('validate').disabled=true; $('validate').textContent='VALIDER';
+    $('skip').disabled=false;
+    $('eyebrow').textContent=`Section ${section} · Niveau ${levelNumber}`;
+    $('title').textContent='Trouve la bonne réponse';
+    $('subtitle').textContent='15 exercices par niveau · 15 niveaux par section. La difficulté augmente progressivement.';
+    const host=$('exercise');
+    if(current.type==='slider'||current.type==='line'){
+      const {max,ticks}=makeScale(current.target);
+      current.max=max;
+      host.innerHTML=`<div class="question"><small>${current.type==='line'?'Place le résultat sur la droite graduée':'Estime le résultat'}</small>${current.a} ${current.op} ${current.b} = ?</div>
+      <div class="slider-box">
+        <div class="slider-readout hidden-value" id="sliderReadout">?</div>
+        <input class="range" id="range" type="range" min="0" max="${max}" step="1" value="${rand(0,max)}" aria-label="Choisir une valeur">
+        <div class="ticks">${ticks.map(t=>`<span>${t}</span>`).join('')}</div>
+        <div class="scale-note">Fais glisser le curseur. Ta valeur restera cachée jusqu'à validation.</div>
+      </div>`;
+      $('range').addEventListener('input',()=>{selected=Number($('range').value);$('validate').disabled=false;});
+    }else if(current.type==='choice'){
+      host.innerHTML=`<div class="question"><small>Choisis le bon résultat</small>${current.a} ${current.op} ${current.b} = ?</div><div class="answers">${current.options.map(v=>`<button class="answer" data-value="${v}">${v}</button>`).join('')}</div>`;
+      host.querySelectorAll('.answer').forEach(btn=>btn.addEventListener('click',()=>choose(Number(btn.dataset.value),btn)));
+    }else if(current.type==='fill'){
+      host.innerHTML=`<div class="question"><small>Complète le calcul</small>${current.a} ${current.op} ${current.b} = ?</div><div class="inline-input"><input id="answerInput" type="number" inputmode="numeric" placeholder="?" aria-label="Ta réponse"></div>`;
+      $('answerInput').addEventListener('input',()=>{selected=$('answerInput').value===''?null:Number($('answerInput').value);$('validate').disabled=selected===null;});
+    }else{
+      host.innerHTML=`<div class="question"><small>Quel nombre vient ensuite ?</small>${current.seq.join(' · ')} · ?</div><div class="answers">${[current.answer,current.answer+current.seq[1]-current.seq[0],current.answer+5,current.answer-2].sort(()=>Math.random()-.5).map(v=>`<button class="answer" data-value="${v}">${v}</button>`).join('')}</div>`;
+      host.querySelectorAll('.answer').forEach(btn=>btn.addEventListener('click',()=>choose(Number(btn.dataset.value),btn)));
+    }
+    $('validate').onclick=validate;
+    $('skip').onclick=()=>{if(!submitted){streak=0;next();}};
+  }
+  function choose(value,btn){
+    if(submitted)return;
+    selected=value;
+    document.querySelectorAll('.answer').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected'); $('validate').disabled=false;
+  }
+  function validate(){
+    if(submitted||selected===null)return;
+    submitted=true;
+    const target=current.type==='pattern'?current.answer:current.ans;
+    const diff=Math.abs(Number(selected)-target);
+    const isSlider=current.type==='slider'||current.type==='line';
+    const near=isSlider&&diff>0&&diff<=Math.max(1,Math.abs(target)*.10);
+    const correct=diff===0;
+    const elapsed=(Date.now()-startedAt)/1000;
+    const speedBonus=Math.max(0,Math.round(25-Math.max(0,elapsed-3)*2));
+    let gained=0;
+    if(correct){gained=100+speedBonus+Math.min(50,streak*5);streak++;correctCount++;}
+    else if(near){gained=60+Math.round(30*(1-diff/Math.max(1,target*.10)))+Math.round(speedBonus*.5);streak=0;}
+    else streak=0;
+    points+=gained; earned=gained; best=Math.max(best,streak);
+    if(!correct&&current.type!=='slider'&&current.type!=='line') document.querySelectorAll('.answer').forEach(b=>{if(Number(b.dataset.value)===target)b.classList.add('correct');});
+    if(!correct&&isSlider){const r=$('range');r.disabled=true;}
+    if(correct&&isSlider)$('range').disabled=true;
+    const box=$('feedback');
+    if(correct){box.className='feedback show good';box.innerHTML=`<strong>Excellent ! +${gained} points ⭐</strong><br>Réponse exacte : ${target}.`;}
+    else if(near){box.className='feedback show near';box.innerHTML=`<strong>Tout près ! +${gained} points 🟠</strong><br>Ta réponse était à moins de 10 % de la bonne réponse.<br>La réponse attendue était <strong>${target}</strong>.`;}
+    else{box.className='feedback show bad';box.innerHTML=`<strong>Pas tout à fait… +0 point</strong><br>La bonne réponse était <strong>${target}</strong>. ${isSlider?'Continue, tu vas progresser !':''}`;}
+    if(isSlider){
+      const readout=$('sliderReadout');readout.textContent=`Ta réponse : ${selected}`;readout.classList.remove('hidden-value');
+      readout.style.color=correct?'var(--green)':near?'var(--orange)':'var(--red)';
+    }
+    // Le bouton doit rester actif après la réponse pour permettre de passer à l'exercice suivant.
+    $('validate').disabled=false;$('validate').textContent='CONTINUER';$('validate').onclick=next;
+    $('skip').disabled=true;updateStats();
+  }
+  function next(){
+    index++;
+    if(index>=TOTAL){finish();return;}
+    render();
+  }
+  function finish(){
+    $('progress').style.width='100%';
+    let nextSection=section, nextLevel=levelNumber;
+    if(levelNumber<LEVELS) nextLevel++; else if(section<SECTIONS){nextSection++;nextLevel=1;}
+    localStorage.setItem('mr_section',String(nextSection));localStorage.setItem('mr_level',String(nextLevel));
+    section=nextSection;levelNumber=nextLevel;
+    $('game').innerHTML=`<div class="result"><div class="emoji">🏆</div><div class="eyebrow">Série terminée</div><h2>Bravo, champion !</h2><p>Tu as terminé les ${TOTAL} exercices de ce niveau. Le niveau suivant est débloqué !</p><p>Prochaine étape : section ${section}, niveau ${levelNumber}.</p>
+      <div class="result-grid"><div><b>${points}</b><span>POINTS</span></div><div><b>${correctCount}</b><span>BONNES RÉPONSES</span></div><div><b>${best}</b><span>MEILLEURE SÉRIE</span></div></div>
+      <button class="primary" id="restart" style="width:100%">REJOUER</button></div>`;
+    $('restart').onclick=()=>{index=0;streak=0;best=0;correctCount=0;render();};
+  }
+  // Duel en ligne : PeerJS transporte les questions et scores via WebRTC.
+  let peer=null, link=null, role=null, duelRound=0, duelMe=0, duelThem=0, duelQuestion=null, duelDone=false;
+  const status=t=>$('roomStatus').textContent=t;
+  function attachLink(c){link=c;c.on('open',()=>{status('Adversaire connecté ! Le duel commence.');$('duelArea').style.display='block';if(role==='host')hostNext();});c.on('data',m=>{
+    if(m.kind==='ready'&&role==='host')hostNext();
+    if(m.kind==='q'&&role==='guest')showDuel(m.q);
+    if(m.kind==='answer'&&role==='host'){duelThem+=m.score;link.send({kind:'scores',host:duelMe,guest:duelThem});}
+    if(m.kind==='scores'&&role==='guest'){duelMe=m.guest;duelThem=m.host;duelScore();}
+    if(m.kind==='finish')status('Duel terminé ! Score : '+m.host+' – '+m.guest);
+  });}
+  function newDQ(){let a=rand(2,10)*5,b=rand(2,10)*5,op=Math.random()<.5?'+':'×',ans=op==='+'?a+b:a*b;return{round:duelRound,a,b,op,ans,opts:shuffle([...new Set([ans,ans+10,Math.max(0,ans-10),ans+20])]).slice(0,4)};}
+  function hostNext(){if(duelRound>=10){link.send({kind:'finish',host:duelMe,guest:duelThem});status(`Duel terminé ! ${duelMe} – ${duelThem}`);return;}duelRound++;duelQuestion=newDQ();duelQuestion.round=duelRound;showDuel(duelQuestion);link.send({kind:'q',q:duelQuestion});}
+  function showDuel(q){duelQuestion=q;duelDone=false;$('duelPrompt').textContent=`Manche ${q.round}/10 : ${q.a} ${q.op} ${q.b} = ?`;$('duelChoices').innerHTML=q.opts.map(v=>`<button class="answer" data-v="${v}">${v}</button>`).join('');$('duelChoices').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(duelDone)return;duelDone=true;const score=Number(b.dataset.v)===q.ans?100:0;duelMe+=score;$('duelChoices').querySelectorAll('button').forEach(x=>x.disabled=true);if(role==='guest')link.send({kind:'answer',score});else{link.send({kind:'scores',host:duelMe,guest:duelThem});setTimeout(hostNext,900);}duelScore();});duelScore();}
+  function duelScore(){$('duelScore').textContent=`Toi : ${duelMe} pts · Adversaire : ${duelThem} pts`;}
+  $('createRoom').onclick=()=>{if(!window.Peer){status('Impossible de charger le module réseau. Vérifie internet puis recharge.');return;}role='host';peer=new Peer('mr-'+Math.random().toString(36).slice(2,8));peer.on('open',id=>status('Salon créé ! Partage ce code : '+id.replace('mr-','').toUpperCase()+'\nEn attente de ton adversaire…'));peer.on('connection',attachLink);peer.on('error',e=>status('Erreur réseau : '+e.type+'. Réessaie.'));};
+  $('joinRoom').onclick=()=>{const code=$('roomCode').value.trim().toLowerCase();if(!code){status('Saisis le code fourni par ton adversaire.');return;}if(!window.Peer){status('Impossible de charger le module réseau. Vérifie internet puis recharge.');return;}role='guest';peer=new Peer();peer.on('open',()=>{const c=peer.connect('mr-'+code);attachLink(c);c.on('open',()=>c.send({kind:'ready'}));});peer.on('error',e=>status('Connexion impossible : '+e.type+'. Vérifie le code.'));};
+  render();
+})();
+</script>
+</body>
+</html>
