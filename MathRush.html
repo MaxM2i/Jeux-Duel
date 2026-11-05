@@ -98,6 +98,24 @@ body{padding-left:0;padding-right:0}
 @media(min-width:700px){.app{padding-left:clamp(24px,5vw,64px);padding-right:clamp(24px,5vw,64px)}}
 @media(max-width:520px){.app{padding-left:10px;padding-right:10px}.panel,.hero{width:100%}}
 
+
+/* Choix de réponse plus grands sur smartphone */
+@media(max-width:520px){
+ .choices{gap:12px}
+ .choice{
+  min-height:76px;
+  padding:18px 10px;
+  font-size:clamp(20px,6vw,25px);
+  line-height:1.25;
+  border-radius:17px;
+  touch-action:manipulation;
+ }
+}
+@media(max-width:360px){
+ .choices{gap:10px}
+ .choice{min-height:70px;padding:16px 7px;font-size:20px}
+}
+
 </style>
 </head>
 <body>
