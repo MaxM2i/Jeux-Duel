@@ -116,6 +116,34 @@ body{padding-left:0;padding-right:0}
  .choice{min-height:70px;padding:16px 7px;font-size:20px}
 }
 
+
+/* Exercices visuels inspirés des références : grandes zones tactiles et mise en page aérée */
+.visual-prompt{width:100%;margin:clamp(24px,7vh,76px) auto clamp(28px,7vh,76px);text-align:center}
+.visual-prompt>small{display:block;color:#77839a;font-size:clamp(14px,3.5vw,18px);font-weight:800;letter-spacing:.04em;margin-bottom:22px}
+.visual-equation{font-size:clamp(36px,9vw,68px);font-weight:850;line-height:1.35;display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,24px);flex-wrap:wrap}
+.visual-equation em,.model-grid em{font-style:normal;color:#20a9e8}
+.percent-model{display:flex;justify-content:center;gap:3px;margin:35px auto 0;max-width:340px;height:70px}
+.percent-model i{flex:1;border:2px solid #dfe4e8;border-radius:5px;background:#fff}
+.percent-model i.on{background:#20a9e8;border-color:#159bd5}
+.visual-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:24px 0}
+.visual-choices .choice{min-height:clamp(76px,12vh,118px);font-size:clamp(22px,6vw,32px)}
+.model-grid{display:grid;grid-template-columns:1fr 1fr;border:2px solid #e2e5e8;border-radius:22px;overflow:hidden;text-align:center;margin:0 auto;max-width:760px}
+.model-grid>div{min-height:clamp(82px,12vh,125px);display:flex;align-items:center;justify-content:center;padding:12px 8px;border:1px solid #e2e5e8;font-size:clamp(17px,4.5vw,29px);font-weight:800}
+.model-grid .missing-cell{background:#def3ff;color:#20a9e8;border:2px solid #79d3fa;font-size:clamp(30px,8vw,48px)}
+.factor-tree{max-width:440px;margin:30px auto;display:flex;flex-direction:column;align-items:center;gap:22px;font-size:clamp(25px,7vw,42px);font-weight:850}
+.factor-total{padding:20px 45px;border:2px dashed #dfe4e8;border-radius:20px;background:#fafafa}
+.factor-branches{display:flex;justify-content:center;gap:clamp(40px,15vw,100px);width:100%;position:relative}
+.factor-branches span{min-width:86px;padding:16px;border:2px dashed #dfe4e8;border-radius:18px}
+.factor-branches span:first-child{color:#20a9e8;background:#e1f5ff}
+.equation-slots{margin:35px auto 0;color:#7d8798;font-size:clamp(15px,4vw,20px)}
+@media(max-width:520px){
+ .visual-prompt{margin:clamp(20px,5vh,48px) auto}
+ .visual-choices{gap:12px}
+ .visual-choices .choice{min-height:92px;padding:16px 8px;font-size:clamp(21px,6vw,29px)}
+ .model-grid>div{min-height:clamp(88px,13vh,118px)}
+ .percent-model{height:58px}
+}
+
 </style>
 </head>
 <body>
@@ -188,11 +216,38 @@ function makeMath(){
  else{op=['+','−','×'][rand(0,2)];if(op==='+'){a=rand(10,150);b=rand(10,150);ans=a+b;}else if(op==='−'){a=rand(30,250);b=rand(1,a-1);ans=a-b;}else{a=rand(3,15);b=rand(3,15);ans=a*b;}}
  return {a,b,op,ans};
 }
+
+function makeVisualExercise(type){
+ if(type==='percent'){
+  const pct=[5,10,20,25,50][rand(0,4)],base=[20,40,60,80,100,200][rand(0,5)],ans=base*pct/100;
+  const opts=shuffle([...new Set([ans,ans+Math.max(1,base/20),Math.max(0,ans-Math.max(1,base/20)),ans*2])]).slice(0,4);
+  return{type,pct,base,ans,opts};
+ }
+ if(type==='model'){
+  const start=rand(10,80)/10,step=[.05,.1,.2,.5][rand(0,3)],fmt=n=>Number(n.toFixed(2)).toLocaleString('fr-FR');
+  const vals=[0,1,2].map(i=>Number((start+i*step).toFixed(2))),ans=Number((start+3*step).toFixed(2));
+  const wrong=[ans+step,ans-step,ans+2*step].map(n=>Number(n.toFixed(2)));
+  return{type,vals,ans,opts:shuffle([ans,...wrong]).map(fmt),displayVals:vals.map(fmt),displayAns:fmt(ans)};
+ }
+ if(type==='factors'){
+  const factors=[2,3,5,7],a=factors[rand(0,3)],b=factors[rand(0,3)],c=factors[rand(0,3)],missing=[a,b,c][rand(0,2)];
+  const known=[a,b,c].filter((v,i)=>i!==[a,b,c].indexOf(missing));
+  return{type,a,b,c,missing,known,ans:missing,opts:shuffle([...new Set([missing,missing+1,missing+2,Math.max(2,missing-1)])])};
+ }
+ if(type==='equation'){
+  const target=[12,15,18,20,24,30,36][rand(0,6)],pairs=[];
+  for(let a=2;a<=9;a++)if(target%a===0)pairs.push([a,target/a]);
+  const pair=pairs[rand(0,pairs.length-1)],good=`${pair[0]} × ${pair[1]}`;
+  const opts=shuffle([good,`${target} ÷ 2`,`${Math.max(1,pair[0]-1)} × ${pair[1]}`,`${pair[0]} + ${pair[1]}`]);
+  return{type,target,ans:good,opts};
+ }
+}
 function buildExercise(){
- const q=makeMath(),types=['slider','choice','fill','pattern','line','choice','fill','slider','pattern','choice','line','fill','slider','choice','pattern'],type=types[exIndex];
+ const q=makeMath(),types=['slider','choice','fill','pattern','line','choice','fill','slider','pattern','choice','line','fill','percent','model','factors','equation','choice','slider','model','factors','equation','percent','pattern','fill','choice'],type=types[exIndex];
  if(type==='slider'||type==='line'){const step=difficultyRank()<=2?10:difficultyRank()<=4?20:50,max=Math.max(step*2,Math.ceil(q.ans*1.5/step)*step);return{...q,type,max,ticks:Array.from({length:Math.floor(max/step)+1},(_,i)=>i*step)};}
  if(type==='choice'){let opts=new Set([q.ans]);while(opts.size<4){let n=q.ans+rand(-Math.max(6,Math.round(q.ans*.3)),Math.max(6,Math.round(q.ans*.3)));if(n>=0)opts.add(n);}return{...q,type,opts:shuffle([...opts])};}
  if(type==='fill')return{...q,type};
+ if(['percent','model','factors','equation'].includes(type))return makeVisualExercise(type);
  const start=difficultyRank()<=2?2:3,step=difficultyRank()<=2?2:rand(3,9);return{type:'pattern',seq:[start,start+step,start+2*step,start+3*step],ans:start+4*step};
 }
 function startSolo(){show('solo');exIndex=0;streak=0;best=0;correctCount=0;renderSolo();}
@@ -210,16 +265,29 @@ function renderSolo(){
  }else if(exercise.type==='fill'){
   q.innerHTML=`<div class="question"><small>Complète le calcul</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><input class="answer-input" id="fillValue" type="number" inputmode="numeric" placeholder="?">`;
   $('fillValue').oninput=e=>{choice=e.target.value===''?null:Number(e.target.value);$('soloValidate').disabled=choice===null;};
- }else{
+ }else if(exercise.type==='pattern'){
   const options=shuffle([exercise.ans,exercise.ans+2,exercise.ans+5,Math.max(0,exercise.ans-3)]);
   q.innerHTML=`<div class="question"><small>Quel nombre vient ensuite ?</small>${exercise.seq.join(' · ')} · ?</div><div class="choices">${options.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
   q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+ }else if(exercise.type==='percent'){
+  const bars=Array.from({length:10},(_,i)=>`<i class="${i<exercise.pct/10?'on':''}"></i>`).join('');
+  q.innerHTML=`<div class="visual-prompt"><small>Calcule le pourcentage</small><div class="visual-equation">${exercise.pct}% <em>×</em> ${exercise.base} <em>=</em> ?</div><div class="percent-model">${bars}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+  q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+ }else if(exercise.type==='model'){
+  q.innerHTML=`<div class="visual-prompt"><small>Suis le modèle</small><div class="model-grid"><div>${exercise.displayVals[0]} <em>+ ${Number((exercise.vals[1]-exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div>${exercise.displayVals[1]}</div><div>${exercise.displayVals[1]} <em>+ ${Number((exercise.vals[1]-exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div>${exercise.displayVals[2]}</div><div>${exercise.displayVals[2]} <em>+ ${Number((exercise.vals[1]-exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div class="missing-cell">?</div></div></div><div class="choices visual-choices">${exercise.opts.map((n,i)=>`<button class="choice" data-v="${n}" data-index="${i}">${n}</button>`).join('')}</div>`;
+  q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(b.dataset.v,b));
+ }else if(exercise.type==='factors'){
+  q.innerHTML=`<div class="visual-prompt"><small>Complète avec les facteurs manquants</small><div class="factor-tree"><div class="factor-total">${exercise.a*exercise.b*exercise.c}</div><div class="factor-branches"><span>?</span><span>${exercise.known[0]} × ${exercise.known[1]}</span></div></div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+  q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+ }else if(exercise.type==='equation'){
+  q.innerHTML=`<div class="visual-prompt"><small>Complète l'équation</small><div class="visual-equation">${exercise.target} <em>=</em> <strong>?</strong></div><div class="equation-slots">Choisis une expression qui donne ${exercise.target}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+  q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(b.dataset.v,b));
  }
 }
 function selectSolo(v,b){if(locked)return;choice=v;document.querySelectorAll('#soloQuestion .choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('soloValidate').disabled=false;}
 function validateSolo(){
  if(locked||choice===null)return;locked=true;
- const target=exercise.ans,diff=Math.abs(choice-target),slider=['slider','line'].includes(exercise.type),exact=diff===0,near=slider&&diff>0&&diff<=Math.max(1,target*.1),speed=Math.max(0,Math.round(20-Math.max(0,(Date.now()-startTime)/1000-4)*2));
+ const target=exercise.ans,diff=typeof target==='number'?Math.abs(Number(choice)-target):(choice===target?0:1),slider=['slider','line'].includes(exercise.type),exact=diff===0,near=slider&&diff>0&&diff<=Math.max(1,target*.1),speed=Math.max(0,Math.round(20-Math.max(0,(Date.now()-startTime)/1000-4)*2));
  let gain=0;if(exact){gain=100+speed+Math.min(40,streak*5);streak++;correctCount++;}else if(near){gain=60+Math.round(25*(1-diff/Math.max(1,target*.1)));streak=0;}else streak=0;
  points+=gain;best=Math.max(best,streak);persist();
  const fb=$('soloFeedback');fb.className='feedback show '+(exact?'good':near?'near':'bad');fb.innerHTML=exact?`Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐`:near?`Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠`:`Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
