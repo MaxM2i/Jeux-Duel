@@ -150,17 +150,10 @@ body{padding-left:0;padding-right:0}
 .ticks span{line-height:1.2;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.ticks{padding-left:12px;padding-right:12px;font-size:12px}.range{height:42px}.question{font-size:clamp(30px,8vw,44px)}}
 
-
-/* Choix de réponse plus grands : zones tactiles généreuses sur tous les écrans */
-.choices{gap:14px}
-.choice{min-height:86px;padding:20px 14px;font-size:clamp(22px,5vw,27px);line-height:1.25;border-radius:17px;display:flex;align-items:center;justify-content:center;text-align:center;touch-action:manipulation}
-.answer-input{width:min(260px,80%);font-size:32px;padding:18px}
-@media(max-width:520px){
- .choices{gap:12px}
- .choice{min-height:92px;font-size:clamp(21px,6.5vw,27px);padding:16px 10px}
- .answer-input{font-size:28px}
-}
-@media(max-width:360px){.choice{min-height:80px;font-size:20px}}
+.groupQuiz img{max-width:100%}
+#quizAnswers .choice{min-height:72px}
+#quizScores{white-space:pre-line}
+@media(max-width:520px){#quizAnswers{gap:10px}#quizAnswers .choice{min-height:78px;font-size:clamp(18px,5vw,23px)}#quizMedia audio{width:100%}}
 </style>
 </head>
 <body>
@@ -199,7 +192,19 @@ body{padding-left:0;padding-right:0}
  <select class="field" id="difficulty"><option value="0">Très facile</option><option value="1">Facile</option><option value="0" selected>Très facile</option><option value="3">Difficile</option><option value="4">Très difficile</option><option value="5">Expert</option></select>
  <button class="btn btn-main full" id="createRoom">Créer un salon</button>
  <div class="small-note">Ou rejoins un ami avec son code</div><input class="field" id="joinCode" placeholder="Code du salon" autocomplete="off"><button class="btn btn-soft full" id="joinRoom">Rejoindre le duel</button>
- <div class="status" id="networkStatus">En attente de connexion.</div><div class="section-gap"><h3>Mes amis</h3><div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div></div></div>
+ <div class="status" id="networkStatus">En attente de connexion.</div>
+ <div class="section-gap" style="border-top:1px solid var(--line);padding-top:18px">
+ <div class="kicker">Nouveau · Quiz multijoueur</div><h2>Jusqu’à 6 joueurs</h2>
+ <p>Choisis un quiz, crée un salon puis partage le code. Le créateur ajoute les médias et lance les manches.</p>
+ <select class="field" id="quizMode"><option value="images">Séries TV · 3 images / 15 secondes</option><option value="seriesAudio">Séries TV · extrait sonore</option><option value="music">Musiques · années 1990 à 2010</option><option value="ccMusic">Musique classique · catalogue libre (aucun fichier)</option></select>
+ <label class="small-note" style="display:block;text-align:left">Images : sélectionne les fichiers par groupes de 3, nommés par exemple Friends_1, Friends_2, Friends_3.<br>Le mode « Musique classique · catalogue libre » ne demande aucun fichier : 12 chefs-d'œuvre du domaine public (Bach, Mozart, Beethoven, Chopin, Debussy…) sont déjà inclus.</label>
+ <input class="field" id="quizFiles" type="file" multiple accept="image/*,audio/*">
+ <button class="btn btn-main full" id="createQuizRoom">Créer un salon quiz (6 joueurs max.)</button>
+ <input class="field" id="quizJoinCode" placeholder="Code du salon quiz" autocomplete="off">
+ <button class="btn btn-soft full" id="joinQuizRoom">Rejoindre un salon quiz</button>
+ <div class="status" id="quizStatus">Pour les quiz audio et musique, ajoute des fichiers audio. Le nom du fichier sert de réponse.</div>
+ </div>
+ <div class="section-gap"><h3>Mes amis</h3><div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div></div></div>
 </section>
 
 <section class="screen" id="duel">
@@ -213,12 +218,27 @@ body{padding-left:0;padding-right:0}
   <div id="duelActions" class="btn-row" style="display:none;flex-wrap:wrap"><button class="btn btn-main" id="rematch">Revanche</button><button class="btn btn-soft" id="addFriend">Ajouter en ami</button><button class="btn btn-soft" id="abandon">Abandonner</button><button class="btn btn-dark" id="duelMenu">Menu</button></div>
  </div>
 </section>
+<section class="screen" id="groupQuiz">
+ <div class="backline"><button class="iconbtn" id="quitQuiz">← Quitter le quiz</button><span class="kicker" id="quizRoundLabel">Manche 0 / 10</span></div>
+ <div class="panel">
+  <div class="kicker" id="quizModeLabel">Quiz multijoueur</div>
+  <div class="duel-score" id="quizPlayers">Joueurs : 1 / 6</div>
+  <div class="countdown" id="quizCountdown"></div>
+  <div id="quizMedia" style="display:grid;gap:8px;justify-items:center"></div>
+  <div class="question" id="quizPrompt" style="font-size:clamp(24px,6vw,38px)">Prêt ?</div>
+  <div class="choices" id="quizAnswers"></div>
+  <div class="feedback" id="quizFeedback"></div>
+  <div class="status" id="quizScores"></div>
+  <div id="quizHostActions" style="display:none;margin-top:14px"><button class="btn btn-main full" id="launchQuiz">Lancer le quiz</button></div>
+  <div class="summary" id="quizSummary" style="display:none"></div>
+ </div>
+</section>
 </div>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (()=>{
 const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,shuffle=a=>a.sort(()=>Math.random()-.5);
-const screens=['home','pathScreen','solo','duelSetup','duel'];
+const screens=['home','pathScreen','solo','duelSetup','duel','groupQuiz'];
 function show(id){screens.forEach(s=>$(s).classList.toggle('active',s===id));window.scrollTo(0,0);}
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
 let saved=JSON.parse(localStorage.getItem('mathrush_app_save')||'{}');
@@ -262,15 +282,7 @@ function makeVisualExercise(type){
 }
 function buildExercise(){
  const q=makeMath(),types=['slider','choice','fill','pattern','line','choice','fill','slider','pattern','choice','line','fill','percent','model','factors','equation','choice','slider','model','factors','equation','percent','pattern','fill','choice'],type=types[exIndex];
- if(type==='slider'||type==='line'){
-  const step=difficultyRank()<=1?5:difficultyRank()<=2?10:difficultyRank()<=4?20:50;
-  // L'échelle commence au premier repère (réponse moins deux pas) et se termine au dernier,
-  // avec exactement 5 repères répartis uniformément entre les deux bornes.
-  const min=Math.max(0,Math.floor((q.ans-2*step)/step)*step);
-  const max=Math.max(min+4*step,Math.ceil((q.ans+2*step)/step)*step);
-  const ticks=[0,1,2,3,4].map(i=>min+(max-min)*i/4);
-  return{...q,type,min,max,ticks};
- }
+ if(type==='slider'||type==='line'){const step=difficultyRank()<=1?5:difficultyRank()<=2?10:difficultyRank()<=4?20:50,max=Math.max(step*4,Math.ceil(q.ans*1.35/step)*step);const ticks=max%4===0?[0,max/4,max/2,max*3/4,max]:[0,max];return{...q,type,max,ticks};}
  if(type==='choice'){let opts=new Set([q.ans]);while(opts.size<4){let n=q.ans+rand(-Math.max(6,Math.round(q.ans*.3)),Math.max(6,Math.round(q.ans*.3)));if(n>=0)opts.add(n);}return{...q,type,opts:shuffle([...opts])};}
  if(type==='fill')return{...q,type};
  if(['percent','model','factors','equation'].includes(type))return makeVisualExercise(type);
@@ -283,7 +295,7 @@ function renderSolo(){
  $('soloPoints').textContent='⭐ '+points;$('soloStreak').textContent='🔥 '+streak;$('soloFeedback').className='feedback';$('soloFeedback').innerHTML='';$('soloValidate').textContent='Valider';$('soloValidate').disabled=true;
  const q=$('soloQuestion');
  if(['slider','line'].includes(exercise.type)){
-  q.innerHTML=`<div class="question"><small>${exercise.type==='line'?'Place le résultat sur la droite graduée':'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="1" value="${rand(exercise.min,exercise.max)}"><div class="ticks">${exercise.ticks.map(n=>`<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
+  q.innerHTML=`<div class="question"><small>${exercise.type==='line'?'Place le résultat sur la droite graduée':'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="0" max="${exercise.max}" value="${rand(0,exercise.max)}"><div class="ticks">${exercise.ticks.map(n=>`<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
   $('soloRange').oninput=e=>{choice=Number(e.target.value);$('soloValidate').disabled=false;};
  }else if(exercise.type==='choice'){
   q.innerHTML=`<div class="question"><small>Choisis la bonne réponse</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
@@ -490,6 +502,166 @@ function joinFriend(code){
 }
 $('rematch').onclick=requestRematch;
 $('addFriend').onclick=addCurrentOpponent;
+
+// Quiz en réseau jusqu'à 6 participants (un hôte + cinq invités).
+// Catalogue de morceaux libres de droits (Wikimedia Commons). Aucun fichier à téléverser :
+// les joueurs écoutent directement l'extrait en ligne, seule l'URL circule sur le réseau.
+const CC_PACK=[
+ {answer:'Maple Leaf Rag',file:'Maple leaf rag - played by Scott Joplin 1916 V2.ogg',credit:'Scott Joplin (1916) · domaine public'},
+ {answer:'Toccata et Fugue en ré mineur',file:'Toccata et Fugue BWV565.ogg',credit:'J.-S. Bach · domaine public'},
+ {answer:'Gymnopédie n°1',file:'Gymnopedie No. 1..ogg',credit:'Erik Satie · domaine public'},
+ {answer:'Dans la caverne du roi de la montagne',file:'In the Hall of the Mountain King.ogg',credit:'Edvard Grieg · domaine public'},
+ {answer:'Symphonie n°5',file:'Ludwig van Beethoven - symphony no. 5 in c minor, op. 67 - i. allegro con brio.ogg',credit:'Ludwig van Beethoven · domaine public'},
+ {answer:'Le Printemps (Vivaldi)',file:'01 - Vivaldi Spring mvt 1 Allegro - John Harrison violin.ogg',credit:'A. Vivaldi · domaine public'},
+ {answer:'Clair de lune',file:'Clair de lune (Claude Debussy) Suite bergamasque.ogg',credit:'Claude Debussy · domaine public'},
+ {answer:'Nocturne n°2 (Chopin)',file:'Frederic Chopin - Nocturne Eb major Opus 9, number 2.ogg',credit:'F. Chopin · domaine public'},
+ {answer:'Marche turque (Mozart)',file:'Mozart - Piano Sonata No. 11 in A major - III. Allegro (Turkish March).ogg',credit:'W. A. Mozart · domaine public'},
+ {answer:'Air (Bach)',file:'Air (Bach).ogg',credit:'J.-S. Bach · domaine public'},
+ {answer:'Danse de la fée Dragée',file:'Tchaikovsky - Dance of the Sugar Plum Fairy - The Nutcracker.ogg',credit:'P. I. Tchaïkovski · domaine public'},
+ {answer:'La Campanella (Liszt)',file:'Liszt-La Campanella-Greiss.ogg',credit:'Franz Liszt · domaine public'}
+];
+const ccUrl=f=>`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}`;
+let qPeer=null,qHost=false,qConnections=[],qConn=null,qMode='images',qPack=[],qRound=0,qScores={},qNames={},qMe='',qAnswered=false,qClosed=false,qTimer=null,qSlideTimer=null,qCurrent=null;
+const qStatus=t=>$('quizStatus').textContent=t;
+function qBroadcast(data){qConnections.forEach(c=>{if(c.open)try{c.send(data)}catch(e){}});}
+function qUpdatePlayers(){
+ const n=qHost?1+qConnections.filter(c=>c.open).length:2;
+ $('quizPlayers').textContent=`Joueurs connectés : ${n} / 6`;
+ $('launchQuiz').disabled=!qHost||qConnections.filter(c=>c.open).length<1||!qPack.length;
+}
+function qUpdateScores(){
+ const entries=Object.entries(qScores).sort((a,b)=>b[1]-a[1]);
+ $('quizScores').textContent=entries.map(([id,score],i)=>`${i+1}. ${qNames[id]||id} : ${score} pts`).join('\n')||'Les scores apparaîtront ici.';
+}
+function qReadFile(file){
+ return new Promise(resolve=>{
+  const reader=new FileReader();reader.onload=()=>resolve({name:file.name,data:reader.result,type:file.type});
+  reader.onerror=()=>resolve(null);reader.readAsDataURL(file);
+ });
+}
+async function qPreparePack(){
+ const files=[...$('quizFiles').files];qMode=$('quizMode').value;
+ if(qMode==='ccMusic'){
+  qPack=shuffle([...CC_PACK]).slice(0,10).map(x=>({answer:x.answer,media:[ccUrl(x.file)],credit:x.credit,remote:true}));
+  qStatus('Catalogue libre chargé : '+qPack.length+' morceaux classiques. Les joueurs écoutent en ligne, rien à téléverser.');
+  return true;
+ }
+ if(!files.length){qStatus('Ajoute des fichiers avant de créer le salon.');return false;}
+ if(qMode==='images'){
+  if(files.some(f=>!f.type.startsWith('image/'))||files.length%3!==0){qStatus('Pour le quiz images, sélectionne un nombre de fichiers multiple de 3 (3 images par série).');return false;}
+  if(files.length/3>10){qStatus('Maximum 10 séries par partie.');return false;}
+ }else{
+  if(files.some(f=>!f.type.startsWith('audio/'))){qStatus('Sélectionne uniquement des fichiers audio pour ce quiz.');return false;}
+  if(files.length>10){qStatus('Maximum 10 extraits par partie.');return false;}
+ }
+ const total=files.reduce((s,f)=>s+f.size,0);
+ if(total>(qMode==='images'?9:12)*1024*1024){qStatus('Fichiers trop volumineux. Réduis leur taille (limite totale 9 Mo pour les images, 12 Mo pour l’audio).');return false;}
+ const loaded=await Promise.all(files.map(qReadFile));if(loaded.some(x=>!x)){qStatus('Impossible de lire un fichier.');return false;}
+ if(qMode==='images'){
+  qPack=[];for(let i=0;i<loaded.length;i+=3){
+   const names=loaded.slice(i,i+3).map(x=>x.name.replace(/\.[^.]+$/,'').replace(/[_-][123]$/,''));
+   qPack.push({answer:names[0],media:loaded.slice(i,i+3)});
+  }
+ }else qPack=loaded.map(x=>({answer:x.name.replace(/\.[^.]+$/,'').replace(/[_-](extrait|audio|music)$/i,''),media:[x]}));
+ // Le nom des fichiers est la réponse, normalisée côté affichage.
+ qPack=qPack.map(x=>({...x,answer:x.answer.replace(/[_-]+/g,' ').trim()}));
+ return true;
+}
+function qRenderQuestion(q){
+ qCurrent=q;qClosed=false;qAnswered=false;
+ $('quizRoundLabel').textContent=`Manche ${q.round} / ${q.total}`;
+ $('quizPrompt').textContent=qMode==='images'?'Quelle série est-ce ?':qMode==='seriesAudio'?'Reconnais la série grâce à son extrait sonore !':qMode==='ccMusic'?'Quel est ce morceau classique ?':'Quel est ce morceau ?';
+ const media=$('quizMedia');media.innerHTML='';
+ if(qMode==='images'){
+  let i=0;const showImage=()=>{if(i>=q.media.length||qClosed)return;media.innerHTML=`<img src="${q.media[i]}" alt="Indice ${i+1}" style="width:min(100%,520px);height:clamp(180px,38vh,360px);object-fit:contain;border-radius:18px;background:#f1f4fa"><small>Image ${i+1} / 3</small>`;i++;if(i<3)qSlideTimer=setTimeout(showImage,5000);};
+  showImage();
+ }else{
+  media.innerHTML=`<audio controls autoplay playsinline style="width:100%;max-width:520px"></audio><small>Écoute l'extrait puis choisis ta réponse${q.credit?' — '+escapeHtml(q.credit):''}</small>`;
+  const audio=media.querySelector('audio');audio.src=q.media[0];audio.play().catch(()=>{});
+ }
+ $('quizAnswers').innerHTML=q.options.map(a=>`<button class="choice">${escapeHtml(a)}</button>`).join('');
+ $('quizAnswers').querySelectorAll('button').forEach(b=>b.onclick=()=>qAnswer(b.textContent));
+ $('quizFeedback').className='feedback';$('quizFeedback').textContent='';
+}
+function qAnswer(answer){
+ if(qClosed||qAnswered)return;qAnswered=true;
+ if(qHost){qCheckAnswer(qMe,answer);}else if(qConn&&qConn.open)qConn.send({type:'qAnswer',answer});
+ $('quizFeedback').className='feedback show near';$('quizFeedback').textContent='Réponse envoyée…';
+}
+function qCheckAnswer(id,answer){
+ if(qClosed)return;
+ if(answer.trim().toLowerCase()===qCurrent.answer.trim().toLowerCase()){
+  qClosed=true;clearTimeout(qTimer);clearTimeout(qSlideTimer);qScores[id]=(qScores[id]||0)+100;
+  qBroadcast({type:'qWinner',id,answer:qCurrent.answer,scores:qScores});
+  qShowWinner(id);
+ }
+}
+function qShowWinner(id){
+ qClosed=true;clearTimeout(qTimer);clearTimeout(qSlideTimer);$('quizFeedback').className='feedback show good';
+ $('quizFeedback').textContent=`${qNames[id]||'Un joueur'} a trouvé : ${qCurrent.answer} (+100 points)`;
+ $('quizAnswers').querySelectorAll('button').forEach(b=>b.disabled=true);qScores=qScores||{};qUpdateScores();
+ if(qHost)qTimer=setTimeout(qNext,2500);
+}
+function qNext(){
+ if(!qHost)return;
+ qRound++;if(qRound>qPack.length){qBroadcast({type:'qFinish',scores:qScores,names:qNames});qFinish();return;}
+ const item=qPack[qRound-1],all=qPack.map(x=>x.answer),distractors=shuffle([...new Set(all.filter(a=>a!==item.answer))]).slice(0,3);
+ while(distractors.length<3)distractors.push(['Friends','Urgences','Malcolm','Buffy','Kaamelott','Lost'][rand(0,5)]);
+ const q={round:qRound,total:qPack.length,answer:item.answer,media:item.remote?item.media:item.media.map(x=>x.data),credit:item.credit||'',options:shuffle([item.answer,...distractors])};
+ qCurrent=q;qClosed=false;qAnswered=false;
+ qBroadcast({type:'qQuestion',q,mode:qMode});qRenderQuestion(q);
+ qTimer=setTimeout(()=>{if(!qClosed){qClosed=true;clearTimeout(qSlideTimer);$('quizFeedback').className='feedback show near';$('quizFeedback').textContent=`Temps écoulé ! Réponse : ${q.answer}`;$('quizAnswers').querySelectorAll('button').forEach(b=>b.disabled=true);qBroadcast({type:'qTimeout',answer:q.answer});setTimeout(qNext,2500);}},qMode==='images'?15000:20000);
+}
+function qFinish(){
+ clearTimeout(qTimer);clearTimeout(qSlideTimer);$('quizMedia').innerHTML='';$('quizPrompt').textContent='Quiz terminé !';$('quizAnswers').innerHTML='';$('quizSummary').style.display='block';
+ $('quizSummary').innerHTML='<div class="big">🏆</div><h2>Classement final</h2>'+Object.entries(qScores).sort((a,b)=>b[1]-a[1]).map(([id,s],i)=>`<p>${i+1}. ${escapeHtml(qNames[id]||id)} — ${s} points</p>`).join('')+'<button class="btn btn-dark full" onclick="location.reload()">Retour au menu</button>';
+}
+function qHandle(m,from){
+ if(m.type==='qFull'){qStatus('Ce salon est complet (6 joueurs maximum).');return;}
+ if(m.type==='qHostLeft'){qStatus('L’hôte a quitté le quiz.');$('quizPrompt').textContent='Salon fermé par l’hôte.';return;}
+ if(m.type==='qStart'&&!qHost){$('quizPrompt').textContent='Le quiz commence !';}
+ if(m.type==='qWelcome'&&!qHost){qMe=m.id;qMode=m.mode;qNames=m.names;qScores=m.scores;$('quizModeLabel').textContent=qMode==='images'?'Séries TV · images':qMode==='seriesAudio'?'Séries TV · audio':qMode==='ccMusic'?'Musique classique · catalogue libre':'Musiques 1990–2010';qUpdateScores();}
+ if(m.type==='qRoster'){qNames=m.names;qScores=m.scores;qUpdatePlayers();qUpdateScores();}
+ if(m.type==='qQuestion'&&!qHost){qMode=m.mode;qRenderQuestion(m.q);}
+ if(m.type==='qAnswer'&&qHost)qCheckAnswer(from,m.answer);
+ if(m.type==='qWinner'&&!qHost){qScores=m.scores;qShowWinner(m.id);}
+ if(m.type==='qTimeout'&&!qHost){qClosed=true;clearTimeout(qTimer);$('quizFeedback').className='feedback show near';$('quizFeedback').textContent='Temps écoulé ! Réponse : '+m.answer;$('quizAnswers').querySelectorAll('button').forEach(b=>b.disabled=true);}
+ if(m.type==='qFinish'&&!qHost){qScores=m.scores;qNames=m.names;qFinish();}
+}
+function qBroadcastRoster(){
+ const names={...qNames},scores={...qScores};qBroadcast({type:'qRoster',names,scores});
+}
+function qStartHost(){
+ qHost=true;qMe=qPeer.id;qNames[qMe]='Hôte';qScores[qMe]=0;qConnections=[];qRound=0;
+ $('quizModeLabel').textContent=qMode==='images'?'Séries TV · 3 images / 15 s':qMode==='seriesAudio'?'Séries TV · extrait sonore':qMode==='ccMusic'?'Musique classique · catalogue libre':'Musiques · 1990–2010';
+ $('quizHostActions').style.display='block';$('quizSummary').style.display='none';$('quizAnswers').innerHTML='';$('quizMedia').innerHTML='';$('quizPrompt').textContent='En attente des joueurs…';show('groupQuiz');qUpdatePlayers();
+}
+function qWireHost(c){
+ if(qConnections.length>=5){c.on('open',()=>c.send({type:'qFull'}));return;}
+ qConnections.push(c);const id=c.peer;qNames[id]='Joueur '+(qConnections.length+1);qScores[id]=0;
+ c.on('data',m=>qHandle(m,id));c.on('close',()=>{qNames[id]=(qNames[id]||'Joueur')+' (parti)';qUpdatePlayers();qBroadcastRoster();});
+ c.on('open',()=>{c.send({type:'qWelcome',id,mode:qMode,names:qNames,scores:qScores});qBroadcastRoster();qUpdatePlayers();});
+}
+function qStartGuest(code){
+ qHost=false;qPeer=new Peer();qPeer.on('open',()=>{qConn=qPeer.connect('mathrushquiz-'+code,{reliable:true});qConn.on('open',()=>{show('groupQuiz');$('quizPrompt').textContent='Connecté ! En attente du lancement par l’hôte…';$('quizHostActions').style.display='none';});qConn.on('data',m=>qHandle(m,'host'));qConn.on('error',()=>qStatus('Erreur de connexion au quiz.'));});
+ qPeer.on('error',e=>qStatus('Impossible de rejoindre le quiz : '+e.type));
+}
+$('createQuizRoom').onclick=async()=>{
+ if(!window.Peer){qStatus('Connexion réseau indisponible : recharge la page avec Internet.');return;}
+ if(!await qPreparePack())return;
+ $('createQuizRoom').disabled=true;qStatus('Création du salon…');
+ qPeer=new Peer('mathrushquiz-'+Math.random().toString(36).slice(2,8));
+ qPeer.on('open',id=>{qStatus(`Salon créé : ${id.replace('mathrushquiz-','').toUpperCase()}. Partage ce code à 5 joueurs maximum.`);qStartHost();});
+ qPeer.on('connection',qWireHost);qPeer.on('error',e=>qStatus('Erreur réseau : '+e.type));
+};
+$('joinQuizRoom').onclick=()=>{const code=$('quizJoinCode').value.trim().toLowerCase();if(!code){qStatus('Entre le code du salon.');return;}if(!window.Peer){qStatus('Connexion réseau indisponible.');return;}qStartGuest(code);};
+$('launchQuiz').onclick=()=>{
+ if(!qHost||!qConnections.some(c=>c.open))return;
+ qScores[qMe]=0;qConnections.forEach((c,i)=>{if(c.open){qNames[c.peer]=qNames[c.peer]||`Joueur ${i+2}`;qScores[c.peer]=0;}});
+ qRound=0;$('quizHostActions').style.display='none';qBroadcast({type:'qStart',mode:qMode});qNext();
+};
+$('quitQuiz').onclick=()=>{if(qHost)qBroadcast({type:'qHostLeft'});if(qPeer){qPeer.destroy();qPeer=null;}if(qConn){qConn.close();qConn=null;}show('home');};
+
 $('homeProgress').textContent=`Section ${section} · Niveau ${level}`;$('totalPoints').textContent=points;renderPath();renderFriends();persist();
 })();
 </script>
