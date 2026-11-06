@@ -1502,7 +1502,18 @@ function topicFor(q){
 const themedQuestions=Object.fromEntries(TOPICS.filter(t=>t.id!=='all').map(t=>[t.id,standardQuestions.filter(q=>topicFor(q)===t.id)]));
 themedQuestions.all=standardQuestions;
 let offeredTopics=[],selectedTopic='insolite';
-let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
+const PEER_OPTS = {
+            config: {
+               iceServers: [
+                  { urls: 'stun:stun.l.google.com:19302' },
+                  { urls: 'stun:stun1.l.google.com:19302' },
+                  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+               ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
+            }
+         };
+         let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
 function renderTopicChoices(target, topics){
  $(target).innerHTML=topics.map(t=>`<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
  $(target).querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -1633,68 +1644,199 @@ $('soloNext').onclick=()=>{if(soloRound>=soloDeck.length){finishSolo();return}so
 $('soloQuit').onclick=()=>{show('home')};
 function render(){const p=players[turn%players.length],q=deck[(round-1)%deck.length];$('roundLabel').textContent=`Question ${round} / 20`;$('turnLabel').textContent=solo?'Mode solo':`Au tour de ${p.name} · Passez l’appareil`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('question').textContent=q.q;$('answers').innerHTML=q.opts.map((a,i)=>`<button class="choice" data-i="${i}">${a}</button>`).join('');$('feedback').innerHTML='';$('next').style.display='none';locked=false;document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>answer(Number(b.dataset.i)))}
 function answer(i){if(locked)return;locked=true;const q=deck[(round-1)%deck.length],p=players[turn%players.length],ok=i===q.a;if(ok)p.score+=100;$('answers').querySelectorAll('button').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.style.border='2px solid #159b68'});$('feedback').className='feedback '+(ok?'good':'bad');$('feedback').textContent=ok?'Bonne réponse ! +100 points':`Raté ! Bonne réponse : ${q.opts[q.a]}`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('next').style.display='block'}
-$('next').onclick=()=>{round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck(20,selectedTopic);$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
+$('next').onclick=()=>{if(onlineGame){advanceOnlineQuestion();return}if(!onlineGame && onlineHost && $('game').classList.contains('active')){advanceOnlineQuestion();return}round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck(20,selectedTopic);$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
 $('startLocal').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if($('playMode').value==='online'){alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.');return}startGame()};
+
+// ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
+let onlineGame=false, onlinePlayerId='', onlineAnswers={}, onlineQuestionIndex=0, onlineDeck=[];
+function onlineRosterData(){
+ return players.map(p=>({id:p.id,name:p.name,score:p.score||0}));
+}
+function broadcastOnline(message){
+ connections.forEach(c=>{if(c && c.open){try{c.send(message)}catch(e){}}});
+}
+function updateOnlineRosterUI(prefix='Salon prêt'){
+ $('onlineRoster').style.display='block';
+ $('onlineRoster').textContent=prefix+' — '+players.length+' joueur(s) : '+players.map(p=>p.name).join(', ');
+}
+function enterOnlineGame(){
+ onlineGame=true;solo=false;round=1;turn=0;locked=false;
+ show('game');renderOnlineQuestion();
+}
+function renderOnlineQuestion(){
+ const q=onlineDeck[onlineQuestionIndex];
+ if(!q){finishOnlineGame();return}
+ round=onlineQuestionIndex+1;locked=false;onlineAnswers={};
+ $('roundLabel').textContent=`Question ${round} / ${onlineDeck.length}`;
+ $('turnLabel').textContent=`Partie en ligne · ${players.find(p=>p.id===onlinePlayerId)?.name||'Joueur'}`;
+ $('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score||0}</b></span>`).join('');
+ $('question').textContent=q.q;
+ $('answers').innerHTML=q.opts.map((a,i)=>`<button class="choice" data-i="${i}">${a}</button>`).join('');
+ $('feedback').className='feedback';$('feedback').textContent='';
+ $('next').style.display='none';$('next').textContent='Question suivante';
+ $('answers').querySelectorAll('button').forEach(b=>b.onclick=()=>submitOnlineAnswer(Number(b.dataset.i)));
+}
+function submitOnlineAnswer(i){
+ if(locked || !onlineGame)return;
+ locked=true;
+ $('answers').querySelectorAll('button').forEach(b=>b.disabled=true);
+ if(onlineHost){
+   onlineAnswers[onlinePlayerId]=i;
+   maybeFinishOnlineQuestion();
+ }else{
+   const c=connections[0];
+   if(c && c.open)c.send({type:'answer',index:onlineQuestionIndex,choice:i});
+   $('feedback').className='feedback';$('feedback').textContent='Réponse envoyée. En attente des autres joueurs…';
+ }
+}
+function maybeFinishOnlineQuestion(){
+ if(!onlineHost)return;
+ if(players.some(p=>!Object.prototype.hasOwnProperty.call(onlineAnswers,p.id)))return;
+ const q=onlineDeck[onlineQuestionIndex];
+ players.forEach(p=>{if(onlineAnswers[p.id]===q.a)p.score=(p.score||0)+100});
+ const result={type:'questionResult',index:onlineQuestionIndex,answers:onlineAnswers,correct:q.a,players:onlineRosterData()};
+ broadcastOnline(result);showOnlineResult(result);
+}
+function showOnlineResult(m){
+ const q=onlineDeck[onlineQuestionIndex];if(!q)return;
+ players=(m.players||players).map(p=>({...p,team:0}));
+ const myChoice=m.answers?.[onlinePlayerId];
+ const correct=myChoice===m.correct;
+ $('answers').querySelectorAll('button').forEach((b,i)=>{
+   b.disabled=true;
+   if(i===m.correct)b.style.border='2px solid #159b68';
+   else if(i===myChoice)b.style.border='2px solid #d95368';
+ });
+ $('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score||0}</b></span>`).join('');
+ $('feedback').className='feedback '+(correct?'good':'bad');
+ $('feedback').textContent=(myChoice===undefined?'Tu n’as pas répondu.':correct?'Bonne réponse ! +100 points':'Raté !')+' Bonne réponse : '+q.opts[m.correct];
+ if(onlineHost){$('next').style.display='block';$('next').textContent=onlineQuestionIndex===onlineDeck.length-1?'Voir les résultats':'Question suivante';}
+ else{$('next').style.display='none';$('turnLabel').textContent='En attente de la question suivante…'}
+}
+function advanceOnlineQuestion(){
+ if(!onlineHost || !onlineGame)return;
+ onlineQuestionIndex++;
+ if(onlineQuestionIndex>=onlineDeck.length){finishOnlineGame();return}
+ const msg={type:'nextQuestion',index:onlineQuestionIndex};
+ broadcastOnline(msg);renderOnlineQuestion();
+}
+function finishOnlineGame(){
+ onlineGame=false;
+ const sorted=[...players].sort((a,b)=>(b.score||0)-(a.score||0));
+ $('roundLabel').textContent='Partie terminée';
+ $('turnLabel').textContent='Classement final';
+ $('question').textContent='Bravo à tous !';
+ $('answers').innerHTML='';
+ $('feedback').className='feedback good';
+ $('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score||0} points`).join('<br>');
+ $('next').style.display='block';$('next').textContent='Retour au menu';
+ if(onlineHost)broadcastOnline({type:'gameFinished',players:onlineRosterData()});
+ $('next').onclick=()=>{if(peer){try{peer.destroy()}catch(e){}}peer=null;connections=[];onlineHost=false;onlineGame=false;show('home')};
+}
+function handleOnlineData(c,m){
+ if(!m || typeof m!=='object')return;
+ if(m.type==='join' && onlineHost && !onlineGame){
+   if(players.length>=6){c.send({type:'rejected',reason:'Ce salon est complet (6 joueurs maximum).'});return}
+   const name=String(m.name||'Joueur').trim().slice(0,18)||'Joueur';
+   if(!players.some(p=>p.id===c.peer)){
+     players.push({id:c.peer,name,score:0,team:0});
+     connections.push(c);
+   }
+   const roster=onlineRosterData();
+   c.send({type:'joined',players:roster,hostId:onlinePlayerId});
+   broadcastOnline({type:'roster',players:roster});
+   updateOnlineRosterUI();
+   $('netStatus').textContent='Un joueur a rejoint le salon.';
+   return;
+ }
+ if(m.type==='answer' && onlineHost && onlineGame && m.index===onlineQuestionIndex){
+   if(players.some(p=>p.id===c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers,c.peer)){
+     onlineAnswers[c.peer]=Number(m.choice);maybeFinishOnlineQuestion();
+   }
+   return;
+ }
+ if(m.type==='rejected'){
+   $('netStatus').textContent=m.reason||'Impossible de rejoindre ce salon.';
+   return;
+ }
+ if(m.type==='joined' && !onlineHost){
+   roomRole='guest';onlineGame=false;onlinePlayerId=peer.id;
+   players=(m.players||[]).map(p=>({...p,team:0}));
+   $('netStatus').textContent='Tu as bien rejoint le salon.';
+   $('joinRoomWrap').style.display='none';$('createOnline').style.display='none';$('startLocal').style.display='none';
+   updateOnlineRosterUI('En attente du lancement par l’hôte');
+   return;
+ }
+ if(m.type==='roster' && !onlineHost){
+   players=(m.players||[]).map(p=>({...p,team:0}));
+   updateOnlineRosterUI('En attente du lancement par l’hôte');return;
+ }
+ if(m.type==='gameStart' && !onlineHost){
+   players=(m.players||[]).map(p=>({...p,team:0}));
+   onlineDeck=m.deck||[];onlineQuestionIndex=0;onlineGame=true;
+   $('netStatus').textContent='La partie commence !';enterOnlineGame();return;
+ }
+ if(m.type==='questionResult' && !onlineHost && m.index===onlineQuestionIndex){
+   showOnlineResult(m);return;
+ }
+ if(m.type==='nextQuestion' && !onlineHost){
+   onlineQuestionIndex=m.index;renderOnlineQuestion();return;
+ }
+ if(m.type==='gameFinished' && !onlineHost){
+   players=(m.players||players).map(p=>({...p,team:0}));finishOnlineGame();return;
+ }
+}
 $('createOnline').onclick=()=>{
- if(!selectedTopic){alert('Choisis une thématique.');return}
- if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}
- setupPlayers();roomRole='host';onlineHost=true;connections=[];$('netStatus').textContent='Création du salon…';
- $('createOnline').style.display='none';$('joinRoomWrap').style.display='none';$('startLocal').style.display='none';
+ if(!selectedTopic){$('netStatus').textContent='Choisis une thématique avant de créer le salon.';return}
+ if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible. Recharge la page avec Internet.';return}
+ const name=$('onlinePlayerName').value.trim();
+ if(!name){$('netStatus').textContent='Choisis ton pseudo avant de créer le salon.';$('onlinePlayerName').focus();return}
+ if(peer){try{peer.destroy()}catch(e){}}
+ players=[{id:'',name,score:0,team:0}];connections=[];onlineHost=true;onlineGame=false;roomRole='host';
+ $('netStatus').textContent='Création du salon…';$('createOnline').style.display='none';$('joinRoomWrap').style.display='none';$('startLocal').style.display='none';
  $('onlineRoster').style.display='block';$('onlineRoster').textContent='Création du salon…';
- peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8));
+ peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8),PEER_OPTS);
  peer.on('open',id=>{
-  roomId=id.replace('drolequizz-','');
-  $('netStatus').textContent='Salon créé. Code à partager : '+roomId.toUpperCase();
-  refreshOnlineRoster();$('hostStart').style.display='block';
+   onlinePlayerId=id;players[0].id=id;roomId=id.replace('drolequizz-','');
+   $('netStatus').textContent='Salon créé. Partage ce code : '+roomId.toUpperCase();
+   updateOnlineRosterUI();$('hostStart').style.display='block';
  });
  peer.on('connection',c=>{
-  connections.push(c);
-  c.on('data',m=>{
-   if(m.type==='join'&&onlineHost){
-    const clean=(m.name||'Joueur').toString().trim().slice(0,18)||'Joueur';
-    if(!players.some(p=>p.clientId===m.clientId))players.push({name:clean,score:0,team:players.length%2,clientId:m.clientId});
-    const roster=players.map(p=>({name:p.name,score:p.score}));
-    c.send({type:'joined',players:roster});
-    connections.forEach(conn=>{if(conn.open)conn.send({type:'roster',players:roster})});
-    refreshOnlineRoster();
-   }
-  });
-  c.on('close',()=>{connections=connections.filter(x=>x!==c)});
-  c.on('error',()=>{$('netStatus').textContent='Une connexion avec un joueur a échoué.'});
+   c.on('data',m=>handleOnlineData(c,m));
+   c.on('close',()=>{
+     connections=connections.filter(x=>x!==c);
+     const oldCount=players.length;players=players.filter(p=>p.id!==c.peer);
+     if(players.length!==oldCount){updateOnlineRosterUI('Un joueur a quitté le salon');broadcastOnline({type:'roster',players:onlineRosterData()})}
+   });
+   c.on('error',()=>{$('netStatus').textContent='Une connexion avec un joueur a échoué.'});
  });
  peer.on('error',err=>{$('netStatus').textContent='Erreur de salon : '+(err.type||'connexion')});
 };
 $('joinOnline').onclick=()=>{
- if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}
  const code=$('roomCode').value.trim().toLowerCase(),name=$('onlinePlayerName').value.trim();
+ if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible. Recharge la page avec Internet.';return}
  if(!name){$('netStatus').textContent='Choisis ton pseudo avant de rejoindre le salon.';$('onlinePlayerName').focus();return}
  if(!code){$('netStatus').textContent='Saisis le code du salon.';return}
+ if(peer){try{peer.destroy()}catch(e){}}
  $('netStatus').textContent='Connexion au salon…';
- peer=new Peer();let acknowledged=false;
- const timeout=setTimeout(()=>{if(!acknowledged)$('netStatus').textContent='Aucune réponse du salon. Vérifie le code ou demande à l’hôte de recréer le salon.'},10000);
+ peer=new Peer(undefined,PEER_OPTS);
+ let acknowledged=false;
+ const timeout=setTimeout(()=>{if(!acknowledged)$('netStatus').textContent='Aucune réponse du salon. Vérifie le code ou demande à l’hôte de recréer le salon.'},12000);
  peer.on('open',()=>{
-  const c=peer.connect('drolequizz-'+code,{reliable:true});connections=[c];
-  c.on('open',()=>c.send({type:'join',name:name,clientId:peer.id}));
-  c.on('data',m=>{
-   if(m.type==='joined'){
-    acknowledged=true;clearTimeout(timeout);roomRole='guest';onlineHost=false;
-    players=(m.players||[]).map((p,i)=>({name:p.name,score:p.score||0,team:i}));
-    $('netStatus').textContent='Tu as bien rejoint le salon.';
-    $('joinRoomWrap').style.display='none';$('createOnline').style.display='none';$('startLocal').style.display='none';
-    $('onlineRoster').style.display='block';$('onlineRoster').textContent='En attente du lancement par l’hôte…\nJoueurs : '+players.map(p=>p.name).join(', ');
-   }else if(m.type==='roster'){
-    players=(m.players||[]).map((p,i)=>({name:p.name,score:p.score||0,team:i}));
-    $('onlineRoster').textContent='En attente du lancement par l’hôte…\nJoueurs : '+players.map(p=>p.name).join(', ');
-   }
-  });
-  c.on('error',()=>{clearTimeout(timeout);$('netStatus').textContent='Impossible de rejoindre ce salon. Vérifie le code.'});
+   onlinePlayerId=peer.id;
+   const c=peer.connect('drolequizz-'+code,{reliable:true});connections=[c];
+   c.on('open',()=>c.send({type:'join',name}));
+   c.on('data',m=>{handleOnlineData(c,m);if(m.type==='joined'){acknowledged=true;clearTimeout(timeout)}});
+   c.on('error',()=>{clearTimeout(timeout);$('netStatus').textContent='Impossible de rejoindre ce salon. Vérifie le code.'});
  });
  peer.on('error',err=>{clearTimeout(timeout);$('netStatus').textContent='Connexion impossible : '+(err.type||'erreur réseau')});
 };
 $('hostStart').onclick=()=>{
- if(!onlineHost||!players.length)return;
- $('netStatus').textContent='Le salon est prêt. Le démarrage synchronisé des questions n’est pas encore implémenté.';
+ if(!onlineHost || players.length<2){$('netStatus').textContent='Il faut au moins 2 joueurs dans le salon pour démarrer.';return}
+ onlineDeck=buildDeck(20,selectedTopic);onlineQuestionIndex=0;players.forEach(p=>p.score=0);
+ const msg={type:'gameStart',deck:onlineDeck,players:onlineRosterData()};
+ broadcastOnline(msg);$('netStatus').textContent='La partie est lancée !';enterOnlineGame();
 };
-$('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];players=[];onlineHost=false;roomRole='local';show('home')};
+$('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];players=[];onlineHost=false;onlineGame=false;roomRole='local';show('home')};
 })();
 </script></body></html>
