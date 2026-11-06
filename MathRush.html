@@ -1361,13 +1361,10 @@
          <div class="panel">
             <div class="kicker">Défi à deux</div>
             <h2>Choisis le mode et la difficulté</h2>
-            <p>Le créateur du salon choisit le mode et le niveau pour les deux joueurs.</p>
+            <p>Affrontez-vous sur 10 manches de calcul mental. Le créateur choisit le niveau pour les deux joueurs.</p>
             <div class="mode-grid">
                <button class="mode-card" id="modeCalc" data-mode="calc"><span class="emoji">🧮</span><strong>Calculs
                      rapides</strong><small>10 manches de calcul mental à vitesse grand V.</small></button>
-               <button class="mode-card selected" id="modeBurger" data-mode="burger"><span
-                     class="emoji">🍔</span><strong>Burger Quiz</strong><small>Culture générale déjantée : Ketchup,
-                     Moutarde, Mayo et Sel ou poivre.</small></button>
             </div>
             <label class="small-note" style="display:block;text-align:left;margin:10px 0 0">Difficulté</label>
             <select class="field" id="difficulty">
@@ -3135,9 +3132,9 @@
             deck.slice(0, 15).forEach(x => seen.add(x.q)); setSeen([...seen]);
             return deck;
          }
-         let duelMode = 'burger', burgerDeck = [], hostWrong = false, guestWrong = false;
+         let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
          document.querySelectorAll('.mode-card').forEach(b => b.onclick = () => {
-            duelMode = b.dataset.mode;
+            duelMode = 'calc';
             document.querySelectorAll('.mode-card').forEach(x => x.classList.toggle('selected', x === b));
          });
          function burgerQuestion() {
