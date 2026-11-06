@@ -4,11 +4,26 @@
 :root{--ink:#241c3d;--muted:#766d91;--paper:#faf8ff;--purple:#6545c8;--pink:#ed6aa8;--line:#e9e2f5;--green:#159b68}
 *{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#f0e6ff,transparent 45%),linear-gradient(145deg,#faf8ff,#fff5f8);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
 .app{max-width:760px;margin:auto}.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 4px}.logo{font-size:23px;font-weight:900;color:#25184d}.logo span{color:var(--pink)}.screen{display:none}.screen.active{display:block}.hero,.panel{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;margin:12px 0;box-shadow:0 10px 30px #4a2c8010}.hero{background:linear-gradient(130deg,#36216b,#754ed1);color:white}.kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--pink)}.hero .kicker{color:#ffc7df}h1{font-size:clamp(32px,8vw,48px);line-height:1.02;margin:12px 0}h2{margin:8px 0 12px}.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.menu-card,.btn{border:0;border-radius:16px;padding:16px;font:inherit;cursor:pointer}.menu-card{text-align:left;background:white;border:1px solid var(--line);min-height:115px;color:var(--ink)}.menu-card strong,.menu-card small{display:block}.menu-card .emoji{font-size:25px}.menu-card small{color:var(--muted);margin-top:6px}.btn{font-weight:800;background:var(--purple);color:white;margin-top:10px}.btn.soft{background:#f0eaff;color:#5035a1}.btn.full{width:100%}.field{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px;font:inherit;background:#fff}.small{color:var(--muted);font-size:13px}.backline{display:flex;justify-content:space-between;align-items:center;margin:10px 2px}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.choice{background:#f4f0ff;border:1px solid var(--line);border-radius:14px;padding:15px;text-align:left;font:inherit;font-weight:700;min-height:62px}.choice:disabled{opacity:.55}.status{background:#f7f3ff;padding:12px;border-radius:12px;white-space:pre-line;font-size:14px}.score{display:flex;gap:8px;flex-wrap:wrap}.score span{background:#f3edff;padding:8px 10px;border-radius:10px}.question{font-size:22px;font-weight:850;margin:18px 0}.feedback{padding:12px;border-radius:12px;margin-top:10px}.good{background:#e6f8ef;color:#087747}.bad{background:#fff0f1;color:#b52e43}@media(max-width:480px){.panel{padding:17px}.choice-grid{grid-template-columns:1fr}.hero{padding:20px}}
-.quiz-selected{margin:12px 0 18px;background:#fff7e6;border:2px solid #f4d48b}.quiz-selected strong{font-size:18px}\n</style></head><body><div class="app">
+.quiz-selected{margin:12px 0 18px;background:#fff7e6;border:2px solid #f4d48b}.quiz-selected strong{font-size:18px}\n
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0}
+.topic-card{border:2px solid var(--line);background:#fff;border-radius:20px;padding:17px;text-align:left;display:flex;flex-direction:column;gap:8px;min-height:165px;color:var(--ink);cursor:pointer;box-shadow:0 5px 0 #eee8f7}
+.topic-card.selected{border-color:#8a68e5;background:#f3edff;box-shadow:0 5px 0 #d8c9ff}
+.topic-emoji{font-size:32px}.topic-card strong{font-size:17px}.topic-card small{color:var(--muted);line-height:1.4}.topic-select{font-size:12px;font-weight:850;color:var(--purple);margin-top:auto}
+#startSoloGame:disabled,#startLocal:disabled,#createOnline:disabled{opacity:.42;cursor:not-allowed}
+.solo-progress{height:9px;background:#e9e2f5;border-radius:20px;overflow:hidden;margin:8px 2px 18px}.solo-progress>div{height:100%;width:0;background:linear-gradient(90deg,#ed6aa8,#8a68e5);border-radius:20px;transition:width .3s}
+.solo-head{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.solo-chip{background:#f0eaff;color:#563ba5;padding:7px 11px;border-radius:99px;font-size:12px;font-weight:800}
+.solo-question-card{background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 12px 35px #4a2c8012;min-height:55vh}
+.solo-count{font-size:12px;font-weight:900;color:var(--pink);letter-spacing:.12em}.solo-question{font-size:clamp(23px,6vw,31px);line-height:1.2;font-weight:900;margin:18px 0 24px}
+.solo-answers{display:grid;gap:11px}.solo-answer{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:13px;background:#fff;border:2px solid var(--line);border-radius:16px;text-align:left;font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
+.solo-answer span{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:10px;background:#f0eaff;color:var(--purple);font-weight:900}
+.solo-answer.correct{border-color:#5bc895;background:#e6f8ef}.solo-answer.wrong{border-color:#ee8d9c;background:#fff0f1}.solo-answer:disabled{opacity:1}
+.solo-feedback{padding:15px;border-radius:16px;margin-top:15px;line-height:1.5}.solo-bottom{display:flex;justify-content:space-between;padding:14px 4px;color:var(--muted)}
+</style></head><body><div class="app">
 <header class="topbar"><div class="logo">Drôle de <span>Quizz</span> 🎉</div></header>
 <section class="screen active" id="home"><div class="hero"><div class="kicker">Culture pop · humour · souvenirs</div><h1>À toi de jouer !</h1><p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p></div>
 <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card" id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en ligne ou sur le même appareil.</small></button></div></section>
-<section class="screen" id="setup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la partie</span></div><div class="panel"><h2>Quiz sélectionné</h2>
+<section class="screen" id="soloSetup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours solo</span></div><div class="hero solo-hero"><div class="kicker">À ton rythme</div><h1>Choisis ton défi</h1><p>Trois thématiques tirées au sort à chaque partie. Choisis celle qui t'inspire !</p></div><div id="soloThemeChoices" class="topic-grid"></div><div class="panel"><div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full" id="startSoloGame" disabled>Commencer mon quiz</button></div></section>
+<section class="screen" id="setup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la partie</span></div><div class="panel"><h2>Choisis une thématique</h2><p class="small">Trois thèmes sont tirés au sort à chaque nouvelle partie. Tous les joueurs répondent aux questions de la thématique choisie.</p><div id="themeChoices" class="topic-grid"></div><div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div></div><div class="panel"><h2>Quiz sélectionné</h2>
          <input type="hidden" id="quizType" value="all">
          <div class="panel quiz-selected"><strong>🤪 Décalé qui fait réfléchir</strong><p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture générale.</p></div>
 <label class="small">Nombre de joueurs</label><select class="field" id="playerCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
@@ -16,11 +31,12 @@
 <label class="small">Type de partie</label><select class="field" id="playMode"><option value="local">Même appareil</option><option value="online">En ligne (salon avec code)</option></select>
 <div id="names"></div><div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field" id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
 <button class="btn full" id="startLocal">Lancer la partie</button><button class="btn soft full" id="createOnline">Créer un salon en ligne</button><label class="small">Code du salon</label><input class="field" id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full" id="joinOnline">Rejoindre un salon</button><div class="status" id="netStatus">Choisis les paramètres de la partie.</div></div></section>
+<section class="screen" id="soloGame"><div class="backline"><button class="btn soft" id="soloQuit">← Quitter</button><span class="kicker" id="soloRoundLabel">Question 1 / 15</span></div><div class="solo-progress"><div id="soloProgressFill"></div></div><div class="solo-head"><span class="solo-chip" id="soloThemeLabel">Thématique</span><span class="solo-chip">🧠 Mode solo</span></div><div class="solo-question-card"><div class="solo-count" id="soloCount">01</div><div class="solo-question" id="soloQuestion"></div><div class="solo-answers" id="soloAnswers"></div><div id="soloFeedback"></div><button class="btn full" id="soloNext" style="display:none">Continuer</button></div><div class="solo-bottom"><span>⭐ <b id="soloScore">0</b> points</span><span>🔥 Série : <b id="soloStreak">0</b></span></div></section>
 <section class="screen" id="game"><div class="backline"><button class="btn soft" id="quit">Quitter</button><span class="kicker" id="roundLabel"></span></div><div class="panel"><div class="score" id="scores"></div><div class="kicker" id="turnLabel"></div><div class="question" id="question"></div><div class="choice-grid" id="answers"></div><div id="feedback"></div><button class="btn full" id="next" style="display:none">Question suivante</button></div></section>
 </div><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
 (() => {
 const $=id=>document.getElementById(id), rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, shuffle=a=>a.sort(()=>Math.random()-.5);
-const screens=['home','setup','game'];function show(id){screens.forEach(s=>$(s).classList.toggle('active',s===id));window.scrollTo(0,0)}
+const screens=['home','setup','game','soloGame','soloSetup'];function show(id){screens.forEach(s=>$(s).classList.toggle('active',s===id));window.scrollTo(0,0)}
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
          const BURGER_QUIZ = [
             { cat: 'KETCHUP', q: "Pourquoi les flamants roses sont-ils roses ?", opts: ["À cause des crevettes qu'ils bouffent en masse", "C'est un maquillage naturel de compétition", "Ils naissent roses, comme les bonbons", "Le stress permanent de la migration"], a: 0 },
@@ -1420,19 +1436,86 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
             return _allBurger = out;
          }
 
-const allQuestions=getAllBurger();let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
-function buildDeck(){return shuffle([...allQuestions]).slice(0,20)}
+const allQuestions=getAllBurger();
+const TOPICS=[
+ {id:'nature',name:'Animaux & nature',emoji:'🦊',desc:'Le monde animal, les plantes et les phénomènes naturels.',test:/animal|animaux|oiseau|oiseaux|poisson|poissons|requin|baleine|dauphin|pieuvre|escargot|panda|ours|girafe|éléphant|lion|tigre|chat|chien|arbre|plante|fleur|forêt|océan|mer |désert|volcan|climat|nature|insecte|abeille|fourmi|wombat|koala|manchot|pingouin|flamant|autruche|grenouille|serpent|tortue|papillon|sahara|antarctique/i},
+ {id:'science',name:'Sciences & corps humain',emoji:'🔬',desc:'Le corps, l’espace, les inventions et les découvertes.',test:/cerveau|cœur|coeur|corps|sang|dent|yeux|œil|oeil|sommeil|muscle|os |cellule|atome|espace|soleil|lune|mars|saturne|planète|galaxie|lumière|son |énergie|gravité|science|scientifique|invention|inventé|inventeur|technologie|électricité|électrique|physique|chimie|mathématique/i},
+ {id:'histoire',name:'Histoire, géographie & mythes',emoji:'🏛️',desc:'Les civilisations, les lieux célèbres et les légendes.',test:/histoire|historique|siècle|antiquité|époque|guerre|roi |reine|empereur|napoléon|égypt|rome|romain|grec|myth|zeus|poséidon|pandore|minotaure|prométhée|athén|pays |capitale|continent|ville |tour eiffel|everest|muraille|fleuve|océan pacifique|paris|france|chine|japon|autriche/i},
+ {id:'culture',name:'Culture & vie quotidienne',emoji:'🎭',desc:'Cuisine, traditions, objets familiers et culture populaire.',test:/aliment|fromage|miel|carotte|croissant|pain au chocolat|sushi|ketchup|café|chocolat|boisson|cuisine|recette|musique|film|série|sport|football|cristiano|joueur|mode|vêtement|langue|mot |expression|tradition|fête|quotidien|maison|voiture|tapis|facteur|titanic/i},
+ {id:'insolite',name:'Étrange & records',emoji:'🤯',desc:'Des faits improbables, des records et des questions pièges.',test:/pourquoi|combien|quel(le)? est|quelle forme|mystère|mystere|record|incroyable|insolite|drôle|drôle|vrai|vraiment|peut-il|peut-elle|plus grand|plus petit|plus long|plus rapide|les deux|ou un |ou une /i}
+];
+function topicFor(q){
+ const text=(q.q||'')+' '+(q.opts||[]).join(' ');
+ // Prefer specific knowledge buckets; use the final broad bucket only when no clear match.
+ for(const t of TOPICS.slice(0,4))if(t.test.test(text))return t.id;
+ return 'insolite';
+}
+const themedQuestions=Object.fromEntries(TOPICS.map(t=>[t.id,allQuestions.filter(q=>topicFor(q)===t.id)]));
+let offeredTopics=[],selectedTopic='insolite';
+let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
+function randomTopicOffer(){
+ offeredTopics=shuffle([...TOPICS]).slice(0,3);
+ const target=solo?'soloThemeChoices':'themeChoices';
+ $(target).innerHTML=offeredTopics.map(t=>`<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
+ $(target).querySelectorAll('button').forEach(b=>b.onclick=()=>{
+   selectedTopic=b.dataset.topic;
+   $(target).querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));
+   const label=TOPICS.find(t=>t.id===selectedTopic);
+   $('soloThemeChosen') && ($('soloThemeChosen').textContent=label.name);$('themeChosen') && ($('themeChosen').textContent=label.name);
+   $('startSoloGame') && ($('startSoloGame').disabled=false);
+   $('startLocal') && ($('startLocal').disabled=false);
+   $('createOnline') && ($('createOnline').disabled=false);
+ });
+}
+function buildDeck(size=20,topic=selectedTopic){
+ const pool=themedQuestions[topic]||allQuestions;
+ return shuffle([...pool]).slice(0,Math.min(size,pool.length));
+}
 function drawNames(){const n=Number($('playerCount').value);$('names').innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');$('teamNameWrap').style.display=$('teamMode').value==='teams'?'block':'none'}
 $('playerCount').onchange=drawNames;$('teamMode').onchange=drawNames;drawNames();
-$('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('setup');$('playMode').value='local'};
-$('multiBtn').onclick=()=>{solo=false;$('playerCount').value='2';drawNames();show('setup')};
+$('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;randomTopicOffer()};
+$('multiBtn').onclick=()=>{solo=false;$('playerCount').value='2';drawNames();show('setup');$('startLocal').disabled=true;$('createOnline').disabled=true;$('themeChosen').textContent='Aucune';randomTopicOffer()};
 function setupPlayers(){const names=[...document.querySelectorAll('.pname')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);players=names.map((name,i)=>({name,score:0,team:$('teamMode').value==='teams'?i%2:i}));}
-function startGame(){if($('quizType').value!=='all'){alert('Cette catégorie est prévue séparément, mais les images/extraits audio ne sont pas encore intégrés. Ajoute les médias autorisés pour activer ce pack.');return}setupPlayers();deck=buildDeck();turn=0;round=1;locked=false;show('game');render()}
+function startGame(){
+ setupPlayers();deck=buildDeck(20,selectedTopic);turn=0;round=1;locked=false;show('game');render();
+}
+let soloRound=1,soloScore=0,soloStreak=0,soloLocked=false,soloDeck=[];
+function startSolo(){
+ solo=true;players=[{name:'Moi',score:0,team:0}];soloDeck=buildDeck(15,selectedTopic);soloRound=1;soloScore=0;soloStreak=0;soloLocked=false;
+ const topic=TOPICS.find(t=>t.id===selectedTopic);$('soloThemeLabel').textContent=topic?`${topic.emoji} ${topic.name}`:'Quiz';
+ show('soloGame');renderSolo();
+}
+function renderSolo(){
+ const q=soloDeck[soloRound-1];if(!q){finishSolo();return}
+ $('soloRoundLabel').textContent=`Question ${soloRound} / ${soloDeck.length}`;$('soloCount').textContent=String(soloRound).padStart(2,'0');
+ $('soloProgressFill').style.width=((soloRound-1)/soloDeck.length*100)+'%';$('soloQuestion').textContent=q.q;
+ $('soloAnswers').innerHTML=q.opts.map((a,i)=>`<button class="solo-answer" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${a}</button>`).join('');
+ $('soloFeedback').innerHTML='';$('soloNext').style.display='none';$('soloScore').textContent=soloScore;$('soloStreak').textContent=soloStreak;soloLocked=false;
+ $('soloAnswers').querySelectorAll('button').forEach(b=>b.onclick=()=>answerSolo(Number(b.dataset.i)));
+}
+function answerSolo(i){
+ if(soloLocked)return;soloLocked=true;const q=soloDeck[soloRound-1],ok=i===q.a;
+ if(ok){soloScore+=100;soloStreak++}else soloStreak=0;
+ $('soloAnswers').querySelectorAll('button').forEach(b=>{b.disabled=true;const n=Number(b.dataset.i);if(n===q.a)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});
+ $('soloFeedback').className='solo-feedback '+(ok?'good':'bad');
+ $('soloFeedback').innerHTML=ok?`<b>Bien joué !</b> +100 points${soloStreak>1?` · Série de ${soloStreak} !`:''}`:`<b>Pas tout à fait.</b><br>La bonne réponse était : <strong>${q.opts[q.a]}</strong>`;
+ $('soloScore').textContent=soloScore;$('soloStreak').textContent=soloStreak;$('soloNext').style.display='block';
+ $('soloNext').textContent=soloRound===soloDeck.length?'Voir mon résultat':'Question suivante';
+}
+function finishSolo(){
+ $('soloProgressFill').style.width='100%';$('soloQuestion').textContent='Bravo, défi terminé !';
+ $('soloAnswers').innerHTML='';$('soloFeedback').className='solo-feedback good';
+ $('soloFeedback').innerHTML=`Tu as obtenu <strong>${soloScore} points</strong> sur ${soloDeck.length*100}.<br>Thématique : ${TOPICS.find(t=>t.id===selectedTopic).name}.`;
+ $('soloNext').textContent='Rejouer';$('soloNext').style.display='block';$('soloNext').onclick=()=>{randomTopicOffer();show('soloSetup');$('startSoloGame').disabled=true;$('soloThemeChosen').textContent='Aucune'};
+}
+$('startSoloGame').onclick=startSolo;
+$('soloNext').onclick=()=>{if(soloRound>=soloDeck.length){finishSolo();return}soloRound++;renderSolo()};
+$('soloQuit').onclick=()=>{show('home')};
 function render(){const p=players[turn%players.length],q=deck[(round-1)%deck.length];$('roundLabel').textContent=`Question ${round} / 20`;$('turnLabel').textContent=solo?'Mode solo':`Au tour de ${p.name} · Passez l’appareil`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('question').textContent=q.q;$('answers').innerHTML=q.opts.map((a,i)=>`<button class="choice" data-i="${i}">${a}</button>`).join('');$('feedback').innerHTML='';$('next').style.display='none';locked=false;document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>answer(Number(b.dataset.i)))}
 function answer(i){if(locked)return;locked=true;const q=deck[(round-1)%deck.length],p=players[turn%players.length],ok=i===q.a;if(ok)p.score+=100;$('answers').querySelectorAll('button').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.style.border='2px solid #159b68'});$('feedback').className='feedback '+(ok?'good':'bad');$('feedback').textContent=ok?'Bonne réponse ! +100 points':`Raté ! Bonne réponse : ${q.opts[q.a]}`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('next').style.display='block'}
-$('next').onclick=()=>{round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck();$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
-$('startLocal').onclick=()=>{if($('playMode').value==='online'){alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.');return}startGame()};
-$('createOnline').onclick=()=>{if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}$('netStatus').textContent='Création du salon…';setupPlayers();roomRole='host';onlineHost=true;peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8));peer.on('open',id=>{$('netStatus').textContent='Salon créé : '+id.replace('drolequizz-','').toUpperCase()+'. Partage ce code aux autres joueurs.'});peer.on('connection',c=>{connections.push(c);c.on('open',()=>c.send({type:'welcome',players}));c.on('data',m=>{if(m.type==='answer'&&onlineHost){/* hôte conserve l’autorité de partie */}})});};
+$('next').onclick=()=>{round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck(20,selectedTopic);$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
+$('startLocal').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if($('playMode').value==='online'){alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.');return}startGame()};
+$('createOnline').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}$('netStatus').textContent='Création du salon…';setupPlayers();roomRole='host';onlineHost=true;peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8));peer.on('open',id=>{$('netStatus').textContent='Salon créé : '+id.replace('drolequizz-','').toUpperCase()+'. Partage ce code aux autres joueurs.'});peer.on('connection',c=>{connections.push(c);c.on('open',()=>c.send({type:'welcome',players}));c.on('data',m=>{if(m.type==='answer'&&onlineHost){/* hôte conserve l’autorité de partie */}})});};
 $('joinOnline').onclick=()=>{if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}const code=$('roomCode').value.trim().toLowerCase();if(!code)return;$('netStatus').textContent='Connexion au salon…';peer=new Peer();peer.on('open',()=>{const c=peer.connect('drolequizz-'+code);c.on('open',()=>{$('netStatus').textContent='Connecté au salon. L’hôte doit lancer la partie.';c.on('data',m=>{if(m.type==='welcome')$('netStatus').textContent='Salon rejoint. Joueurs : '+m.players.map(p=>p.name).join(', ')})})});};
 $('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];show('home')};
 })();
