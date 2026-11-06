@@ -38,6 +38,11 @@
 }
 
 #onlineRoster{margin-top:10px;white-space:pre-line}#hostStart{margin-top:12px}
+
+/* Correctif robuste du formulaire multijoueur */
+#names[aria-hidden="true"]{display:none !important}
+#onlineNameWrap[style*="display: block"]{display:block}
+#startLocal:disabled,#createOnline:disabled{opacity:.42}
 </style></head><body><div class="app">
 <header class="topbar"><div class="logo">Drôle de <span>Quizz</span> 🎉</div></header>
 <section class="screen active" id="home"><div class="hero"><div class="kicker">Culture pop · humour · souvenirs</div><h1>À toi de jouer !</h1><p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p></div>
@@ -1507,8 +1512,13 @@ function renderTopicChoices(target, topics){
    $('soloThemeChosen') && ($('soloThemeChosen').textContent=label.name);
    $('themeChosen') && ($('themeChosen').textContent=label.name);
    $('startSoloGame') && ($('startSoloGame').disabled=false);
-   $('startLocal') && ($('startLocal').disabled=false);
-   $('createOnline') && ($('createOnline').disabled=false);
+   if($('playMode').value==='online'){
+     $('createOnline').disabled=false;
+     $('startLocal').disabled=true;
+   }else{
+     $('startLocal').disabled=false;
+     $('createOnline').disabled=true;
+   }
  });
 }
 function randomTopicOffer(){
@@ -1542,19 +1552,37 @@ function buildSoloDeck(size=15,topic=selectedTopic){
 }
 function drawNames(){
  const online=$('playMode').value==='online';
- $('onlineNameWrap').style.display=online?'block':'none';
- $('names').style.display=online?'none':'block';
- const n=Number($('playerCount').value);
- $('names').innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');
- $('teamNameWrap').style.display=!online && $('teamMode').value==='teams'?'block':'none';
+ const names=$('names'), onlineWrap=$('onlineNameWrap');
+ names.style.setProperty('display',online?'none':'grid','important');
+ names.setAttribute('aria-hidden',online?'true':'false');
+ onlineWrap.style.display=online?'block':'none';
+ $('teamNameWrap').style.display=(!online && $('teamMode').value==='teams')?'block':'none';
  $('startLocal').style.display=online?'none':'block';
  $('createOnline').style.display=online?'block':'none';
  $('joinRoomWrap').style.display=online?'block':'none';
- $('onlineRoster').style.display='none';$('hostStart').style.display='none';
+ $('onlineRoster').style.display='none';
+ $('hostStart').style.display='none';
+ const ready=!!selectedTopic;
+ $('startLocal').disabled=online || !ready;
+ $('createOnline').disabled=!online || !ready;
+ if(online){
+   names.innerHTML='';
+ }else{
+   const n=Number($('playerCount').value);
+   names.innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');
+ }
 }
-$('playerCount').onchange=drawNames;$('teamMode').onchange=drawNames;$('playMode').onchange=drawNames;drawNames();
+$('playerCount').onchange=drawNames;
+$('teamMode').onchange=drawNames;
+$('playMode').addEventListener('change',drawNames);
+drawNames();
 $('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;showSoloTopics()};
-$('multiBtn').onclick=()=>{solo=false;$('playerCount').value='2';drawNames();show('setup');$('startLocal').disabled=true;$('createOnline').disabled=true;$('themeChosen').textContent='Aucune';randomTopicOffer()};
+$('multiBtn').onclick=()=>{
+ solo=false;selectedTopic=null;
+ $('playerCount').value='2';
+ $('themeChosen').textContent='Aucune';
+ show('setup');randomTopicOffer();drawNames();
+};
 function setupPlayers(){
  if($('playMode').value==='online'){
   const name=$('onlinePlayerName').value.trim();
