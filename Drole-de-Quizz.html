@@ -22,7 +22,7 @@
 <header class="topbar"><div class="logo">Drôle de <span>Quizz</span> 🎉</div></header>
 <section class="screen active" id="home"><div class="hero"><div class="kicker">Culture pop · humour · souvenirs</div><h1>À toi de jouer !</h1><p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p></div>
 <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card" id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en ligne ou sur le même appareil.</small></button></div></section>
-<section class="screen" id="soloSetup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours solo</span></div><div class="hero solo-hero"><div class="kicker">À ton rythme</div><h1>Choisis ton défi</h1><p>Trois thématiques tirées au sort à chaque partie. Choisis celle qui t'inspire !</p></div><div id="soloThemeChoices" class="topic-grid"></div><div class="panel"><div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full" id="startSoloGame" disabled>Commencer mon quiz</button></div></section>
+<section class="screen" id="soloSetup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours solo</span></div><div class="hero solo-hero"><div class="kicker">À ton rythme</div><h1>Choisis ton défi</h1><p>Choisis librement parmi les 5 thèmes, ou mélange tout. Les questions « Sel ou poivre » viendront régulièrement pimenter ta partie !</p></div><div id="soloThemeChoices" class="topic-grid"></div><div class="panel"><div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full" id="startSoloGame" disabled>Commencer mon quiz</button></div></section>
 <section class="screen" id="setup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la partie</span></div><div class="panel"><h2>Choisis une thématique</h2><p class="small">Trois thèmes sont tirés au sort à chaque nouvelle partie. Tous les joueurs répondent aux questions de la thématique choisie.</p><div id="themeChoices" class="topic-grid"></div><div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div></div><div class="panel"><h2>Quiz sélectionné</h2>
          <input type="hidden" id="quizType" value="all">
          <div class="panel quiz-selected"><strong>🤪 Décalé qui fait réfléchir</strong><p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture générale.</p></div>
@@ -1437,12 +1437,17 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
          }
 
 const allQuestions=getAllBurger();
+// Les questions Sel ou poivre sont conservées à part pour pouvoir les intercaler en solo.
+const standardQuestions=allQuestions.filter(q=>Array.isArray(q.opts)&&q.opts.length===4);
+const selPepperQuestions=allQuestions.filter(q=>Array.isArray(q.opts)&&q.opts.length===3);
 const TOPICS=[
  {id:'nature',name:'Animaux & nature',emoji:'🦊',desc:'Le monde animal, les plantes et les phénomènes naturels.',test:/animal|animaux|oiseau|oiseaux|poisson|poissons|requin|baleine|dauphin|pieuvre|escargot|panda|ours|girafe|éléphant|lion|tigre|chat|chien|arbre|plante|fleur|forêt|océan|mer |désert|volcan|climat|nature|insecte|abeille|fourmi|wombat|koala|manchot|pingouin|flamant|autruche|grenouille|serpent|tortue|papillon|sahara|antarctique/i},
  {id:'science',name:'Sciences & corps humain',emoji:'🔬',desc:'Le corps, l’espace, les inventions et les découvertes.',test:/cerveau|cœur|coeur|corps|sang|dent|yeux|œil|oeil|sommeil|muscle|os |cellule|atome|espace|soleil|lune|mars|saturne|planète|galaxie|lumière|son |énergie|gravité|science|scientifique|invention|inventé|inventeur|technologie|électricité|électrique|physique|chimie|mathématique/i},
  {id:'histoire',name:'Histoire, géographie & mythes',emoji:'🏛️',desc:'Les civilisations, les lieux célèbres et les légendes.',test:/histoire|historique|siècle|antiquité|époque|guerre|roi |reine|empereur|napoléon|égypt|rome|romain|grec|myth|zeus|poséidon|pandore|minotaure|prométhée|athén|pays |capitale|continent|ville |tour eiffel|everest|muraille|fleuve|océan pacifique|paris|france|chine|japon|autriche/i},
  {id:'culture',name:'Culture & vie quotidienne',emoji:'🎭',desc:'Cuisine, traditions, objets familiers et culture populaire.',test:/aliment|fromage|miel|carotte|croissant|pain au chocolat|sushi|ketchup|café|chocolat|boisson|cuisine|recette|musique|film|série|sport|football|cristiano|joueur|mode|vêtement|langue|mot |expression|tradition|fête|quotidien|maison|voiture|tapis|facteur|titanic/i},
  {id:'insolite',name:'Étrange & records',emoji:'🤯',desc:'Des faits improbables, des records et des questions pièges.',test:/pourquoi|combien|quel(le)? est|quelle forme|mystère|mystere|record|incroyable|insolite|drôle|drôle|vrai|vraiment|peut-il|peut-elle|plus grand|plus petit|plus long|plus rapide|les deux|ou un |ou une /i}
+ ,
+ {id:'all',name:'Tout mélangé',emoji:'🎲',desc:'Un mélange des cinq thématiques : impossible de savoir ce qui arrive !'}
 ];
 function topicFor(q){
  const text=(q.q||'')+' '+(q.opts||[]).join(' ');
@@ -1450,30 +1455,54 @@ function topicFor(q){
  for(const t of TOPICS.slice(0,4))if(t.test.test(text))return t.id;
  return 'insolite';
 }
-const themedQuestions=Object.fromEntries(TOPICS.map(t=>[t.id,allQuestions.filter(q=>topicFor(q)===t.id)]));
+const themedQuestions=Object.fromEntries(TOPICS.filter(t=>t.id!=='all').map(t=>[t.id,standardQuestions.filter(q=>topicFor(q)===t.id)]));
+themedQuestions.all=standardQuestions;
 let offeredTopics=[],selectedTopic='insolite';
 let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
-function randomTopicOffer(){
- offeredTopics=shuffle([...TOPICS]).slice(0,3);
- const target=solo?'soloThemeChoices':'themeChoices';
- $(target).innerHTML=offeredTopics.map(t=>`<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
+function renderTopicChoices(target, topics){
+ $(target).innerHTML=topics.map(t=>`<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
  $(target).querySelectorAll('button').forEach(b=>b.onclick=()=>{
    selectedTopic=b.dataset.topic;
    $(target).querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));
    const label=TOPICS.find(t=>t.id===selectedTopic);
-   $('soloThemeChosen') && ($('soloThemeChosen').textContent=label.name);$('themeChosen') && ($('themeChosen').textContent=label.name);
+   $('soloThemeChosen') && ($('soloThemeChosen').textContent=label.name);
+   $('themeChosen') && ($('themeChosen').textContent=label.name);
    $('startSoloGame') && ($('startSoloGame').disabled=false);
    $('startLocal') && ($('startLocal').disabled=false);
    $('createOnline') && ($('createOnline').disabled=false);
  });
 }
+function randomTopicOffer(){
+ offeredTopics=shuffle([...TOPICS.filter(t=>t.id!=='all')]).slice(0,3);
+ renderTopicChoices('themeChoices',offeredTopics);
+}
+function showSoloTopics(){
+ renderTopicChoices('soloThemeChoices',TOPICS);
+}
 function buildDeck(size=20,topic=selectedTopic){
- const pool=themedQuestions[topic]||allQuestions;
+ const pool=themedQuestions[topic]||standardQuestions;
  return shuffle([...pool]).slice(0,Math.min(size,pool.length));
+}
+function buildSoloDeck(size=15,topic=selectedTopic){
+ const themed=shuffle([...(themedQuestions[topic]||standardQuestions)]);
+ const selPepper=shuffle([...selPepperQuestions]);
+ const deck=[];
+ let normalIndex=0, pepperIndex=0;
+ // Une question « Sel ou poivre » toutes les deux questions, en alternance avec le thème choisi.
+ while(deck.length<size && (normalIndex<themed.length || pepperIndex<selPepper.length)){
+   if(deck.length%2===1 && pepperIndex<selPepper.length){
+     deck.push(selPepper[pepperIndex++]);
+   } else if(normalIndex<themed.length){
+     deck.push(themed[normalIndex++]);
+   } else if(pepperIndex<selPepper.length){
+     deck.push(selPepper[pepperIndex++]);
+   }
+ }
+ return deck.slice(0,size);
 }
 function drawNames(){const n=Number($('playerCount').value);$('names').innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');$('teamNameWrap').style.display=$('teamMode').value==='teams'?'block':'none'}
 $('playerCount').onchange=drawNames;$('teamMode').onchange=drawNames;drawNames();
-$('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;randomTopicOffer()};
+$('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;showSoloTopics()};
 $('multiBtn').onclick=()=>{solo=false;$('playerCount').value='2';drawNames();show('setup');$('startLocal').disabled=true;$('createOnline').disabled=true;$('themeChosen').textContent='Aucune';randomTopicOffer()};
 function setupPlayers(){const names=[...document.querySelectorAll('.pname')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);players=names.map((name,i)=>({name,score:0,team:$('teamMode').value==='teams'?i%2:i}));}
 function startGame(){
@@ -1481,7 +1510,7 @@ function startGame(){
 }
 let soloRound=1,soloScore=0,soloStreak=0,soloLocked=false,soloDeck=[];
 function startSolo(){
- solo=true;players=[{name:'Moi',score:0,team:0}];soloDeck=buildDeck(15,selectedTopic);soloRound=1;soloScore=0;soloStreak=0;soloLocked=false;
+ solo=true;players=[{name:'Moi',score:0,team:0}];soloDeck=buildSoloDeck(15,selectedTopic);soloRound=1;soloScore=0;soloStreak=0;soloLocked=false;
  const topic=TOPICS.find(t=>t.id===selectedTopic);$('soloThemeLabel').textContent=topic?`${topic.emoji} ${topic.name}`:'Quiz';
  show('soloGame');renderSolo();
 }
@@ -1506,7 +1535,7 @@ function finishSolo(){
  $('soloProgressFill').style.width='100%';$('soloQuestion').textContent='Bravo, défi terminé !';
  $('soloAnswers').innerHTML='';$('soloFeedback').className='solo-feedback good';
  $('soloFeedback').innerHTML=`Tu as obtenu <strong>${soloScore} points</strong> sur ${soloDeck.length*100}.<br>Thématique : ${TOPICS.find(t=>t.id===selectedTopic).name}.`;
- $('soloNext').textContent='Rejouer';$('soloNext').style.display='block';$('soloNext').onclick=()=>{randomTopicOffer();show('soloSetup');$('startSoloGame').disabled=true;$('soloThemeChosen').textContent='Aucune'};
+ $('soloNext').textContent='Rejouer';$('soloNext').style.display='block';$('soloNext').onclick=()=>{showSoloTopics();show('soloSetup');$('startSoloGame').disabled=true;$('soloThemeChosen').textContent='Aucune'};
 }
 $('startSoloGame').onclick=startSolo;
 $('soloNext').onclick=()=>{if(soloRound>=soloDeck.length){finishSolo();return}soloRound++;renderSolo()};
