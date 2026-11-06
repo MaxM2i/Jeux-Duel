@@ -1246,6 +1246,9 @@
          }
       }
       .journey-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px;border-radius:26px;background:linear-gradient(120deg,#f078c4,#f7a0d7);color:white;box-shadow:0 8px 0 #c95ca5;margin-bottom:14px}.journey-banner h2{margin:8px 0;font-size:clamp(22px,5vw,30px)}.journey-banner p{margin:0;font-size:13px}.journey-mascot{font-size:48px;min-width:70px}.journey-top{display:flex;justify-content:space-around;color:#d64c9f;font-weight:800}.journey-path{display:flex;justify-content:space-around;align-items:center;position:relative;margin:24px 0}.journey-path:before{content:"";position:absolute;height:8px;background:#f5c4e2;left:10%;right:10%;z-index:0}.path-node{z-index:1;border-radius:50%;width:48px;height:48px;background:#eee;color:#999;display:grid;place-items:center;font-size:22px;font-weight:900;border:4px solid white;box-shadow:0 4px 0 #ddd}.path-node.open{background:#f078c4;color:white}.path-node.done{background:#29b8ed;color:white}.quest-row,.review-item{padding:14px 0;border-bottom:1px solid var(--line)}.quest-progress{height:12px;border-radius:20px;background:#e7e7e7;margin:9px 0;overflow:hidden}.quest-progress i{display:block;height:100%;background:#d64c9f;border-radius:20px}.quest-row small,.review-item small{color:var(--muted)}.quest-preview{display:flex;justify-content:space-between;padding:8px 0}.strategy-tip{background:#fff5d9;border:1px solid #f4d58b;color:#75551a;border-radius:16px;padding:13px;margin:12px 0;font-size:14px}.pair-grid,.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.pair-card,.gogo-card{min-height:78px;border:2px solid #e4e4e4;border-radius:18px;background:white;box-shadow:0 5px 0 #e5e5e5;font-size:21px;font-weight:900;color:#444}.pair-card.selected,.gogo-card.selected{border-color:#ef79c3;background:#fff0f8}.pair-card.matched,.gogo-card.matched{border-color:#9ee66d;background:#e4ffd0;color:#6ba92f;box-shadow:0 5px 0 #b7e995}.duogogo-stats{display:flex;justify-content:space-around;padding:14px;background:#f8e4f1;border-radius:18px;font-size:20px;color:#c64d9b}
+
+      .gogo-head{display:flex;align-items:center;gap:18px;margin:16px 0 22px}.gogo-head>strong{font-size:23px;color:#f2b900;min-width:54px;text-align:right}.gogo-progress{height:14px;background:#e6e6e6;border-radius:30px;flex:1;position:relative;display:flex;justify-content:space-between;align-items:center}.gogo-progress i{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffc400;border-radius:30px;transition:width .2s}.gogo-progress b{z-index:1;color:#ddd;font-size:30px;line-height:1;text-shadow:0 1px white}.gogo-progress b.earned{color:#ffc400;text-shadow:0 1px #e1a900}.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}.gogo-card{min-height:116px;border:3px solid #e5e5e5;border-radius:24px;background:#fff;box-shadow:0 7px 0 #e5e5e5;font-size:clamp(22px,6vw,34px);font-weight:900;color:#4d4d4d;padding:10px}.gogo-card.selected{border-color:#83d5f5;background:#e3f7ff;box-shadow:0 7px 0 #c7eaf8}.gogo-card:disabled{opacity:.35}
+
    </style>
 </head>
 
@@ -1310,7 +1313,7 @@
 
       <section class="screen" id="questsScreen"><div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Quêtes & récompenses</span></div><div class="panel"><div class="kicker">+ points de quête !</div><h2>Progresse à ton rythme</h2><div id="questList"></div><p class="small-note">Les défis duo se valident quand deux joueurs jouent ensemble sur le même appareil.</p></div></section>
       <section class="screen" id="reviewScreen"><div class="backline"><button class="iconbtn" id="reviewBack">← Parcours</button><span class="kicker">Carnet d’erreurs</span></div><div class="panel"><div class="kicker">Révise pour progresser</div><h2>Les calculs à revoir</h2><div id="reviewList"></div><button class="btn btn-main full" id="reviewPractice">Refaire ces calculs</button></div></section>
-      <section class="screen" id="duoGogo"><div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Défi chronométré</span></div><div class="panel"><div class="kicker">DUO À GOGO</div><h2>Retrouve les bonnes paires !</h2><p>Associe chaque calcul à son résultat. Les tables de 2, 3, 4, 5 et 10 reviennent souvent.</p><div class="duogogo-stats"><span>⏱️ <b id="gogoTime">60</b> s</span><span>🧩 <b id="gogoScore">0</b> paires</span></div><div class="strategy-tip">Astuce : pour ×5, multiplie par 10 puis divise par 2. Pour ×9, fais ×10 puis enlève le nombre.</div><div id="gogoBoard" class="gogo-board"></div><div id="gogoFeedback" class="feedback"></div><button class="btn btn-main full" id="gogoStart">Lancer le défi</button><button class="btn btn-soft full" id="gogoAgain" style="display:none">Rejouer</button></div></section>
+      <section class="screen" id="duoGogo"><div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Défi chronométré</span></div><div class="panel"><div class="kicker">DUO À GOGO</div><h2>Retrouve les bonnes paires !</h2><p>Associe chaque calcul à son résultat. Les tables de 2, 3, 4, 5 et 10 reviennent souvent.</p><div class="gogo-head"><div class="gogo-progress"><i id="gogoProgressFill"></i><b id="gogoStar1">★</b><b id="gogoStar2">★</b><b id="gogoStar3">★</b></div><strong id="gogoTime">90</strong></div><div class="duogogo-stats"><span>🧩 <b id="gogoScore">0</b>/<b id="gogoTarget">24</b> paires</span><span>⏱️ <b id="gogoDifficulty">Débutant</b></span></div><div class="strategy-tip">Astuce : ×10 ajoute un zéro ; ×5, c’est ×10 puis la moitié. Repère les tables pour aller vite !</div><div id="gogoBoard" class="gogo-board"></div><div id="gogoFeedback" class="feedback"></div><button class="btn btn-main full" id="gogoStart">Lancer le défi</button><button class="btn btn-soft full" id="gogoAgain" style="display:none">Rejouer</button></div></section>
       <section class="screen" id="duelSetup">
          <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Multijoueur</span>
          </div>
@@ -1387,11 +1390,24 @@
          function difficultyRank() { return Math.min(6, Math.floor((level - 1) / 4) + Math.floor((section - 1) / 6)); }
          function makeMath() {
             const d = difficultyRank(); let a, b, op, ans;
-            if (d <= 1) { op = Math.random() < .7 ? '+' : '×'; if (op === '+') { a = rand(1, 10); b = rand(1, 10); ans = a + b; } else { a = rand(2, 5); b = rand(2, 5); ans = a * b; } }
-            else if (d <= 2) { op = Math.random() < .6 ? '+' : '×'; if (op === '+') { a = [5, 10, 20, 25][rand(0, 3)]; b = [5, 10, 20, 25][rand(0, 3)]; ans = a + b; } else { a = [2, 5, 10][rand(0, 2)]; b = [2, 5, 10][rand(0, 2)]; ans = a * b; } }
-            else if (d <= 4) { op = ['+', '−', '×'][rand(0, 2)]; if (op === '+') { a = rand(2, 18) * 5; b = rand(2, 12) * 5; ans = a + b; } else if (op === '−') { a = rand(5, 25) * 5; b = rand(1, a / 5 - 1) * 5; ans = a - b; } else { a = rand(2, 10); b = rand(2, 12) * 5; ans = a * b; } }
-            else { op = ['+', '−', '×'][rand(0, 2)]; if (op === '+') { a = rand(10, 150); b = rand(10, 150); ans = a + b; } else if (op === '−') { a = rand(30, 250); b = rand(1, a - 1); ans = a - b; } else { a = rand(3, 15); b = rand(3, 15); ans = a * b; } }
-            return { a, b, op, ans };
+            // Progression douce : additions/soustractions sans retenue au début,
+            // puis tables familières (2, 3, 4, 5 et 10). Aucun décimal.
+            if (d <= 2) {
+               op = Math.random() < .58 ? '+' : '×';
+               if (op === '+') { a = rand(1, 10); b = rand(1, Math.min(10, 20-a)); ans = a+b; }
+               else { a = [2,3,4,5,10][rand(0,4)]; b = rand(2,5); ans=a*b; }
+            } else if (d <= 4) {
+               op = ['+','−','×'][rand(0,2)];
+               if(op==='+'){a=[10,20,30,40,50][rand(0,4)];b=[5,10,20,30][rand(0,3)];ans=a+b;}
+               else if(op==='−'){a=[20,30,40,50,60,80,100][rand(0,6)];b=[5,10,20,30][rand(0,3)];if(b>a)b=10;ans=a-b;}
+               else {a=[2,3,4,5,10][rand(0,4)];b=rand(2,10);ans=a*b;}
+            } else {
+               op=['+','−','×'][rand(0,2)];
+               if(op==='+'){a=rand(2,12)*10;b=rand(1,8)*10;ans=a+b;}
+               else if(op==='−'){a=rand(3,15)*10;b=rand(1,a/10-1)*10;ans=a-b;}
+               else {a=[2,3,4,5,10][rand(0,4)];b=rand(2,12);ans=a*b;}
+            }
+            return {a,b,op,ans};
          }
 
          function makeVisualExercise(type) {
@@ -1401,9 +1417,9 @@
                return { type, pct, base, ans, opts };
             }
             if (type === 'model') {
-               const start = rand(10, 80) / 10, step = [.05, .1, .2, .5][rand(0, 3)], fmt = n => Number(n.toFixed(2)).toLocaleString('fr-FR');
-               const vals = [0, 1, 2].map(i => Number((start + i * step).toFixed(2))), ans = Number((start + 3 * step).toFixed(2));
-               const wrong = [ans + step, ans - step, ans + 2 * step].map(n => Number(n.toFixed(2)));
+               const start = rand(2, 8), step = [1,2,5][rand(0,2)], fmt = n => String(n);
+               const vals = [0, 1, 2].map(i => start + i * step), ans = start + 3 * step;
+               const wrong = [ans + step, ans - step, ans + 2 * step];
                return { type, vals, ans, opts: shuffle([ans, ...wrong]).map(fmt), displayVals: vals.map(fmt), displayAns: fmt(ans) };
             }
             if (type === 'factors') {
@@ -1421,8 +1437,8 @@
          }
          function mathStrategy(a,b,op){if(op==='×'&&b===5)return `Astuce ×5 : calcule ${a} × 10, puis divise par 2.`;if(op==='×'&&b===9)return `Astuce ×9 : calcule ${a} × 10, puis enlève ${a}.`;if(op==='×'&&b===10)return `Astuce ×10 : ajoute un zéro à ${a}.`;if(op==='+'&&b%10===0)return `Astuce : ajoute les dizaines en premier (${a} + ${b}).`;if(op==='−'&&b%10===0)return `Astuce : enlève les dizaines en premier.`;return 'Astuce : compte par bonds et repère les multiples pour calculer plus vite.';}
          function buildExercise() {
-            const q = makeMath(), types = ['slider', 'choice', 'fill', 'pattern', 'line', 'choice', 'fill', 'slider', 'pattern', 'choice', 'line', 'fill', 'percent', 'model', 'factors', 'equation', 'choice', 'slider', 'model', 'factors', 'equation', 'percent', 'pattern', 'fill', 'choice'], type = ([4,9,14].includes(exIndex) ? 'pairmatch' : types[exIndex]);
-            if(type==='pairmatch'){return {type, pairs:[[2,6],[3,4],[4,5],[5,8]].map(([a,b])=>({label:`${a} × ${b}`,value:a*b}))};}
+            const q = makeMath(), types = ['slider', 'choice', 'fill', 'pattern', 'line', 'choice', 'fill', 'slider', 'pattern', 'choice', 'line', 'fill', 'percent', 'model', 'factors', 'equation', 'choice', 'slider', 'model', 'factors', 'equation', 'percent', 'pattern', 'fill', 'choice'], beginnerTypes=['choice','fill','pattern','pairmatch','slider','choice','fill','pattern','line','pairmatch','choice','fill','pattern','choice','pairmatch'], type = difficultyRank()<=2 ? beginnerTypes[exIndex] : ([4,9,14].includes(exIndex) ? 'pairmatch' : types[exIndex]);
+            if(type==='pairmatch'){return {type, ans:1, pairs:[[2,6],[3,4],[4,5],[5,8]].map(([a,b])=>({label:`${a} × ${b}`,value:a*b}))};}
             if (type === 'slider' || type === 'line') {
                const step = difficultyRank() <= 1 ? 5 : difficultyRank() <= 2 ? 10 : difficultyRank() <= 4 ? 20 : 50;
                // L'échelle commence au premier repère (réponse moins deux pas) et se termine au dernier,
@@ -1473,7 +1489,7 @@
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
             }
          }
-         let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
+         let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
          function selectSolo(v, b) { if (locked) return; choice = v; document.querySelectorAll('#soloQuestion .choice').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('soloValidate').disabled = false; }
          function validateSolo() {
             if (locked || choice === null) return; locked = true;
@@ -1510,10 +1526,56 @@
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
          function renderReview(){$('reviewList').innerHTML=errors.length?errors.map((e,i)=>`<div class="review-item"><b>${i+1}. ${e.question}</b><p>Réponse : <strong>${e.answer}</strong></p><small>${e.tip}</small></div>`).join(''):'<div class="strategy-tip">Aucune erreur enregistrée. Continue comme ça !</div>';$('reviewPractice').disabled=!errors.length;}
          $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
-         let gogoTimer=null,gogoRemaining=60,gogoPairs=0,gogoBusy=false;const gogoFacts=[[2,6],[3,4],[4,5],[5,8],[10,7],[2,9],[3,7],[4,4],[5,6],[10,9],[2,8],[3,6]];function resetGogo(){clearInterval(gogoTimer);gogoRemaining=60;gogoPairs=0;gogoBusy=false;$('gogoTime').textContent='60';$('gogoScore').textContent='0';$('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoAgain').style.display='none';$('gogoBoard').innerHTML='';}
-         function startGogo(){resetGogo();$('gogoStart').style.display='none';const facts=shuffle(gogoFacts.slice()).slice(0,6),cards=shuffle([...facts.map((f,i)=>({key:i,text:`${f[0]} × ${f[1]}`})),...facts.map((f,i)=>({key:i,text:String(f[0]*f[1])}))]);$('gogoBoard').innerHTML=cards.map(c=>`<button class="gogo-card" data-key="${c.key}">${c.text}</button>`).join('');let selected=[];$('gogoBoard').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(gogoBusy||b.disabled||gogoRemaining<=0)return;b.classList.add('selected');selected.push(b);if(selected.length===2){gogoBusy=true;const [a,c]=selected;if(a.dataset.key===c.dataset.key){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;gogoPairs++;$('gogoScore').textContent=gogoPairs;$('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='Paire trouvée !';}else{$('gogoFeedback').className='feedback show near';$('gogoFeedback').textContent='Pas cette fois. Repère les multiples !';}setTimeout(()=>{selected.forEach(x=>x.classList.remove('selected'));selected=[];gogoBusy=false;if([...$('gogoBoard').querySelectorAll('button')].every(x=>x.disabled))finishGogo();},450);}});gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo();},1000);}
-         function finishGogo(){clearInterval(gogoTimer);$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);$('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent=`Temps écoulé ! ${gogoPairs} paires trouvées. Record : ${best}.`;$('gogoAgain').style.display='block';renderQuests();}
-         $('gogoStart').onclick=startGogo;$('gogoAgain').onclick=resetGogo;
+         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[];
+         function resetGogo(){clearInterval(gogoTimer);gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];$('gogoTime').textContent='90';$('gogoScore').textContent='0';$('gogoTarget').textContent='24';$('gogoDifficulty').textContent='Débutant';$('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));$('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoAgain').style.display='none';$('gogoBoard').innerHTML='';}
+         function makeGogoPairs(count){
+            const candidates=[];[2,3,4,5,10].forEach(a=>{for(let b=2;b<=12;b++)candidates.push({a,b,result:a*b});});
+            const seen=new Set(),unique=[];shuffle(candidates).forEach(x=>{if(!seen.has(x.result)){seen.add(x.result);unique.push(x);}});
+            // Les premiers calculs restent volontairement très accessibles.
+            unique.sort((x,y)=>((x.a===10||x.b===10)?-1:0)-((y.a===10||y.b===10)?-1:0));
+            return shuffle(unique).slice(0,count).map((x,i)=>({id:i,label:`${x.a} × ${x.b}`,result:x.result}));
+         }
+         function updateGogoProgress(){
+            const pct=Math.min(100,gogoPairs/gogoTarget*100);$('gogoProgressFill').style.width=pct+'%';
+            [1,2,3].forEach(n=>{if(gogoPairs>=Math.ceil(gogoTarget*n/3))$('gogoStar'+n).classList.add('earned');else $('gogoStar'+n).classList.remove('earned');});
+         }
+         function drawGogoBoard(initial=false){
+            const board=$('gogoBoard');
+            if(initial){board.innerHTML='';for(let i=0;i<4;i++)addGogoPair();}
+            board.querySelectorAll('button').forEach(b=>b.onclick=()=>selectGogoCard(b));
+         }
+         function addGogoPair(){
+            if(!gogoQueue.length)return;
+            const pair=gogoQueue.shift(),board=$('gogoBoard');
+            const cards=[{pair:pair.id,kind:'calc',text:pair.label},{pair:pair.id,kind:'result',text:String(pair.result)}];
+            shuffle(cards).forEach(c=>{const b=document.createElement('button');b.className='gogo-card';b.dataset.pair=String(c.pair);b.dataset.kind=c.kind;b.textContent=c.text;b.onclick=()=>selectGogoCard(b);board.appendChild(b);});
+         }
+         function selectGogoCard(b){
+            if(gogoBusy||b.disabled||b.classList.contains('selected')||gogoRemaining<=0)return;
+            b.classList.add('selected');gogoSelected.push(b);
+            if(gogoSelected.length!==2)return;
+            gogoBusy=true;const [a,c]=gogoSelected;
+            if(a.dataset.pair===c.dataset.pair&&a.dataset.kind!==c.dataset.kind){
+               $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='Bien joué ! Nouvelle paire…';
+               setTimeout(()=>{a.remove();c.remove();gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();if(gogoPairs>=gogoTarget){finishGogo(true);return;}addGogoPair();gogoSelected=[];gogoBusy=false;},180);
+            }else{
+               $('gogoFeedback').className='feedback show near';$('gogoFeedback').textContent='Pas cette fois. Réessaie !';
+               setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');gogoSelected=[];gogoBusy=false;},550);
+            }
+         }
+         function startGogo(){
+            resetGogo();const advanced=difficultyRank()>=4;gogoTarget=advanced?32:24;gogoRemaining=advanced?120:90;
+            $('gogoTime').textContent=gogoRemaining;$('gogoTarget').textContent=gogoTarget;$('gogoDifficulty').textContent=advanced?'Confirmé':'Débutant';$('gogoStart').style.display='none';
+            gogoQueue=makeGogoPairs(gogoTarget);drawGogoBoard(true);
+            gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
+         }
+         function finishGogo(completed){
+            if(!gogoTimer&&$('gogoAgain').style.display==='block')return;clearInterval(gogoTimer);gogoTimer=null;gogoBusy=true;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
+            const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
+            $('gogoFeedback').className='feedback show '+(completed?'good':'near');$('gogoFeedback').textContent=completed?`Incroyable ! ${gogoTarget} paires trouvées avant la fin du temps !`:`Temps écoulé ! ${gogoPairs}/${gogoTarget} paires trouvées. Record : ${best}.`;
+            $('gogoAgain').style.display='block';renderQuests();
+         }
+         $('gogoStart').onclick=startGogo;$('gogoAgain').onclick=()=>{resetGogo();};$('gogoAgain').onclick=resetGogo;
          /* DUEL : le serveur logique est l'hôte. Le premier joueur qui donne la bonne réponse clôt la manche des deux côtés. */
          /* Réseau : STUN pour la découverte directe + TURN (Open Relay Project, gratuit) en relais de secours.
             Sans TURN, deux smartphones en 4G/5G derrière des NAT stricts ne parviennent souvent pas à se connecter. */
