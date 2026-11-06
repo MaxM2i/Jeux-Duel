@@ -37,6 +37,7 @@
   .topic-grid .topic-emoji{font-size:27px}
 }
 
+#onlineRoster{margin-top:10px;white-space:pre-line}#hostStart{margin-top:12px}
 </style></head><body><div class="app">
 <header class="topbar"><div class="logo">Drôle de <span>Quizz</span> 🎉</div></header>
 <section class="screen active" id="home"><div class="hero"><div class="kicker">Culture pop · humour · souvenirs</div><h1>À toi de jouer !</h1><p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p></div>
@@ -48,8 +49,13 @@
 <label class="small">Nombre de joueurs</label><select class="field" id="playerCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
 <label class="small">Organisation</label><select class="field" id="teamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes</option></select>
 <label class="small">Type de partie</label><select class="field" id="playMode"><option value="local">Même appareil</option><option value="online">En ligne (salon avec code)</option></select>
-<div id="names"></div><div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field" id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
-<button class="btn full" id="startLocal">Lancer la partie</button><button class="btn soft full" id="createOnline">Créer un salon en ligne</button><label class="small">Code du salon</label><input class="field" id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full" id="joinOnline">Rejoindre un salon</button><div class="status" id="netStatus">Choisis les paramètres de la partie.</div></div></section>
+<div id="names"></div><div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton pseudo</label><input class="field" id="onlinePlayerName" maxlength="18" placeholder="Choisis ton pseudo"></div><div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field" id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
+<button class="btn full" id="startLocal">Lancer la partie</button>
+<button class="btn soft full" id="createOnline">Créer un salon en ligne</button>
+<div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field" id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full" id="joinOnline">Rejoindre un salon</button></div>
+<div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
+<div id="onlineRoster" class="status" style="display:none"></div>
+<button class="btn full" id="hostStart" style="display:none">Démarrer le quiz</button></div></section>
 <section class="screen" id="soloGame"><div class="backline"><button class="btn soft" id="soloQuit">← Quitter</button><span class="kicker" id="soloRoundLabel">Question 1 / 15</span></div><div class="solo-progress"><div id="soloProgressFill"></div></div><div class="solo-head"><span class="solo-chip" id="soloThemeLabel">Thématique</span><span class="solo-chip">🧠 Mode solo</span></div><div class="solo-question-card"><div class="solo-count" id="soloCount">01</div><div class="solo-question" id="soloQuestion"></div><div class="solo-answers" id="soloAnswers"></div><div id="soloFeedback"></div><button class="btn full" id="soloNext" style="display:none">Continuer</button></div><div class="solo-bottom"><span>⭐ <b id="soloScore">0</b> points</span><span>🔥 Série : <b id="soloStreak">0</b></span></div></section>
 <section class="screen" id="game"><div class="backline"><button class="btn soft" id="quit">Quitter</button><span class="kicker" id="roundLabel"></span></div><div class="panel"><div class="score" id="scores"></div><div class="kicker" id="turnLabel"></div><div class="question" id="question"></div><div class="choice-grid" id="answers"></div><div id="feedback"></div><button class="btn full" id="next" style="display:none">Question suivante</button></div></section>
 </div><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
@@ -1534,11 +1540,34 @@ function buildSoloDeck(size=15,topic=selectedTopic){
  }
  return deck.slice(0,size);
 }
-function drawNames(){const n=Number($('playerCount').value);$('names').innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');$('teamNameWrap').style.display=$('teamMode').value==='teams'?'block':'none'}
-$('playerCount').onchange=drawNames;$('teamMode').onchange=drawNames;drawNames();
+function drawNames(){
+ const online=$('playMode').value==='online';
+ $('onlineNameWrap').style.display=online?'block':'none';
+ $('names').style.display=online?'none':'block';
+ const n=Number($('playerCount').value);
+ $('names').innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');
+ $('teamNameWrap').style.display=!online && $('teamMode').value==='teams'?'block':'none';
+ $('startLocal').style.display=online?'none':'block';
+ $('createOnline').style.display=online?'block':'none';
+ $('joinRoomWrap').style.display=online?'block':'none';
+ $('onlineRoster').style.display='none';$('hostStart').style.display='none';
+}
+$('playerCount').onchange=drawNames;$('teamMode').onchange=drawNames;$('playMode').onchange=drawNames;drawNames();
 $('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;showSoloTopics()};
 $('multiBtn').onclick=()=>{solo=false;$('playerCount').value='2';drawNames();show('setup');$('startLocal').disabled=true;$('createOnline').disabled=true;$('themeChosen').textContent='Aucune';randomTopicOffer()};
-function setupPlayers(){const names=[...document.querySelectorAll('.pname')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);players=names.map((name,i)=>({name,score:0,team:$('teamMode').value==='teams'?i%2:i}));}
+function setupPlayers(){
+ if($('playMode').value==='online'){
+  const name=$('onlinePlayerName').value.trim();
+  players=[{name:name||'Hôte',score:0,team:0}];
+ }else{
+  const names=[...document.querySelectorAll('.pname')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);
+  players=names.map((name,i)=>({name,score:0,team:$('teamMode').value==='teams'?i%2:i}));
+ }
+}
+function refreshOnlineRoster(){
+ $('onlineRoster').style.display='block';
+ $('onlineRoster').textContent='Salon prêt — '+players.length+' joueur(s) : '+players.map(p=>p.name).join(', ');
+}
 function startGame(){
  setupPlayers();deck=buildDeck(20,selectedTopic);turn=0;round=1;locked=false;show('game');render();
 }
@@ -1578,8 +1607,66 @@ function render(){const p=players[turn%players.length],q=deck[(round-1)%deck.len
 function answer(i){if(locked)return;locked=true;const q=deck[(round-1)%deck.length],p=players[turn%players.length],ok=i===q.a;if(ok)p.score+=100;$('answers').querySelectorAll('button').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.style.border='2px solid #159b68'});$('feedback').className='feedback '+(ok?'good':'bad');$('feedback').textContent=ok?'Bonne réponse ! +100 points':`Raté ! Bonne réponse : ${q.opts[q.a]}`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('next').style.display='block'}
 $('next').onclick=()=>{round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck(20,selectedTopic);$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
 $('startLocal').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if($('playMode').value==='online'){alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.');return}startGame()};
-$('createOnline').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}$('netStatus').textContent='Création du salon…';setupPlayers();roomRole='host';onlineHost=true;peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8));peer.on('open',id=>{$('netStatus').textContent='Salon créé : '+id.replace('drolequizz-','').toUpperCase()+'. Partage ce code aux autres joueurs.'});peer.on('connection',c=>{connections.push(c);c.on('open',()=>c.send({type:'welcome',players}));c.on('data',m=>{if(m.type==='answer'&&onlineHost){/* hôte conserve l’autorité de partie */}})});};
-$('joinOnline').onclick=()=>{if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}const code=$('roomCode').value.trim().toLowerCase();if(!code)return;$('netStatus').textContent='Connexion au salon…';peer=new Peer();peer.on('open',()=>{const c=peer.connect('drolequizz-'+code);c.on('open',()=>{$('netStatus').textContent='Connecté au salon. L’hôte doit lancer la partie.';c.on('data',m=>{if(m.type==='welcome')$('netStatus').textContent='Salon rejoint. Joueurs : '+m.players.map(p=>p.name).join(', ')})})});};
-$('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];show('home')};
+$('createOnline').onclick=()=>{
+ if(!selectedTopic){alert('Choisis une thématique.');return}
+ if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}
+ setupPlayers();roomRole='host';onlineHost=true;connections=[];$('netStatus').textContent='Création du salon…';
+ $('createOnline').style.display='none';$('joinRoomWrap').style.display='none';$('startLocal').style.display='none';
+ $('onlineRoster').style.display='block';$('onlineRoster').textContent='Création du salon…';
+ peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8));
+ peer.on('open',id=>{
+  roomId=id.replace('drolequizz-','');
+  $('netStatus').textContent='Salon créé. Code à partager : '+roomId.toUpperCase();
+  refreshOnlineRoster();$('hostStart').style.display='block';
+ });
+ peer.on('connection',c=>{
+  connections.push(c);
+  c.on('data',m=>{
+   if(m.type==='join'&&onlineHost){
+    const clean=(m.name||'Joueur').toString().trim().slice(0,18)||'Joueur';
+    if(!players.some(p=>p.clientId===m.clientId))players.push({name:clean,score:0,team:players.length%2,clientId:m.clientId});
+    const roster=players.map(p=>({name:p.name,score:p.score}));
+    c.send({type:'joined',players:roster});
+    connections.forEach(conn=>{if(conn.open)conn.send({type:'roster',players:roster})});
+    refreshOnlineRoster();
+   }
+  });
+  c.on('close',()=>{connections=connections.filter(x=>x!==c)});
+  c.on('error',()=>{$('netStatus').textContent='Une connexion avec un joueur a échoué.'});
+ });
+ peer.on('error',err=>{$('netStatus').textContent='Erreur de salon : '+(err.type||'connexion')});
+};
+$('joinOnline').onclick=()=>{
+ if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible.';return}
+ const code=$('roomCode').value.trim().toLowerCase(),name=$('onlinePlayerName').value.trim();
+ if(!name){$('netStatus').textContent='Choisis ton pseudo avant de rejoindre le salon.';$('onlinePlayerName').focus();return}
+ if(!code){$('netStatus').textContent='Saisis le code du salon.';return}
+ $('netStatus').textContent='Connexion au salon…';
+ peer=new Peer();let acknowledged=false;
+ const timeout=setTimeout(()=>{if(!acknowledged)$('netStatus').textContent='Aucune réponse du salon. Vérifie le code ou demande à l’hôte de recréer le salon.'},10000);
+ peer.on('open',()=>{
+  const c=peer.connect('drolequizz-'+code,{reliable:true});connections=[c];
+  c.on('open',()=>c.send({type:'join',name:name,clientId:peer.id}));
+  c.on('data',m=>{
+   if(m.type==='joined'){
+    acknowledged=true;clearTimeout(timeout);roomRole='guest';onlineHost=false;
+    players=(m.players||[]).map((p,i)=>({name:p.name,score:p.score||0,team:i}));
+    $('netStatus').textContent='Tu as bien rejoint le salon.';
+    $('joinRoomWrap').style.display='none';$('createOnline').style.display='none';$('startLocal').style.display='none';
+    $('onlineRoster').style.display='block';$('onlineRoster').textContent='En attente du lancement par l’hôte…\nJoueurs : '+players.map(p=>p.name).join(', ');
+   }else if(m.type==='roster'){
+    players=(m.players||[]).map((p,i)=>({name:p.name,score:p.score||0,team:i}));
+    $('onlineRoster').textContent='En attente du lancement par l’hôte…\nJoueurs : '+players.map(p=>p.name).join(', ');
+   }
+  });
+  c.on('error',()=>{clearTimeout(timeout);$('netStatus').textContent='Impossible de rejoindre ce salon. Vérifie le code.'});
+ });
+ peer.on('error',err=>{clearTimeout(timeout);$('netStatus').textContent='Connexion impossible : '+(err.type||'erreur réseau')});
+};
+$('hostStart').onclick=()=>{
+ if(!onlineHost||!players.length)return;
+ $('netStatus').textContent='Le salon est prêt. Le démarrage synchronisé des questions n’est pas encore implémenté.';
+};
+$('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];players=[];onlineHost=false;roomRole='local';show('home')};
 })();
 </script></body></html>
