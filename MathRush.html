@@ -1252,10 +1252,13 @@
 
 
       .profile-hero{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,#e8f5ff,#fce8f5)}
-      .profile-avatar-large{width:100px;height:100px;flex:0 0 100px;border-radius:28px;background:#fff;display:grid;place-items:center;font-size:62px;box-shadow:0 7px 0 #d9e5f3}
+      .profile-avatar-large{width:100px;height:100px;flex:0 0 100px;border-radius:28px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 7px 0 #d9e5f3}
+      .profile-avatar-large img{width:100%;height:100%;object-fit:cover}
       .avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0 20px}
-      .avatar-choice{min-height:58px;border:2px solid #e5eaf4;border-radius:17px;background:#fff;font-size:31px;box-shadow:0 4px 0 #e5eaf4}
+      .avatar-choice{min-height:258px;border:2px solid #e5eaf4;border-radius:17px;background:#fff;padding:6px;box-shadow:0 4px 0 #e5eaf4}
+      .avatar-choice img{display:block;width:242px;height:242px;margin:auto;border-radius:11px;object-fit:cover}
       .avatar-choice.active{border-color:#4aa9ed;background:#e4f6ff;box-shadow:0 4px 0 #9edcf7}
+      .menu-card .emoji img{width:38px;height:38px;border-radius:12px;object-fit:cover;vertical-align:middle}
       .profile-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
       .profile-stats>div{background:#f4f7ff;border-radius:17px;padding:14px;text-align:center}
       .profile-stats b{display:block;font-size:25px;color:#397ce6}.profile-stats small{font-size:12px;color:var(--muted)}
@@ -1288,7 +1291,7 @@
             <button class="menu-card duel-card" id="goDuel"><span class="emoji">⚔️</span><strong>Défi à
                   deux</strong><small>Affronte un ami en direct sur 10 manches.</small></button>
             <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs sur le même appareil.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
-            <button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar">😎</span><strong>Mon profil</strong><small>Ton avatar, tes statistiques, tes records et tes récompenses.</small></button>
+            <button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton avatar, tes statistiques, tes records et tes récompenses.</small></button>
          </div>
          <div class="panel section-gap">
             <div class="kicker">Ta progression</div>
@@ -1330,7 +1333,7 @@
       <section class="screen" id="profileScreen">
          <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Espace joueur</span></div>
          <div class="panel profile-hero">
-            <div class="profile-avatar-large" id="profileAvatarPreview">😎</div>
+            <div class="profile-avatar-large" id="profileAvatarPreview"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></div>
             <div><div class="kicker">MON PROFIL MATHRUSH</div><h2 id="profileDisplayName">Super calculateur</h2><p class="small-note">Personnalise ton personnage et suis tes progrès.</p></div>
          </div>
          <div class="panel section-gap">
@@ -1572,14 +1575,15 @@
             for (let n = 1; n <= 15; n++) { const b = document.createElement('button'), isDone = done.includes(`${section}-${n}`), open = n <= level; b.className = 'level-node ' + (isDone ? 'done' : open ? 'open' : ''); b.disabled = !open; b.textContent = (isDone ? '✓ ' : '') + n; b.onclick = () => { level = n; persist(); startSolo(); }; $('levelList').appendChild(b); }
          }
          const PROFILE_KEY='mathrush_player_profile_v1';
-         const AVATARS=['😎','🤓','🥸','🤠','🦊','🐸','🐼','🦄','🐙','👾','🤖','🐲','🐵','🐧','🦖','🍕'];
+         const AVATARS=['08d694a0343943d7d0b58c1a9c17b525.jpg','3d-rendering-cartoon-man-beach.jpg','3e41eb054e1de1da0adf117bcd0ef515.jpg','45bdf75eb0c698f62db653228a6c9528.jpg','5916012f876c456afd9404f2d4d6b4c8.jpg','825972f6e645e88ef00ca763c6660cc2.jpg','870714d34d7b5e28d7e754c0c5b0d3e6.jpg','8c7fbf419e03b81cab48b949cc5fb8b3.jpg','a608d953177e09b847ef842e017539e8.jpg','a8113f148c9636f0ccba6781c7499467.jpg','a87a30f6d944720837b21e6491576d97.jpg','cartoony-ostrich-studio.jpg','ef3a9408a7a62b5c687486eba0b11d7c.jpg','f355af61009f0a0be856871919d9262e.jpg'];
          let playerProfile=(()=>{try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}})();
-         if(!playerProfile.avatar)playerProfile.avatar='😎';
+         if(!AVATARS.includes(playerProfile.avatar))playerProfile.avatar=AVATARS[0];
          if(!playerProfile.name)playerProfile.name='Super calculateur';
          function renderProfile(){
-            $('profileAvatarPreview').textContent=playerProfile.avatar;$('homeAvatar').textContent=playerProfile.avatar;
+            const avatarUrl=`assets/avatar/${playerProfile.avatar}`;
+            $('profileAvatarPreview').innerHTML=`<img src="${avatarUrl}" alt="Avatar du joueur">`;$('homeAvatar').innerHTML=`<img src="${avatarUrl}" alt="Avatar">`;
             $('profileDisplayName').textContent=playerProfile.name;$('profileName').value=playerProfile.name;
-            $('avatarGrid').innerHTML=AVATARS.map(a=>`<button class="avatar-choice ${a===playerProfile.avatar?'active':''}" data-avatar="${a}" aria-label="Avatar ${a}">${a}</button>`).join('');
+            $('avatarGrid').innerHTML=AVATARS.map((a,i)=>`<button class="avatar-choice ${a===playerProfile.avatar?'active':''}" data-avatar="${a}" aria-label="Choisir l’avatar ${i+1}"><img src="assets/avatar/${a}" alt=""></button>`).join('');
             $('avatarGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{playerProfile.avatar=b.dataset.avatar;renderProfile();});
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
             $('profileErrors').textContent=errors.length;$('profileStreak').textContent=best;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
