@@ -1,73 +1,617 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#21134b"><title>Drôle de Quizz</title>
-<style>
-:root{--ink:#241c3d;--muted:#766d91;--paper:#faf8ff;--purple:#6545c8;--pink:#ed6aa8;--line:#e9e2f5;--green:#159b68}
-*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#f0e6ff,transparent 45%),linear-gradient(145deg,#faf8ff,#fff5f8);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
-.app{max-width:760px;margin:auto}.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 4px}.logo{font-size:23px;font-weight:900;color:#25184d}.logo span{color:var(--pink)}.screen{display:none}.screen.active{display:block}.hero,.panel{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;margin:12px 0;box-shadow:0 10px 30px #4a2c8010}.hero{background:linear-gradient(130deg,#36216b,#754ed1);color:white}.kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--pink)}.hero .kicker{color:#ffc7df}h1{font-size:clamp(32px,8vw,48px);line-height:1.02;margin:12px 0}h2{margin:8px 0 12px}.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.menu-card,.btn{border:0;border-radius:16px;padding:16px;font:inherit;cursor:pointer}.menu-card{text-align:left;background:white;border:1px solid var(--line);min-height:115px;color:var(--ink)}.menu-card strong,.menu-card small{display:block}.menu-card .emoji{font-size:25px}.menu-card small{color:var(--muted);margin-top:6px}.btn{font-weight:800;background:var(--purple);color:white;margin-top:10px}.btn.soft{background:#f0eaff;color:#5035a1}.btn.full{width:100%}.field{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px;font:inherit;background:#fff}.small{color:var(--muted);font-size:13px}.backline{display:flex;justify-content:space-between;align-items:center;margin:10px 2px}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.choice{background:#f4f0ff;border:1px solid var(--line);border-radius:14px;padding:15px;text-align:left;font:inherit;font-weight:700;min-height:62px}.choice:disabled{opacity:.55}.status{background:#f7f3ff;padding:12px;border-radius:12px;white-space:pre-line;font-size:14px}.score{display:flex;gap:8px;flex-wrap:wrap}.score span{background:#f3edff;padding:8px 10px;border-radius:10px}.question{font-size:22px;font-weight:850;margin:18px 0;white-space:pre-line}.feedback{padding:12px;border-radius:12px;margin-top:10px}.good{background:#e6f8ef;color:#087747}.bad{background:#fff0f1;color:#b52e43}@media(max-width:480px){.panel{padding:17px}.choice-grid{grid-template-columns:1fr}.hero{padding:20px}}
-.quiz-selected{margin:12px 0 18px;background:#fff7e6;border:2px solid #f4d48b}.quiz-selected strong{font-size:18px}\n
-.topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
-.topic-card{border:2px solid var(--line);background:#fff;border-radius:20px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:7px;min-height:150px;color:var(--ink);cursor:pointer;box-shadow:0 5px 0 #eee8f7}
-.topic-card.selected{border-color:#8a68e5;background:#f3edff;box-shadow:0 5px 0 #d8c9ff}
-.topic-emoji{font-size:32px}.topic-card strong{font-size:17px}.topic-card small{color:var(--muted);line-height:1.4}.topic-select{font-size:12px;font-weight:850;color:var(--purple);margin-top:auto}
-#startSoloGame:disabled,#startLocal:disabled,#createOnline:disabled{opacity:.42;cursor:not-allowed}
-.solo-progress{height:9px;background:#e9e2f5;border-radius:20px;overflow:hidden;margin:8px 2px 18px}.solo-progress>div{height:100%;width:0;background:linear-gradient(90deg,#ed6aa8,#8a68e5);border-radius:20px;transition:width .3s}
-.solo-head{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.solo-chip{background:#f0eaff;color:#563ba5;padding:7px 11px;border-radius:99px;font-size:12px;font-weight:800}
-.solo-question-card{background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 12px 35px #4a2c8012;min-height:55vh}
-.solo-count{font-size:12px;font-weight:900;color:var(--pink);letter-spacing:.12em}.solo-question{font-size:clamp(23px,6vw,31px);line-height:1.2;font-weight:900;margin:18px 0 24px;white-space:pre-line}
-.solo-answers{display:grid;gap:11px}.solo-answer{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:13px;background:#fff;border:2px solid var(--line);border-radius:16px;text-align:left;font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
-.solo-answer span{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:10px;background:#f0eaff;color:var(--purple);font-weight:900}
-.solo-answer.correct{border-color:#5bc895;background:#e6f8ef}.solo-answer.wrong{border-color:#ee8d9c;background:#fff0f1}.solo-answer:disabled{opacity:1}
-.solo-feedback{padding:15px;border-radius:16px;margin-top:15px;line-height:1.5}.solo-bottom{display:flex;justify-content:space-between;padding:14px 4px;color:var(--muted)}
+<html lang="fr">
 
-/* Grille des six thèmes : toujours 2 colonnes et 3 lignes, en solo comme en duel. */
-.topic-grid{
-  display:grid !important;
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  grid-auto-flow:row;
-  grid-auto-rows:minmax(150px,auto);
-  gap:12px;
-  width:100%;
-}
-.topic-grid .topic-card{min-width:0;width:100%;height:100%}
-@media(max-width:480px){
-  .topic-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px}
-  .topic-grid .topic-card{padding:11px;min-height:145px}
-  .topic-grid .topic-card strong{font-size:15px}
-  .topic-grid .topic-card small{font-size:12px}
-  .topic-grid .topic-emoji{font-size:27px}
-}
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+   <meta name="theme-color" content="#21134b">
+   <title>Drôle de Quizz</title>
+   <style>
+      :root {
+         --ink: #241c3d;
+         --muted: #766d91;
+         --paper: #faf8ff;
+         --purple: #6545c8;
+         --pink: #ed6aa8;
+         --line: #e9e2f5;
+         --green: #159b68
+      }
 
-#onlineRoster{margin-top:10px;white-space:pre-line}#hostStart{margin-top:12px}
+      * {
+         box-sizing: border-box
+      }
 
-/* Correctif robuste du formulaire multijoueur */
-#names[aria-hidden="true"]{display:none !important}
-#onlineNameWrap[style*="display: block"]{display:block}
-#startLocal:disabled,#createOnline:disabled{opacity:.42}
-</style></head><body><div class="app">
-<header class="topbar"><div class="logo">Drôle de <span>Quizz</span> 🎉</div></header>
-<section class="screen active" id="home"><div class="hero"><div class="kicker">Culture pop · humour · souvenirs</div><h1>À toi de jouer !</h1><p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p></div>
-<div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card" id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en ligne ou sur le même appareil.</small></button></div></section>
-<section class="screen" id="soloSetup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours solo</span></div><div class="hero solo-hero"><div class="kicker">À ton rythme</div><h1>Choisis ton défi</h1><p>Choisis librement parmi les 5 thèmes, ou mélange tout. Les questions « Sel ou poivre » viendront régulièrement pimenter ta partie !</p></div><div id="soloThemeChoices" class="topic-grid"></div><div class="panel"><div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full" id="startSoloGame" disabled>Commencer mon quiz</button></div></section>
-<section class="screen" id="setup"><div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la partie</span></div><div class="panel"><h2>Choisis une thématique</h2><p class="small">Choisissez parmi les six thèmes. Tous les joueurs répondent aux questions de la thématique choisie.</p><div id="themeChoices" class="topic-grid"></div><div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div></div><div class="panel"><h2>Quiz sélectionné</h2>
-         <input type="hidden" id="quizType" value="all">
-         <div class="panel quiz-selected"><strong>🤪 Décalé qui fait réfléchir</strong><p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture générale.</p></div>
-<label class="small">Nombre de joueurs</label><select class="field" id="playerCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
-<label class="small">Organisation</label><select class="field" id="teamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes</option></select>
-<label class="small">Type de partie</label><select class="field" id="playMode"><option value="local">Même appareil</option><option value="online">En ligne (salon avec code)</option></select>
-<div id="names"></div><div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton pseudo</label><input class="field" id="onlinePlayerName" maxlength="18" placeholder="Choisis ton pseudo"></div><div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field" id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
-<button class="btn full" id="startLocal">Lancer la partie</button>
-<button class="btn soft full" id="createOnline">Créer un salon en ligne</button>
-<div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field" id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full" id="joinOnline">Rejoindre un salon</button></div>
-<div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
-<div id="onlineRoster" class="status" style="display:none"></div>
-<button class="btn full" id="hostStart" style="display:none">Démarrer le quiz</button></div></section>
-<section class="screen" id="soloGame"><div class="backline"><button class="btn soft" id="soloQuit">← Quitter</button><span class="kicker" id="soloRoundLabel">Question 1 / 15</span></div><div class="solo-progress"><div id="soloProgressFill"></div></div><div class="solo-head"><span class="solo-chip" id="soloThemeLabel">Thématique</span><span class="solo-chip">🧠 Mode solo</span></div><div class="solo-question-card"><div class="solo-count" id="soloCount">01</div><div class="solo-question" id="soloQuestion"></div><div class="solo-answers" id="soloAnswers"></div><div id="soloFeedback"></div><button class="btn full" id="soloNext" style="display:none">Continuer</button></div><div class="solo-bottom"><span>⭐ <b id="soloScore">0</b> points</span><span>🔥 Série : <b id="soloStreak">0</b></span></div></section>
-<section class="screen" id="game"><div class="backline"><button class="btn soft" id="quit">Quitter</button><span class="kicker" id="roundLabel"></span></div><div class="panel"><div class="score" id="scores"></div><div class="kicker" id="turnLabel"></div><div class="question" id="question"></div><div class="choice-grid" id="answers"></div><div id="feedback"></div><button class="btn full" id="next" style="display:none">Question suivante</button></div></section>
-</div><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
-(() => {
-const $=id=>document.getElementById(id), rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, shuffle=a=>a.sort(()=>Math.random()-.5);
-const screens=['home','setup','game','soloGame','soloSetup'];function show(id){screens.forEach(s=>$(s).classList.toggle('active',s===id));window.scrollTo(0,0)}
-document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
+      body {
+         margin: 0;
+         padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+         min-height: 100vh;
+         background: radial-gradient(ellipse at 15% 0%, #f0e6ff, transparent 45%), linear-gradient(145deg, #faf8ff, #fff5f8);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         color: var(--ink)
+      }
+
+      .app {
+         max-width: 760px;
+         margin: auto
+      }
+
+      .topbar {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         padding: 16px 4px
+      }
+
+      .logo {
+         font-size: 23px;
+         font-weight: 900;
+         color: #25184d
+      }
+
+      .logo span {
+         color: var(--pink)
+      }
+
+      .screen {
+         display: none
+      }
+
+      .screen.active {
+         display: block
+      }
+
+      .hero,
+      .panel {
+         background: #fff;
+         border: 1px solid var(--line);
+         border-radius: 22px;
+         padding: 22px;
+         margin: 12px 0;
+         box-shadow: 0 10px 30px #4a2c8010
+      }
+
+      .hero {
+         background: linear-gradient(130deg, #36216b, #754ed1);
+         color: white
+      }
+
+      .kicker {
+         font-size: 12px;
+         letter-spacing: .12em;
+         text-transform: uppercase;
+         font-weight: 800;
+         color: var(--pink)
+      }
+
+      .hero .kicker {
+         color: #ffc7df
+      }
+
+      h1 {
+         font-size: clamp(32px, 8vw, 48px);
+         line-height: 1.02;
+         margin: 12px 0
+      }
+
+      h2 {
+         margin: 8px 0 12px
+      }
+
+      .menu-grid {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+         gap: 12px
+      }
+
+      .menu-card,
+      .btn {
+         border: 0;
+         border-radius: 16px;
+         padding: 16px;
+         font: inherit;
+         cursor: pointer
+      }
+
+      .menu-card {
+         text-align: left;
+         background: white;
+         border: 1px solid var(--line);
+         min-height: 115px;
+         color: var(--ink)
+      }
+
+      .menu-card strong,
+      .menu-card small {
+         display: block
+      }
+
+      .menu-card .emoji {
+         font-size: 25px
+      }
+
+      .menu-card small {
+         color: var(--muted);
+         margin-top: 6px
+      }
+
+      .btn {
+         font-weight: 800;
+         background: var(--purple);
+         color: white;
+         margin-top: 10px
+      }
+
+      .btn.soft {
+         background: #f0eaff;
+         color: #5035a1
+      }
+
+      .btn.full {
+         width: 100%
+      }
+
+      .field {
+         width: 100%;
+         padding: 13px;
+         border: 1px solid var(--line);
+         border-radius: 12px;
+         margin: 6px 0 12px;
+         font: inherit;
+         background: #fff
+      }
+
+      .small {
+         color: var(--muted);
+         font-size: 13px
+      }
+
+      .backline {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin: 10px 2px
+      }
+
+      .choice-grid {
+         display: grid;
+         grid-template-columns: 1fr 1fr;
+         gap: 9px
+      }
+
+      .choice {
+         background: #f4f0ff;
+         border: 1px solid var(--line);
+         border-radius: 14px;
+         padding: 15px;
+         text-align: left;
+         font: inherit;
+         font-weight: 700;
+         min-height: 62px
+      }
+
+      .choice:disabled {
+         opacity: .55
+      }
+
+      .status {
+         background: #f7f3ff;
+         padding: 12px;
+         border-radius: 12px;
+         white-space: pre-line;
+         font-size: 14px
+      }
+
+      .score {
+         display: flex;
+         gap: 8px;
+         flex-wrap: wrap
+      }
+
+      .score span {
+         background: #f3edff;
+         padding: 8px 10px;
+         border-radius: 10px
+      }
+
+      .question {
+         font-size: 22px;
+         font-weight: 850;
+         margin: 18px 0;
+         white-space: pre-line
+      }
+
+      .feedback {
+         padding: 12px;
+         border-radius: 12px;
+         margin-top: 10px
+      }
+
+      .good {
+         background: #e6f8ef;
+         color: #087747
+      }
+
+      .bad {
+         background: #fff0f1;
+         color: #b52e43
+      }
+
+      @media(max-width:480px) {
+         .panel {
+            padding: 17px
+         }
+
+         .choice-grid {
+            grid-template-columns: 1fr
+         }
+
+         .hero {
+            padding: 20px
+         }
+      }
+
+      .quiz-selected {
+         margin: 12px 0 18px;
+         background: #fff7e6;
+         border: 2px solid #f4d48b
+      }
+
+      .quiz-selected strong {
+         font-size: 18px
+      }
+
+      \n .topic-grid {
+         display: grid;
+         grid-template-columns: repeat(2, minmax(0, 1fr));
+         gap: 12px;
+         margin: 14px 0
+      }
+
+      .topic-card {
+         border: 2px solid var(--line);
+         background: #fff;
+         border-radius: 20px;
+         padding: 14px;
+         text-align: left;
+         display: flex;
+         flex-direction: column;
+         gap: 7px;
+         min-height: 150px;
+         color: var(--ink);
+         cursor: pointer;
+         box-shadow: 0 5px 0 #eee8f7
+      }
+
+      .topic-card.selected {
+         border-color: #8a68e5;
+         background: #f3edff;
+         box-shadow: 0 5px 0 #d8c9ff
+      }
+
+      .topic-emoji {
+         font-size: 32px
+      }
+
+      .topic-card strong {
+         font-size: 17px
+      }
+
+      .topic-card small {
+         color: var(--muted);
+         line-height: 1.4
+      }
+
+      .topic-select {
+         font-size: 12px;
+         font-weight: 850;
+         color: var(--purple);
+         margin-top: auto
+      }
+
+      #startSoloGame:disabled,
+      #startLocal:disabled,
+      #createOnline:disabled {
+         opacity: .42;
+         cursor: not-allowed
+      }
+
+      .solo-progress {
+         height: 9px;
+         background: #e9e2f5;
+         border-radius: 20px;
+         overflow: hidden;
+         margin: 8px 2px 18px
+      }
+
+      .solo-progress>div {
+         height: 100%;
+         width: 0;
+         background: linear-gradient(90deg, #ed6aa8, #8a68e5);
+         border-radius: 20px;
+         transition: width .3s
+      }
+
+      .solo-head {
+         display: flex;
+         gap: 8px;
+         flex-wrap: wrap;
+         margin-bottom: 12px
+      }
+
+      .solo-chip {
+         background: #f0eaff;
+         color: #563ba5;
+         padding: 7px 11px;
+         border-radius: 99px;
+         font-size: 12px;
+         font-weight: 800
+      }
+
+      .solo-question-card {
+         background: #fff;
+         border: 1px solid var(--line);
+         border-radius: 26px;
+         padding: 22px;
+         box-shadow: 0 12px 35px #4a2c8012;
+         min-height: 55vh
+      }
+
+      .solo-count {
+         font-size: 12px;
+         font-weight: 900;
+         color: var(--pink);
+         letter-spacing: .12em
+      }
+
+      .solo-question {
+         font-size: clamp(23px, 6vw, 31px);
+         line-height: 1.2;
+         font-weight: 900;
+         margin: 18px 0 24px;
+         white-space: pre-line
+      }
+
+      .solo-answers {
+         display: grid;
+         gap: 11px
+      }
+
+      .solo-answer {
+         display: flex;
+         align-items: center;
+         gap: 12px;
+         width: 100%;
+         min-height: 64px;
+         padding: 13px;
+         background: #fff;
+         border: 2px solid var(--line);
+         border-radius: 16px;
+         text-align: left;
+         font: inherit;
+         font-weight: 700;
+         color: var(--ink);
+         cursor: pointer
+      }
+
+      .solo-answer span {
+         display: grid;
+         place-items: center;
+         flex: 0 0 32px;
+         height: 32px;
+         border-radius: 10px;
+         background: #f0eaff;
+         color: var(--purple);
+         font-weight: 900
+      }
+
+      .solo-answer.correct {
+         border-color: #5bc895;
+         background: #e6f8ef
+      }
+
+      .solo-answer.wrong {
+         border-color: #ee8d9c;
+         background: #fff0f1
+      }
+
+      .solo-answer:disabled {
+         opacity: 1
+      }
+
+      .solo-feedback {
+         padding: 15px;
+         border-radius: 16px;
+         margin-top: 15px;
+         line-height: 1.5
+      }
+
+      .solo-bottom {
+         display: flex;
+         justify-content: space-between;
+         padding: 14px 4px;
+         color: var(--muted)
+      }
+
+      /* Grille des six thèmes : toujours 2 colonnes et 3 lignes, en solo comme en duel. */
+      .topic-grid {
+         display: grid !important;
+         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+         grid-auto-flow: row;
+         grid-auto-rows: minmax(150px, auto);
+         gap: 12px;
+         width: 100%;
+      }
+
+      .topic-grid .topic-card {
+         min-width: 0;
+         width: 100%;
+         height: 100%
+      }
+
+      @media(max-width:480px) {
+         .topic-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px
+         }
+
+         .topic-grid .topic-card {
+            padding: 11px;
+            min-height: 145px
+         }
+
+         .topic-grid .topic-card strong {
+            font-size: 15px
+         }
+
+         .topic-grid .topic-card small {
+            font-size: 12px
+         }
+
+         .topic-grid .topic-emoji {
+            font-size: 27px
+         }
+      }
+
+      #onlineRoster {
+         margin-top: 10px;
+         white-space: pre-line
+      }
+
+      #hostStart {
+         margin-top: 12px
+      }
+
+      /* Correctif robuste du formulaire multijoueur */
+      #names[aria-hidden="true"] {
+         display: none !important
+      }
+
+      #onlineNameWrap[style*="display: block"] {
+         display: block
+      }
+
+      #startLocal:disabled,
+      #createOnline:disabled {
+         opacity: .42
+      }
+   </style>
+</head>
+
+<body>
+   <div class="app">
+      <header class="topbar">
+         <div class="logo">Drôle de <span>Quizz</span> 🎉</div>
+      </header>
+      <section class="screen active" id="home">
+         <div class="hero">
+            <div class="kicker">Culture pop · humour · souvenirs</div>
+            <h1>À toi de jouer !</h1>
+            <p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p>
+         </div>
+         <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
+                  solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card"
+               id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en
+                  ligne ou sur le même appareil.</small></button></div>
+      </section>
+      <section class="screen" id="soloSetup">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours
+               solo</span></div>
+         <div class="hero solo-hero">
+            <div class="kicker">À ton rythme</div>
+            <h1>Choisis ton défi</h1>
+            <p>Choisis librement parmi les 5 thèmes, ou mélange tout. Les questions « Sel ou poivre » viendront
+               régulièrement pimenter ta partie !</p>
+         </div>
+         <div id="soloThemeChoices" class="topic-grid"></div>
+         <div class="panel">
+            <div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full"
+               id="startSoloGame" disabled>Commencer mon quiz</button>
+         </div>
+      </section>
+      <section class="screen" id="setup">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la
+               partie</span></div>
+         <div class="panel">
+            <h2>Choisis une thématique</h2>
+            <p class="small">Choisissez parmi les six thèmes. Tous les joueurs répondent aux questions de la thématique
+               choisie.</p>
+            <div id="themeChoices" class="topic-grid"></div>
+            <div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div>
+         </div>
+         <div class="panel">
+            <h2>Quiz sélectionné</h2>
+            <input type="hidden" id="quizType" value="all">
+            <div class="panel quiz-selected"><strong>🤪 Décalé qui fait réfléchir</strong>
+               <p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture
+                  générale.</p>
+            </div>
+            <label class="small">Nombre de joueurs</label><select class="field" id="playerCount">
+               <option>1</option>
+               <option>2</option>
+               <option>3</option>
+               <option>4</option>
+               <option>5</option>
+               <option>6</option>
+            </select>
+            <label class="small">Organisation</label><select class="field" id="teamMode">
+               <option value="free">Chacun pour soi</option>
+               <option value="teams">En équipes</option>
+            </select>
+            <label class="small">Type de partie</label><select class="field" id="playMode">
+               <option value="local">Même appareil</option>
+               <option value="online">En ligne (salon avec code)</option>
+            </select>
+            <div id="names"></div>
+            <div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton
+                  pseudo</label><input class="field" id="onlinePlayerName" maxlength="18"
+                  placeholder="Choisis ton pseudo"></div>
+            <div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field"
+                  id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
+            <button class="btn full" id="startLocal">Lancer la partie</button>
+            <button class="btn soft full" id="createOnline">Créer un salon en ligne</button>
+            <div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field"
+                  id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full"
+                  id="joinOnline">Rejoindre un salon</button></div>
+            <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
+            <div id="onlineRoster" class="status" style="display:none"></div>
+            <button class="btn full" id="hostStart" style="display:none">Démarrer le quiz</button>
+         </div>
+      </section>
+      <section class="screen" id="soloGame">
+         <div class="backline"><button class="btn soft" id="soloQuit">← Quitter</button><span class="kicker"
+               id="soloRoundLabel">Question 1 / 15</span></div>
+         <div class="solo-progress">
+            <div id="soloProgressFill"></div>
+         </div>
+         <div class="solo-head"><span class="solo-chip" id="soloThemeLabel">Thématique</span><span class="solo-chip">🧠
+               Mode solo</span></div>
+         <div class="solo-question-card">
+            <div class="solo-count" id="soloCount">01</div>
+            <div class="solo-question" id="soloQuestion"></div>
+            <div class="solo-answers" id="soloAnswers"></div>
+            <div id="soloFeedback"></div><button class="btn full" id="soloNext" style="display:none">Continuer</button>
+         </div>
+         <div class="solo-bottom"><span>⭐ <b id="soloScore">0</b> points</span><span>🔥 Série : <b
+                  id="soloStreak">0</b></span></div>
+      </section>
+      <section class="screen" id="game">
+         <div class="backline"><button class="btn soft" id="quit">Quitter</button><span class="kicker"
+               id="roundLabel"></span></div>
+         <div class="panel">
+            <div class="score" id="scores"></div>
+            <div class="kicker" id="turnLabel"></div>
+            <div class="question" id="question"></div>
+            <div class="choice-grid" id="answers"></div>
+            <div id="feedback"></div><button class="btn full" id="next" style="display:none">Question suivante</button>
+         </div>
+      </section>
+   </div>
+   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+   <script>
+      (() => {
+         const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
+         const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
+         document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          const BURGER_QUIZ = [
             { cat: 'KETCHUP', q: "Pourquoi les flamants roses sont-ils roses ?", opts: ["À cause des crevettes qu'ils bouffent en masse", "C'est un maquillage naturel de compétition", "Ils naissent roses, comme les bonbons", "Le stress permanent de la migration"], a: 0 },
             { cat: 'MOUTARDE', q: "Combien de temps un escargot peut-il dormir d'affilée ?", opts: ["Une nuit bien méritée", "Jusqu'à 3 ans : champion du monde de la sieste", "6 mois maximum, comme l'ours", "Il ne dort jamais vraiment"], a: 1 },
@@ -174,7 +718,7 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
             { cat: 'MOUTARDE', q: "Quelle forme les abeilles ont-elles choisie pour leurs alvéoles ?", opts: ["L'hexagone, la plus économique", "Le carré, plus sérieux", "Le cercle, qui fuit", "Le triangle, pour rigoler"], a: 0 }
          ];
          /* SEL OU POIVRE : duels absurdes façon émission — X ou Y ? avec option « Les deux ». */
-        const SEL_PEPPER = [
+         const SEL_PEPPER = [
             { q: "Un homard ou Cristiano Ronaldo ? \n Porte fièrement une queue", opts: ["Un homard", "Cristiano Ronaldo", "Les deux"], a: 0 },
             { q: "Un tapis ou un aigle ? \n Vole à plus de 150 km/h", opts: ["Le tapis", "L'aigle", "Les deux"], a: 1 },
             { q: "Un pingouin ou un manchot ? \n Vit au pôle Sud", opts: ["Le pingouin", "Le manchot", "Les deux"], a: 1 },
@@ -1480,29 +2024,29 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
             return _allBurger = out;
          }
 
-const allQuestions=getAllBurger();
-// Les questions Sel ou poivre sont conservées à part pour pouvoir les intercaler en solo.
-const standardQuestions=allQuestions.filter(q=>Array.isArray(q.opts)&&q.opts.length===4);
-const selPepperQuestions=allQuestions.filter(q=>Array.isArray(q.opts)&&q.opts.length===3);
-const TOPICS=[
- {id:'nature',name:'Animaux & nature',emoji:'🦊',desc:'Le monde animal, les plantes et les phénomènes naturels.',test:/animal|animaux|oiseau|oiseaux|poisson|poissons|requin|baleine|dauphin|pieuvre|escargot|panda|ours|girafe|éléphant|lion|tigre|chat|chien|arbre|plante|fleur|forêt|océan|mer |désert|volcan|climat|nature|insecte|abeille|fourmi|wombat|koala|manchot|pingouin|flamant|autruche|grenouille|serpent|tortue|papillon|sahara|antarctique/i},
- {id:'science',name:'Sciences & corps humain',emoji:'🔬',desc:'Le corps, l’espace, les inventions et les découvertes.',test:/cerveau|cœur|coeur|corps|sang|dent|yeux|œil|oeil|sommeil|muscle|os |cellule|atome|espace|soleil|lune|mars|saturne|planète|galaxie|lumière|son |énergie|gravité|science|scientifique|invention|inventé|inventeur|technologie|électricité|électrique|physique|chimie|mathématique/i},
- {id:'histoire',name:'Histoire, géographie & mythes',emoji:'🏛️',desc:'Les civilisations, les lieux célèbres et les légendes.',test:/histoire|historique|siècle|antiquité|époque|guerre|roi |reine|empereur|napoléon|égypt|rome|romain|grec|myth|zeus|poséidon|pandore|minotaure|prométhée|athén|pays |capitale|continent|ville |tour eiffel|everest|muraille|fleuve|océan pacifique|paris|france|chine|japon|autriche/i},
- {id:'culture',name:'Culture & vie quotidienne',emoji:'🎭',desc:'Cuisine, traditions, objets familiers et culture populaire.',test:/aliment|fromage|miel|carotte|croissant|pain au chocolat|sushi|ketchup|café|chocolat|boisson|cuisine|recette|musique|film|série|sport|football|cristiano|joueur|mode|vêtement|langue|mot |expression|tradition|fête|quotidien|maison|voiture|tapis|facteur|titanic/i},
- {id:'insolite',name:'Étrange & records',emoji:'🤯',desc:'Des faits improbables, des records et des questions pièges.',test:/pourquoi|combien|quel(le)? est|quelle forme|mystère|mystere|record|incroyable|insolite|drôle|drôle|vrai|vraiment|peut-il|peut-elle|plus grand|plus petit|plus long|plus rapide|les deux|ou un |ou une /i}
- ,
- {id:'all',name:'Tout mélangé',emoji:'🎲',desc:'Un mélange des cinq thématiques : impossible de savoir ce qui arrive !'}
-];
-function topicFor(q){
- const text=(q.q||'')+' '+(q.opts||[]).join(' ');
- // Prefer specific knowledge buckets; use the final broad bucket only when no clear match.
- for(const t of TOPICS.slice(0,4))if(t.test.test(text))return t.id;
- return 'insolite';
-}
-const themedQuestions=Object.fromEntries(TOPICS.filter(t=>t.id!=='all').map(t=>[t.id,standardQuestions.filter(q=>topicFor(q)===t.id)]));
-themedQuestions.all=standardQuestions;
-let offeredTopics=[],selectedTopic='insolite';
-const PEER_OPTS = {
+         const allQuestions = getAllBurger();
+         // Les questions Sel ou poivre sont conservées à part pour pouvoir les intercaler en solo.
+         const standardQuestions = allQuestions.filter(q => Array.isArray(q.opts) && q.opts.length === 4);
+         const selPepperQuestions = allQuestions.filter(q => Array.isArray(q.opts) && q.opts.length === 3);
+         const TOPICS = [
+            { id: 'nature', name: 'Animaux & nature', emoji: '🦊', desc: 'Le monde animal, les plantes et les phénomènes naturels.', test: /animal|animaux|oiseau|oiseaux|poisson|poissons|requin|baleine|dauphin|pieuvre|escargot|panda|ours|girafe|éléphant|lion|tigre|chat|chien|arbre|plante|fleur|forêt|océan|mer |désert|volcan|climat|nature|insecte|abeille|fourmi|wombat|koala|manchot|pingouin|flamant|autruche|grenouille|serpent|tortue|papillon|sahara|antarctique/i },
+            { id: 'science', name: 'Sciences & corps humain', emoji: '🔬', desc: 'Le corps, l’espace, les inventions et les découvertes.', test: /cerveau|cœur|coeur|corps|sang|dent|yeux|œil|oeil|sommeil|muscle|os |cellule|atome|espace|soleil|lune|mars|saturne|planète|galaxie|lumière|son |énergie|gravité|science|scientifique|invention|inventé|inventeur|technologie|électricité|électrique|physique|chimie|mathématique/i },
+            { id: 'histoire', name: 'Histoire, géographie & mythes', emoji: '🏛️', desc: 'Les civilisations, les lieux célèbres et les légendes.', test: /histoire|historique|siècle|antiquité|époque|guerre|roi |reine|empereur|napoléon|égypt|rome|romain|grec|myth|zeus|poséidon|pandore|minotaure|prométhée|athén|pays |capitale|continent|ville |tour eiffel|everest|muraille|fleuve|océan pacifique|paris|france|chine|japon|autriche/i },
+            { id: 'culture', name: 'Culture & vie quotidienne', emoji: '🎭', desc: 'Cuisine, traditions, objets familiers et culture populaire.', test: /aliment|fromage|miel|carotte|croissant|pain au chocolat|sushi|ketchup|café|chocolat|boisson|cuisine|recette|musique|film|série|sport|football|cristiano|joueur|mode|vêtement|langue|mot |expression|tradition|fête|quotidien|maison|voiture|tapis|facteur|titanic/i },
+            { id: 'insolite', name: 'Étrange & records', emoji: '🤯', desc: 'Des faits improbables, des records et des questions pièges.', test: /pourquoi|combien|quel(le)? est|quelle forme|mystère|mystere|record|incroyable|insolite|drôle|drôle|vrai|vraiment|peut-il|peut-elle|plus grand|plus petit|plus long|plus rapide|les deux|ou un |ou une /i }
+            ,
+            { id: 'all', name: 'Tout mélangé', emoji: '🎲', desc: 'Un mélange des cinq thématiques : impossible de savoir ce qui arrive !' }
+         ];
+         function topicFor(q) {
+            const text = (q.q || '') + ' ' + (q.opts || []).join(' ');
+            // Prefer specific knowledge buckets; use the final broad bucket only when no clear match.
+            for (const t of TOPICS.slice(0, 4)) if (t.test.test(text)) return t.id;
+            return 'insolite';
+         }
+         const themedQuestions = Object.fromEntries(TOPICS.filter(t => t.id !== 'all').map(t => [t.id, standardQuestions.filter(q => topicFor(q) === t.id)]));
+         themedQuestions.all = standardQuestions;
+         let offeredTopics = [], selectedTopic = 'insolite';
+         const PEER_OPTS = {
             config: {
                iceServers: [
                   { urls: 'stun:stun.l.google.com:19302' },
@@ -1513,330 +2057,333 @@ const PEER_OPTS = {
                ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
             }
          };
-         let players=[],turn=0,round=1,deck=[],solo=false,locked=false,peer=null,connections=[],roomRole='local',roomId='',onlineHost=false;
-function renderTopicChoices(target, topics){
- $(target).innerHTML=topics.map(t=>`<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
- $(target).querySelectorAll('button').forEach(b=>b.onclick=()=>{
-   selectedTopic=b.dataset.topic;
-   $(target).querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));
-   const label=TOPICS.find(t=>t.id===selectedTopic);
-   $('soloThemeChosen') && ($('soloThemeChosen').textContent=label.name);
-   $('themeChosen') && ($('themeChosen').textContent=label.name);
-   $('startSoloGame') && ($('startSoloGame').disabled=false);
-   if($('playMode').value==='online'){
-     $('createOnline').disabled=false;
-     $('startLocal').disabled=true;
-   }else{
-     $('startLocal').disabled=false;
-     $('createOnline').disabled=true;
-   }
- });
-}
-function randomTopicOffer(){
- // Les duels proposent les mêmes six thèmes que le mode solo, en grille 2 × 3.
- offeredTopics=[...TOPICS];
- renderTopicChoices('themeChoices',offeredTopics);
-}
-function showSoloTopics(){
- renderTopicChoices('soloThemeChoices',TOPICS);
-}
-function buildDeck(size=20,topic=selectedTopic){
- const pool=themedQuestions[topic]||standardQuestions;
- return shuffle([...pool]).slice(0,Math.min(size,pool.length));
-}
-function buildSoloDeck(size=15,topic=selectedTopic){
- const themed=shuffle([...(themedQuestions[topic]||standardQuestions)]);
- const selPepper=shuffle([...selPepperQuestions]);
- const deck=[];
- let normalIndex=0, pepperIndex=0;
- // Une question « Sel ou poivre » toutes les deux questions, en alternance avec le thème choisi.
- while(deck.length<size && (normalIndex<themed.length || pepperIndex<selPepper.length)){
-   if(deck.length%2===1 && pepperIndex<selPepper.length){
-     deck.push(selPepper[pepperIndex++]);
-   } else if(normalIndex<themed.length){
-     deck.push(themed[normalIndex++]);
-   } else if(pepperIndex<selPepper.length){
-     deck.push(selPepper[pepperIndex++]);
-   }
- }
- return deck.slice(0,size);
-}
-function drawNames(){
- const online=$('playMode').value==='online';
- const names=$('names'), onlineWrap=$('onlineNameWrap');
- names.style.setProperty('display',online?'none':'grid','important');
- names.setAttribute('aria-hidden',online?'true':'false');
- onlineWrap.style.display=online?'block':'none';
- $('teamNameWrap').style.display=(!online && $('teamMode').value==='teams')?'block':'none';
- $('startLocal').style.display=online?'none':'block';
- $('createOnline').style.display=online?'block':'none';
- $('joinRoomWrap').style.display=online?'block':'none';
- $('onlineRoster').style.display='none';
- $('hostStart').style.display='none';
- const ready=!!selectedTopic;
- $('startLocal').disabled=online || !ready;
- $('createOnline').disabled=!online || !ready;
- if(online){
-   names.innerHTML='';
- }else{
-   const n=Number($('playerCount').value);
-   names.innerHTML=Array.from({length:n},(_,i)=>`<label class="small">Joueur ${i+1}<input class="field pname" maxlength="18" value="${i===0?'Joueur 1':`Joueur ${i+1}`}" placeholder="Nom du joueur ${i+1}"></label>`).join('');
- }
-}
-$('playerCount').onchange=drawNames;
-$('teamMode').onchange=drawNames;
-$('playMode').addEventListener('change',drawNames);
-drawNames();
-$('soloBtn').onclick=()=>{solo=true;$('playerCount').value='1';drawNames();show('soloSetup');$('soloThemeChosen').textContent='Aucune';$('startSoloGame').disabled=true;showSoloTopics()};
-$('multiBtn').onclick=()=>{
- solo=false;selectedTopic=null;
- $('playerCount').value='2';
- $('themeChosen').textContent='Aucune';
- show('setup');randomTopicOffer();drawNames();
-};
-function setupPlayers(){
- if($('playMode').value==='online'){
-  const name=$('onlinePlayerName').value.trim();
-  players=[{name:name||'Hôte',score:0,team:0}];
- }else{
-  const names=[...document.querySelectorAll('.pname')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);
-  players=names.map((name,i)=>({name,score:0,team:$('teamMode').value==='teams'?i%2:i}));
- }
-}
-function refreshOnlineRoster(){
- $('onlineRoster').style.display='block';
- $('onlineRoster').textContent='Salon prêt — '+players.length+' joueur(s) : '+players.map(p=>p.name).join(', ');
-}
-function startGame(){
- setupPlayers();deck=buildDeck(20,selectedTopic);turn=0;round=1;locked=false;show('game');render();
-}
-let soloRound=1,soloScore=0,soloStreak=0,soloLocked=false,soloDeck=[];
-function startSolo(){
- solo=true;players=[{name:'Moi',score:0,team:0}];soloDeck=buildSoloDeck(15,selectedTopic);soloRound=1;soloScore=0;soloStreak=0;soloLocked=false;
- const topic=TOPICS.find(t=>t.id===selectedTopic);$('soloThemeLabel').textContent=topic?`${topic.emoji} ${topic.name}`:'Quiz';
- show('soloGame');renderSolo();
-}
-function renderSolo(){
- const q=soloDeck[soloRound-1];if(!q){finishSolo();return}
- $('soloRoundLabel').textContent=`Question ${soloRound} / ${soloDeck.length}`;$('soloCount').textContent=String(soloRound).padStart(2,'0');
- $('soloProgressFill').style.width=((soloRound-1)/soloDeck.length*100)+'%';$('soloQuestion').textContent=q.q;
- $('soloAnswers').innerHTML=q.opts.map((a,i)=>`<button class="solo-answer" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${a}</button>`).join('');
- $('soloFeedback').innerHTML='';$('soloNext').style.display='none';$('soloScore').textContent=soloScore;$('soloStreak').textContent=soloStreak;soloLocked=false;
- $('soloAnswers').querySelectorAll('button').forEach(b=>b.onclick=()=>answerSolo(Number(b.dataset.i)));
-}
-function answerSolo(i){
- if(soloLocked)return;soloLocked=true;const q=soloDeck[soloRound-1],ok=i===q.a;
- if(ok){soloScore+=100;soloStreak++}else soloStreak=0;
- $('soloAnswers').querySelectorAll('button').forEach(b=>{b.disabled=true;const n=Number(b.dataset.i);if(n===q.a)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});
- $('soloFeedback').className='solo-feedback '+(ok?'good':'bad');
- $('soloFeedback').innerHTML=ok?`<b>Bien joué !</b> +100 points${soloStreak>1?` · Série de ${soloStreak} !`:''}`:`<b>Pas tout à fait.</b><br>La bonne réponse était : <strong>${q.opts[q.a]}</strong>`;
- $('soloScore').textContent=soloScore;$('soloStreak').textContent=soloStreak;$('soloNext').style.display='block';
- $('soloNext').textContent=soloRound===soloDeck.length?'Voir mon résultat':'Question suivante';
-}
-function finishSolo(){
- $('soloProgressFill').style.width='100%';$('soloQuestion').textContent='Bravo, défi terminé !';
- $('soloAnswers').innerHTML='';$('soloFeedback').className='solo-feedback good';
- $('soloFeedback').innerHTML=`Tu as obtenu <strong>${soloScore} points</strong> sur ${soloDeck.length*100}.<br>Thématique : ${TOPICS.find(t=>t.id===selectedTopic).name}.`;
- $('soloNext').textContent='Rejouer';$('soloNext').style.display='block';$('soloNext').onclick=()=>{showSoloTopics();show('soloSetup');$('startSoloGame').disabled=true;$('soloThemeChosen').textContent='Aucune'};
-}
-$('startSoloGame').onclick=startSolo;
-$('soloNext').onclick=()=>{if(soloRound>=soloDeck.length){finishSolo();return}soloRound++;renderSolo()};
-$('soloQuit').onclick=()=>{show('home')};
-function render(){const p=players[turn%players.length],q=deck[(round-1)%deck.length];$('roundLabel').textContent=`Question ${round} / 20`;$('turnLabel').textContent=solo?'Mode solo':`Au tour de ${p.name} · Passez l’appareil`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('question').textContent=q.q;$('answers').innerHTML=q.opts.map((a,i)=>`<button class="choice" data-i="${i}">${a}</button>`).join('');$('feedback').innerHTML='';$('next').style.display='none';locked=false;document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>answer(Number(b.dataset.i)))}
-function answer(i){if(locked)return;locked=true;const q=deck[(round-1)%deck.length],p=players[turn%players.length],ok=i===q.a;if(ok)p.score+=100;$('answers').querySelectorAll('button').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.style.border='2px solid #159b68'});$('feedback').className='feedback '+(ok?'good':'bad');$('feedback').textContent=ok?'Bonne réponse ! +100 points':`Raté ! Bonne réponse : ${q.opts[q.a]}`;$('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score}</b></span>`).join('');$('next').style.display='block'}
-$('next').onclick=()=>{if(onlineGame){advanceOnlineQuestion();return}if(!onlineGame && onlineHost && $('game').classList.contains('active')){advanceOnlineQuestion();return}round++;if(round>20){const sorted=[...players].sort((a,b)=>b.score-a.score);$('question').textContent='Partie terminée !';$('answers').innerHTML='';$('feedback').className='feedback good';$('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('<br>');$('next').textContent='Rejouer';$('next').onclick=()=>{round=1;players.forEach(p=>p.score=0);deck=buildDeck(20,selectedTopic);$('next').textContent='Question suivante';$('next').onclick=()=>{};render()};return}turn=(turn+1)%players.length;render()};
-$('startLocal').onclick=()=>{if(!selectedTopic){alert('Choisis une thématique.');return}if($('playMode').value==='online'){alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.');return}startGame()};
+         let players = [], turn = 0, round = 1, deck = [], solo = false, locked = false, peer = null, connections = [], roomRole = 'local', roomId = '', onlineHost = false;
+         function renderTopicChoices(target, topics) {
+            $(target).innerHTML = topics.map(t => `<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
+            $(target).querySelectorAll('button').forEach(b => b.onclick = () => {
+               selectedTopic = b.dataset.topic;
+               $(target).querySelectorAll('button').forEach(x => x.classList.toggle('selected', x === b));
+               const label = TOPICS.find(t => t.id === selectedTopic);
+               $('soloThemeChosen') && ($('soloThemeChosen').textContent = label.name);
+               $('themeChosen') && ($('themeChosen').textContent = label.name);
+               $('startSoloGame') && ($('startSoloGame').disabled = false);
+               if ($('playMode').value === 'online') {
+                  $('createOnline').disabled = false;
+                  $('startLocal').disabled = true;
+               } else {
+                  $('startLocal').disabled = false;
+                  $('createOnline').disabled = true;
+               }
+            });
+         }
+         function randomTopicOffer() {
+            // Les duels proposent les mêmes six thèmes que le mode solo, en grille 2 × 3.
+            offeredTopics = [...TOPICS];
+            renderTopicChoices('themeChoices', offeredTopics);
+         }
+         function showSoloTopics() {
+            renderTopicChoices('soloThemeChoices', TOPICS);
+         }
+         function buildDeck(size = 20, topic = selectedTopic) {
+            const pool = themedQuestions[topic] || standardQuestions;
+            return shuffle([...pool]).slice(0, Math.min(size, pool.length));
+         }
+         function buildSoloDeck(size = 15, topic = selectedTopic) {
+            const themed = shuffle([...(themedQuestions[topic] || standardQuestions)]);
+            const selPepper = shuffle([...selPepperQuestions]);
+            const deck = [];
+            let normalIndex = 0, pepperIndex = 0;
+            // Une question « Sel ou poivre » toutes les deux questions, en alternance avec le thème choisi.
+            while (deck.length < size && (normalIndex < themed.length || pepperIndex < selPepper.length)) {
+               if (deck.length % 2 === 1 && pepperIndex < selPepper.length) {
+                  deck.push(selPepper[pepperIndex++]);
+               } else if (normalIndex < themed.length) {
+                  deck.push(themed[normalIndex++]);
+               } else if (pepperIndex < selPepper.length) {
+                  deck.push(selPepper[pepperIndex++]);
+               }
+            }
+            return deck.slice(0, size);
+         }
+         function drawNames() {
+            const online = $('playMode').value === 'online';
+            const names = $('names'), onlineWrap = $('onlineNameWrap');
+            names.style.setProperty('display', online ? 'none' : 'grid', 'important');
+            names.setAttribute('aria-hidden', online ? 'true' : 'false');
+            onlineWrap.style.display = online ? 'block' : 'none';
+            $('teamNameWrap').style.display = (!online && $('teamMode').value === 'teams') ? 'block' : 'none';
+            $('startLocal').style.display = online ? 'none' : 'block';
+            $('createOnline').style.display = online ? 'block' : 'none';
+            $('joinRoomWrap').style.display = online ? 'block' : 'none';
+            $('onlineRoster').style.display = 'none';
+            $('hostStart').style.display = 'none';
+            const ready = !!selectedTopic;
+            $('startLocal').disabled = online || !ready;
+            $('createOnline').disabled = !online || !ready;
+            if (online) {
+               names.innerHTML = '';
+            } else {
+               const n = Number($('playerCount').value);
+               names.innerHTML = Array.from({ length: n }, (_, i) => `<label class="small">Joueur ${i + 1}<input class="field pname" maxlength="18" value="${i === 0 ? 'Joueur 1' : `Joueur ${i + 1}`}" placeholder="Nom du joueur ${i + 1}"></label>`).join('');
+            }
+         }
+         $('playerCount').onchange = drawNames;
+         $('teamMode').onchange = drawNames;
+         $('playMode').addEventListener('change', drawNames);
+         drawNames();
+         $('soloBtn').onclick = () => { solo = true; $('playerCount').value = '1'; drawNames(); show('soloSetup'); $('soloThemeChosen').textContent = 'Aucune'; $('startSoloGame').disabled = true; showSoloTopics() };
+         $('multiBtn').onclick = () => {
+            solo = false; selectedTopic = null;
+            $('playerCount').value = '2';
+            $('themeChosen').textContent = 'Aucune';
+            show('setup'); randomTopicOffer(); drawNames();
+         };
+         function setupPlayers() {
+            if ($('playMode').value === 'online') {
+               const name = $('onlinePlayerName').value.trim();
+               players = [{ name: name || 'Hôte', score: 0, team: 0 }];
+            } else {
+               const names = [...document.querySelectorAll('.pname')].map((x, i) => x.value.trim() || `Joueur ${i + 1}`);
+               players = names.map((name, i) => ({ name, score: 0, team: $('teamMode').value === 'teams' ? i % 2 : i }));
+            }
+         }
+         function refreshOnlineRoster() {
+            $('onlineRoster').style.display = 'block';
+            $('onlineRoster').textContent = 'Salon prêt — ' + players.length + ' joueur(s) : ' + players.map(p => p.name).join(', ');
+         }
+         function startGame() {
+            setupPlayers(); deck = buildDeck(20, selectedTopic); turn = 0; round = 1; locked = false; show('game'); render();
+         }
+         let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
+         function startSolo() {
+            solo = true; players = [{ name: 'Moi', score: 0, team: 0 }]; soloDeck = buildSoloDeck(15, selectedTopic); soloRound = 1; soloScore = 0; soloStreak = 0; soloLocked = false;
+            const topic = TOPICS.find(t => t.id === selectedTopic); $('soloThemeLabel').textContent = topic ? `${topic.emoji} ${topic.name}` : 'Quiz';
+            show('soloGame'); renderSolo();
+         }
+         function renderSolo() {
+            const q = soloDeck[soloRound - 1]; if (!q) { finishSolo(); return }
+            $('soloRoundLabel').textContent = `Question ${soloRound} / ${soloDeck.length}`; $('soloCount').textContent = String(soloRound).padStart(2, '0');
+            $('soloProgressFill').style.width = ((soloRound - 1) / soloDeck.length * 100) + '%'; $('soloQuestion').textContent = q.q;
+            $('soloAnswers').innerHTML = q.opts.map((a, i) => `<button class="solo-answer" data-i="${i}"><span>${String.fromCharCode(65 + i)}</span>${a}</button>`).join('');
+            $('soloFeedback').innerHTML = ''; $('soloNext').style.display = 'none'; $('soloScore').textContent = soloScore; $('soloStreak').textContent = soloStreak; soloLocked = false;
+            $('soloAnswers').querySelectorAll('button').forEach(b => b.onclick = () => answerSolo(Number(b.dataset.i)));
+         }
+         function answerSolo(i) {
+            if (soloLocked) return; soloLocked = true; const q = soloDeck[soloRound - 1], ok = i === q.a;
+            if (ok) { soloScore += 100; soloStreak++ } else soloStreak = 0;
+            $('soloAnswers').querySelectorAll('button').forEach(b => { b.disabled = true; const n = Number(b.dataset.i); if (n === q.a) b.classList.add('correct'); else if (n === i) b.classList.add('wrong') });
+            $('soloFeedback').className = 'solo-feedback ' + (ok ? 'good' : 'bad');
+            $('soloFeedback').innerHTML = ok ? `<b>Bien joué !</b> +100 points${soloStreak > 1 ? ` · Série de ${soloStreak} !` : ''}` : `<b>Pas tout à fait.</b><br>La bonne réponse était : <strong>${q.opts[q.a]}</strong>`;
+            $('soloScore').textContent = soloScore; $('soloStreak').textContent = soloStreak; $('soloNext').style.display = 'block';
+            $('soloNext').textContent = soloRound === soloDeck.length ? 'Voir mon résultat' : 'Question suivante';
+         }
+         function finishSolo() {
+            $('soloProgressFill').style.width = '100%'; $('soloQuestion').textContent = 'Bravo, défi terminé !';
+            $('soloAnswers').innerHTML = ''; $('soloFeedback').className = 'solo-feedback good';
+            $('soloFeedback').innerHTML = `Tu as obtenu <strong>${soloScore} points</strong> sur ${soloDeck.length * 100}.<br>Thématique : ${TOPICS.find(t => t.id === selectedTopic).name}.`;
+            $('soloNext').textContent = 'Rejouer'; $('soloNext').style.display = 'block'; $('soloNext').onclick = () => { showSoloTopics(); show('soloSetup'); $('startSoloGame').disabled = true; $('soloThemeChosen').textContent = 'Aucune' };
+         }
+         $('startSoloGame').onclick = startSolo;
+         $('soloNext').onclick = () => { if (soloRound >= soloDeck.length) { finishSolo(); return } soloRound++; renderSolo() };
+         $('soloQuit').onclick = () => { show('home') };
+         function render() { const p = players[turn % players.length], q = deck[(round - 1) % deck.length]; $('roundLabel').textContent = `Question ${round} / 20`; $('turnLabel').textContent = solo ? 'Mode solo' : `Au tour de ${p.name} · Passez l’appareil`; $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score}</b></span>`).join(''); $('question').textContent = q.q; $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join(''); $('feedback').innerHTML = ''; $('next').style.display = 'none'; locked = false; document.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(Number(b.dataset.i))) }
+         function answer(i) { if (locked) return; locked = true; const q = deck[(round - 1) % deck.length], p = players[turn % players.length], ok = i === q.a; if (ok) p.score += 100; $('answers').querySelectorAll('button').forEach(b => { b.disabled = true; if (Number(b.dataset.i) === q.a) b.style.border = '2px solid #159b68' }); $('feedback').className = 'feedback ' + (ok ? 'good' : 'bad'); $('feedback').textContent = ok ? 'Bonne réponse ! +100 points' : `Raté ! Bonne réponse : ${q.opts[q.a]}`; $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score}</b></span>`).join(''); $('next').style.display = 'block' }
+         $('next').onclick = () => { if (onlineGame) { advanceOnlineQuestion(); return } if (!onlineGame && onlineHost && $('game').classList.contains('active')) { advanceOnlineQuestion(); return } round++; if (round > 20) { const sorted = [...players].sort((a, b) => b.score - a.score); $('question').textContent = 'Partie terminée !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good'; $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.name} — ${p.score} points`).join('<br>'); $('next').textContent = 'Rejouer'; $('next').onclick = () => { round = 1; players.forEach(p => p.score = 0); deck = buildDeck(20, selectedTopic); $('next').textContent = 'Question suivante'; $('next').onclick = () => { }; render() }; return } turn = (turn + 1) % players.length; render() };
+         $('startLocal').onclick = () => { if (!selectedTopic) { alert('Choisis une thématique.'); return } if ($('playMode').value === 'online') { alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.'); return } startGame() };
 
-// ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
-let onlineGame=false, onlinePlayerId='', onlineAnswers={}, onlineQuestionIndex=0, onlineDeck=[];
-function onlineRosterData(){
- return players.map(p=>({id:p.id,name:p.name,score:p.score||0}));
-}
-function broadcastOnline(message){
- connections.forEach(c=>{if(c && c.open){try{c.send(message)}catch(e){}}});
-}
-function updateOnlineRosterUI(prefix='Salon prêt'){
- $('onlineRoster').style.display='block';
- $('onlineRoster').textContent=prefix+' — '+players.length+' joueur(s) : '+players.map(p=>p.name).join(', ');
-}
-function enterOnlineGame(){
- onlineGame=true;solo=false;round=1;turn=0;locked=false;
- show('game');renderOnlineQuestion();
-}
-function renderOnlineQuestion(){
- const q=onlineDeck[onlineQuestionIndex];
- if(!q){finishOnlineGame();return}
- round=onlineQuestionIndex+1;locked=false;onlineAnswers={};
- $('roundLabel').textContent=`Question ${round} / ${onlineDeck.length}`;
- $('turnLabel').textContent=`Partie en ligne · ${players.find(p=>p.id===onlinePlayerId)?.name||'Joueur'}`;
- $('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score||0}</b></span>`).join('');
- $('question').textContent=q.q;
- $('answers').innerHTML=q.opts.map((a,i)=>`<button class="choice" data-i="${i}">${a}</button>`).join('');
- $('feedback').className='feedback';$('feedback').textContent='';
- $('next').style.display='none';$('next').textContent='Question suivante';
- $('answers').querySelectorAll('button').forEach(b=>b.onclick=()=>submitOnlineAnswer(Number(b.dataset.i)));
-}
-function submitOnlineAnswer(i){
- if(locked || !onlineGame)return;
- locked=true;
- $('answers').querySelectorAll('button').forEach(b=>b.disabled=true);
- if(onlineHost){
-   onlineAnswers[onlinePlayerId]=i;
-   maybeFinishOnlineQuestion();
- }else{
-   const c=connections[0];
-   if(c && c.open)c.send({type:'answer',index:onlineQuestionIndex,choice:i});
-   $('feedback').className='feedback';$('feedback').textContent='Réponse envoyée. En attente des autres joueurs…';
- }
-}
-function maybeFinishOnlineQuestion(){
- if(!onlineHost)return;
- if(players.some(p=>!Object.prototype.hasOwnProperty.call(onlineAnswers,p.id)))return;
- const q=onlineDeck[onlineQuestionIndex];
- players.forEach(p=>{if(onlineAnswers[p.id]===q.a)p.score=(p.score||0)+100});
- const result={type:'questionResult',index:onlineQuestionIndex,answers:onlineAnswers,correct:q.a,players:onlineRosterData()};
- broadcastOnline(result);showOnlineResult(result);
-}
-function showOnlineResult(m){
- const q=onlineDeck[onlineQuestionIndex];if(!q)return;
- players=(m.players||players).map(p=>({...p,team:0}));
- const myChoice=m.answers?.[onlinePlayerId];
- const correct=myChoice===m.correct;
- $('answers').querySelectorAll('button').forEach((b,i)=>{
-   b.disabled=true;
-   if(i===m.correct)b.style.border='2px solid #159b68';
-   else if(i===myChoice)b.style.border='2px solid #d95368';
- });
- $('scores').innerHTML=players.map(p=>`<span>${p.name} : <b>${p.score||0}</b></span>`).join('');
- $('feedback').className='feedback '+(correct?'good':'bad');
- $('feedback').textContent=(myChoice===undefined?'Tu n’as pas répondu.':correct?'Bonne réponse ! +100 points':'Raté !')+' Bonne réponse : '+q.opts[m.correct];
- if(onlineHost){$('next').style.display='block';$('next').textContent=onlineQuestionIndex===onlineDeck.length-1?'Voir les résultats':'Question suivante';}
- else{$('next').style.display='none';$('turnLabel').textContent='En attente de la question suivante…'}
-}
-function advanceOnlineQuestion(){
- if(!onlineHost || !onlineGame)return;
- onlineQuestionIndex++;
- if(onlineQuestionIndex>=onlineDeck.length){finishOnlineGame();return}
- const msg={type:'nextQuestion',index:onlineQuestionIndex};
- broadcastOnline(msg);renderOnlineQuestion();
-}
-function finishOnlineGame(){
- onlineGame=false;
- const sorted=[...players].sort((a,b)=>(b.score||0)-(a.score||0));
- $('roundLabel').textContent='Partie terminée';
- $('turnLabel').textContent='Classement final';
- $('question').textContent='Bravo à tous !';
- $('answers').innerHTML='';
- $('feedback').className='feedback good';
- $('feedback').innerHTML=sorted.map((p,i)=>`${i+1}. ${p.name} — ${p.score||0} points`).join('<br>');
- $('next').style.display='block';$('next').textContent='Retour au menu';
- if(onlineHost)broadcastOnline({type:'gameFinished',players:onlineRosterData()});
- $('next').onclick=()=>{if(peer){try{peer.destroy()}catch(e){}}peer=null;connections=[];onlineHost=false;onlineGame=false;show('home')};
-}
-function handleOnlineData(c,m){
- if(!m || typeof m!=='object')return;
- if(m.type==='join' && onlineHost && !onlineGame){
-   if(players.length>=6){c.send({type:'rejected',reason:'Ce salon est complet (6 joueurs maximum).'});return}
-   const name=String(m.name||'Joueur').trim().slice(0,18)||'Joueur';
-   if(!players.some(p=>p.id===c.peer)){
-     players.push({id:c.peer,name,score:0,team:0});
-     connections.push(c);
-   }
-   const roster=onlineRosterData();
-   c.send({type:'joined',players:roster,hostId:onlinePlayerId});
-   broadcastOnline({type:'roster',players:roster});
-   updateOnlineRosterUI();
-   $('netStatus').textContent='Un joueur a rejoint le salon.';
-   return;
- }
- if(m.type==='answer' && onlineHost && onlineGame && m.index===onlineQuestionIndex){
-   if(players.some(p=>p.id===c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers,c.peer)){
-     onlineAnswers[c.peer]=Number(m.choice);maybeFinishOnlineQuestion();
-   }
-   return;
- }
- if(m.type==='rejected'){
-   $('netStatus').textContent=m.reason||'Impossible de rejoindre ce salon.';
-   return;
- }
- if(m.type==='joined' && !onlineHost){
-   roomRole='guest';onlineGame=false;onlinePlayerId=peer.id;
-   players=(m.players||[]).map(p=>({...p,team:0}));
-   $('netStatus').textContent='Tu as bien rejoint le salon.';
-   $('joinRoomWrap').style.display='none';$('createOnline').style.display='none';$('startLocal').style.display='none';
-   updateOnlineRosterUI('En attente du lancement par l’hôte');
-   return;
- }
- if(m.type==='roster' && !onlineHost){
-   players=(m.players||[]).map(p=>({...p,team:0}));
-   updateOnlineRosterUI('En attente du lancement par l’hôte');return;
- }
- if(m.type==='gameStart' && !onlineHost){
-   players=(m.players||[]).map(p=>({...p,team:0}));
-   onlineDeck=m.deck||[];onlineQuestionIndex=0;onlineGame=true;
-   $('netStatus').textContent='La partie commence !';enterOnlineGame();return;
- }
- if(m.type==='questionResult' && !onlineHost && m.index===onlineQuestionIndex){
-   showOnlineResult(m);return;
- }
- if(m.type==='nextQuestion' && !onlineHost){
-   onlineQuestionIndex=m.index;renderOnlineQuestion();return;
- }
- if(m.type==='gameFinished' && !onlineHost){
-   players=(m.players||players).map(p=>({...p,team:0}));finishOnlineGame();return;
- }
-}
-$('createOnline').onclick=()=>{
- if(!selectedTopic){$('netStatus').textContent='Choisis une thématique avant de créer le salon.';return}
- if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible. Recharge la page avec Internet.';return}
- const name=$('onlinePlayerName').value.trim();
- if(!name){$('netStatus').textContent='Choisis ton pseudo avant de créer le salon.';$('onlinePlayerName').focus();return}
- if(peer){try{peer.destroy()}catch(e){}}
- players=[{id:'',name,score:0,team:0}];connections=[];onlineHost=true;onlineGame=false;roomRole='host';
- $('netStatus').textContent='Création du salon…';$('createOnline').style.display='none';$('joinRoomWrap').style.display='none';$('startLocal').style.display='none';
- $('onlineRoster').style.display='block';$('onlineRoster').textContent='Création du salon…';
- peer=new Peer('drolequizz-'+Math.random().toString(36).slice(2,8),PEER_OPTS);
- peer.on('open',id=>{
-   onlinePlayerId=id;players[0].id=id;roomId=id.replace('drolequizz-','');
-   $('netStatus').textContent='Salon créé. Partage ce code : '+roomId.toUpperCase();
-   updateOnlineRosterUI();$('hostStart').style.display='block';
- });
- peer.on('connection',c=>{
-   c.on('data',m=>handleOnlineData(c,m));
-   c.on('close',()=>{
-     connections=connections.filter(x=>x!==c);
-     const oldCount=players.length;players=players.filter(p=>p.id!==c.peer);
-     if(players.length!==oldCount){updateOnlineRosterUI('Un joueur a quitté le salon');broadcastOnline({type:'roster',players:onlineRosterData()})}
-   });
-   c.on('error',()=>{$('netStatus').textContent='Une connexion avec un joueur a échoué.'});
- });
- peer.on('error',err=>{$('netStatus').textContent='Erreur de salon : '+(err.type||'connexion')});
-};
-$('joinOnline').onclick=()=>{
- const code=$('roomCode').value.trim().toLowerCase(),name=$('onlinePlayerName').value.trim();
- if(!window.Peer){$('netStatus').textContent='Connexion réseau indisponible. Recharge la page avec Internet.';return}
- if(!name){$('netStatus').textContent='Choisis ton pseudo avant de rejoindre le salon.';$('onlinePlayerName').focus();return}
- if(!code){$('netStatus').textContent='Saisis le code du salon.';return}
- if(peer){try{peer.destroy()}catch(e){}}
- $('netStatus').textContent='Connexion au salon…';
- peer=new Peer(undefined,PEER_OPTS);
- let acknowledged=false;
- const timeout=setTimeout(()=>{if(!acknowledged)$('netStatus').textContent='Aucune réponse du salon. Vérifie le code ou demande à l’hôte de recréer le salon.'},12000);
- peer.on('open',()=>{
-   onlinePlayerId=peer.id;
-   const c=peer.connect('drolequizz-'+code,{reliable:true});connections=[c];
-   c.on('open',()=>c.send({type:'join',name}));
-   c.on('data',m=>{handleOnlineData(c,m);if(m.type==='joined'){acknowledged=true;clearTimeout(timeout)}});
-   c.on('error',()=>{clearTimeout(timeout);$('netStatus').textContent='Impossible de rejoindre ce salon. Vérifie le code.'});
- });
- peer.on('error',err=>{clearTimeout(timeout);$('netStatus').textContent='Connexion impossible : '+(err.type||'erreur réseau')});
-};
-$('hostStart').onclick=()=>{
- if(!onlineHost || players.length<2){$('netStatus').textContent='Il faut au moins 2 joueurs dans le salon pour démarrer.';return}
- onlineDeck=buildDeck(20,selectedTopic);onlineQuestionIndex=0;players.forEach(p=>p.score=0);
- const msg={type:'gameStart',deck:onlineDeck,players:onlineRosterData()};
- broadcastOnline(msg);$('netStatus').textContent='La partie est lancée !';enterOnlineGame();
-};
-$('quit').onclick=()=>{if(peer)peer.destroy();peer=null;connections=[];players=[];onlineHost=false;onlineGame=false;roomRole='local';show('home')};
-})();
-</script></body></html>
+         // ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
+         let onlineGame = false, onlinePlayerId = '', onlineAnswers = {}, onlineQuestionIndex = 0, onlineDeck = [];
+         function onlineRosterData() {
+            return players.map(p => ({ id: p.id, name: p.name, score: p.score || 0 }));
+         }
+         function broadcastOnline(message) {
+            connections.forEach(c => { if (c && c.open) { try { c.send(message) } catch (e) { } } });
+         }
+         function updateOnlineRosterUI(prefix = 'Salon prêt') {
+            $('onlineRoster').style.display = 'block';
+            $('onlineRoster').textContent = prefix + ' — ' + players.length + ' joueur(s) : ' + players.map(p => p.name).join(', ');
+         }
+         function enterOnlineGame() {
+            onlineGame = true; solo = false; round = 1; turn = 0; locked = false;
+            show('game'); renderOnlineQuestion();
+         }
+         function renderOnlineQuestion() {
+            const q = onlineDeck[onlineQuestionIndex];
+            if (!q) { finishOnlineGame(); return }
+            round = onlineQuestionIndex + 1; locked = false; onlineAnswers = {};
+            $('roundLabel').textContent = `Question ${round} / ${onlineDeck.length}`;
+            $('turnLabel').textContent = `Partie en ligne · ${players.find(p => p.id === onlinePlayerId)?.name || 'Joueur'}`;
+            $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            $('question').textContent = q.q;
+            $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join('');
+            $('feedback').className = 'feedback'; $('feedback').textContent = '';
+            $('next').style.display = 'none'; $('next').textContent = 'Question suivante';
+            $('answers').querySelectorAll('button').forEach(b => b.onclick = () => submitOnlineAnswer(Number(b.dataset.i)));
+         }
+         function submitOnlineAnswer(i) {
+            if (locked || !onlineGame) return;
+            locked = true;
+            $('answers').querySelectorAll('button').forEach(b => b.disabled = true);
+            if (onlineHost) {
+               onlineAnswers[onlinePlayerId] = i;
+               maybeFinishOnlineQuestion();
+            } else {
+               const c = connections[0];
+               if (c && c.open) c.send({ type: 'answer', index: onlineQuestionIndex, choice: i });
+               $('feedback').className = 'feedback'; $('feedback').textContent = 'Réponse envoyée. En attente des autres joueurs…';
+            }
+         }
+         function maybeFinishOnlineQuestion() {
+            if (!onlineHost) return;
+            if (players.some(p => !Object.prototype.hasOwnProperty.call(onlineAnswers, p.id))) return;
+            const q = onlineDeck[onlineQuestionIndex];
+            players.forEach(p => { if (onlineAnswers[p.id] === q.a) p.score = (p.score || 0) + 100 });
+            const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, correct: q.a, players: onlineRosterData() };
+            broadcastOnline(result); showOnlineResult(result);
+         }
+         function showOnlineResult(m) {
+            const q = onlineDeck[onlineQuestionIndex]; if (!q) return;
+            players = (m.players || players).map(p => ({ ...p, team: 0 }));
+            const myChoice = m.answers?.[onlinePlayerId];
+            const correct = myChoice === m.correct;
+            $('answers').querySelectorAll('button').forEach((b, i) => {
+               b.disabled = true;
+               if (i === m.correct) b.style.border = '2px solid #159b68';
+               else if (i === myChoice) b.style.border = '2px solid #d95368';
+            });
+            $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            $('feedback').className = 'feedback ' + (correct ? 'good' : 'bad');
+            $('feedback').textContent = (myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? 'Bonne réponse ! +100 points' : 'Raté !') + ' Bonne réponse : ' + q.opts[m.correct];
+            if (onlineHost) { $('next').style.display = 'block'; $('next').textContent = onlineQuestionIndex === onlineDeck.length - 1 ? 'Voir les résultats' : 'Question suivante'; }
+            else { $('next').style.display = 'none'; $('turnLabel').textContent = 'En attente de la question suivante…' }
+         }
+         function advanceOnlineQuestion() {
+            if (!onlineHost || !onlineGame) return;
+            onlineQuestionIndex++;
+            if (onlineQuestionIndex >= onlineDeck.length) { finishOnlineGame(); return }
+            const msg = { type: 'nextQuestion', index: onlineQuestionIndex };
+            broadcastOnline(msg); renderOnlineQuestion();
+         }
+         function finishOnlineGame() {
+            onlineGame = false;
+            const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
+            $('roundLabel').textContent = 'Partie terminée';
+            $('turnLabel').textContent = 'Classement final';
+            $('question').textContent = 'Bravo à tous !';
+            $('answers').innerHTML = '';
+            $('feedback').className = 'feedback good';
+            $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.name} — ${p.score || 0} points`).join('<br>');
+            $('next').style.display = 'block'; $('next').textContent = 'Retour au menu';
+            if (onlineHost) broadcastOnline({ type: 'gameFinished', players: onlineRosterData() });
+            $('next').onclick = () => { if (peer) { try { peer.destroy() } catch (e) { } } peer = null; connections = []; onlineHost = false; onlineGame = false; show('home') };
+         }
+         function handleOnlineData(c, m) {
+            if (!m || typeof m !== 'object') return;
+            if (m.type === 'join' && onlineHost && !onlineGame) {
+               if (players.length >= 6) { c.send({ type: 'rejected', reason: 'Ce salon est complet (6 joueurs maximum).' }); return }
+               const name = String(m.name || 'Joueur').trim().slice(0, 18) || 'Joueur';
+               if (!players.some(p => p.id === c.peer)) {
+                  players.push({ id: c.peer, name, score: 0, team: 0 });
+                  connections.push(c);
+               }
+               const roster = onlineRosterData();
+               c.send({ type: 'joined', players: roster, hostId: onlinePlayerId });
+               broadcastOnline({ type: 'roster', players: roster });
+               updateOnlineRosterUI();
+               $('netStatus').textContent = 'Un joueur a rejoint le salon.';
+               return;
+            }
+            if (m.type === 'answer' && onlineHost && onlineGame && m.index === onlineQuestionIndex) {
+               if (players.some(p => p.id === c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers, c.peer)) {
+                  onlineAnswers[c.peer] = Number(m.choice); maybeFinishOnlineQuestion();
+               }
+               return;
+            }
+            if (m.type === 'rejected') {
+               $('netStatus').textContent = m.reason || 'Impossible de rejoindre ce salon.';
+               return;
+            }
+            if (m.type === 'joined' && !onlineHost) {
+               roomRole = 'guest'; onlineGame = false; onlinePlayerId = peer.id;
+               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               $('netStatus').textContent = 'Tu as bien rejoint le salon.';
+               $('joinRoomWrap').style.display = 'none'; $('createOnline').style.display = 'none'; $('startLocal').style.display = 'none';
+               updateOnlineRosterUI('En attente du lancement par l’hôte');
+               return;
+            }
+            if (m.type === 'roster' && !onlineHost) {
+               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               updateOnlineRosterUI('En attente du lancement par l’hôte'); return;
+            }
+            if (m.type === 'gameStart' && !onlineHost) {
+               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               onlineDeck = m.deck || []; onlineQuestionIndex = 0; onlineGame = true;
+               $('netStatus').textContent = 'La partie commence !'; enterOnlineGame(); return;
+            }
+            if (m.type === 'questionResult' && !onlineHost && m.index === onlineQuestionIndex) {
+               showOnlineResult(m); return;
+            }
+            if (m.type === 'nextQuestion' && !onlineHost) {
+               onlineQuestionIndex = m.index; renderOnlineQuestion(); return;
+            }
+            if (m.type === 'gameFinished' && !onlineHost) {
+               players = (m.players || players).map(p => ({ ...p, team: 0 })); finishOnlineGame(); return;
+            }
+         }
+         $('createOnline').onclick = () => {
+            if (!selectedTopic) { $('netStatus').textContent = 'Choisis une thématique avant de créer le salon.'; return }
+            if (!window.Peer) { $('netStatus').textContent = 'Connexion réseau indisponible. Recharge la page avec Internet.'; return }
+            const name = $('onlinePlayerName').value.trim();
+            if (!name) { $('netStatus').textContent = 'Choisis ton pseudo avant de créer le salon.'; $('onlinePlayerName').focus(); return }
+            if (peer) { try { peer.destroy() } catch (e) { } }
+            players = [{ id: '', name, score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
+            $('netStatus').textContent = 'Création du salon…'; $('createOnline').style.display = 'none'; $('joinRoomWrap').style.display = 'none'; $('startLocal').style.display = 'none';
+            $('onlineRoster').style.display = 'block'; $('onlineRoster').textContent = 'Création du salon…';
+            peer = new Peer('drolequizz-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
+            peer.on('open', id => {
+               onlinePlayerId = id; players[0].id = id; roomId = id.replace('drolequizz-', '');
+               $('netStatus').textContent = 'Salon créé. Partage ce code : ' + roomId.toUpperCase();
+               updateOnlineRosterUI(); $('hostStart').style.display = 'block';
+            });
+            peer.on('connection', c => {
+               c.on('data', m => handleOnlineData(c, m));
+               c.on('close', () => {
+                  connections = connections.filter(x => x !== c);
+                  const oldCount = players.length; players = players.filter(p => p.id !== c.peer);
+                  if (players.length !== oldCount) { updateOnlineRosterUI('Un joueur a quitté le salon'); broadcastOnline({ type: 'roster', players: onlineRosterData() }) }
+               });
+               c.on('error', () => { $('netStatus').textContent = 'Une connexion avec un joueur a échoué.' });
+            });
+            peer.on('error', err => { $('netStatus').textContent = 'Erreur de salon : ' + (err.type || 'connexion') });
+         };
+         $('joinOnline').onclick = () => {
+            const code = $('roomCode').value.trim().toLowerCase(), name = $('onlinePlayerName').value.trim();
+            if (!window.Peer) { $('netStatus').textContent = 'Connexion réseau indisponible. Recharge la page avec Internet.'; return }
+            if (!name) { $('netStatus').textContent = 'Choisis ton pseudo avant de rejoindre le salon.'; $('onlinePlayerName').focus(); return }
+            if (!code) { $('netStatus').textContent = 'Saisis le code du salon.'; return }
+            if (peer) { try { peer.destroy() } catch (e) { } }
+            $('netStatus').textContent = 'Connexion au salon…';
+            peer = new Peer(undefined, PEER_OPTS);
+            let acknowledged = false;
+            const timeout = setTimeout(() => { if (!acknowledged) $('netStatus').textContent = 'Aucune réponse du salon. Vérifie le code ou demande à l’hôte de recréer le salon.' }, 12000);
+            peer.on('open', () => {
+               onlinePlayerId = peer.id;
+               const c = peer.connect('drolequizz-' + code, { reliable: true }); connections = [c];
+               c.on('open', () => c.send({ type: 'join', name }));
+               c.on('data', m => { handleOnlineData(c, m); if (m.type === 'joined') { acknowledged = true; clearTimeout(timeout) } });
+               c.on('error', () => { clearTimeout(timeout); $('netStatus').textContent = 'Impossible de rejoindre ce salon. Vérifie le code.' });
+            });
+            peer.on('error', err => { clearTimeout(timeout); $('netStatus').textContent = 'Connexion impossible : ' + (err.type || 'erreur réseau') });
+         };
+         $('hostStart').onclick = () => {
+            if (!onlineHost || players.length < 2) { $('netStatus').textContent = 'Il faut au moins 2 joueurs dans le salon pour démarrer.'; return }
+            onlineDeck = buildDeck(20, selectedTopic); onlineQuestionIndex = 0; players.forEach(p => p.score = 0);
+            const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData() };
+            broadcastOnline(msg); $('netStatus').textContent = 'La partie est lancée !'; enterOnlineGame();
+         };
+         $('quit').onclick = () => { if (peer) peer.destroy(); peer = null; connections = []; players = []; onlineHost = false; onlineGame = false; roomRole = 'local'; show('home') };
+      })();
+   </script>
+</body>
+
+</html>

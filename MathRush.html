@@ -1254,9 +1254,9 @@
       .profile-hero{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,#e8f5ff,#fce8f5)}
       .profile-avatar-large{width:100px;height:100px;flex:0 0 100px;border-radius:28px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 7px 0 #d9e5f3}
       .profile-avatar-large img{width:100%;height:100%;object-fit:cover}
-      .avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0 20px}
-      .avatar-choice{min-height:258px;border:2px solid #e5eaf4;border-radius:17px;background:#fff;padding:6px;box-shadow:0 4px 0 #e5eaf4}
-      .avatar-choice img{display:block;width:242px;height:242px;margin:auto;border-radius:11px;object-fit:cover}
+      .avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,120px),1fr));gap:clamp(8px,2vw,14px);margin:12px 0 20px}
+      .avatar-choice{width:100%;min-width:0;aspect-ratio:1;border:2px solid #e5eaf4;border-radius:17px;background:#fff;padding:6px;box-shadow:0 4px 0 #e5eaf4}
+      .avatar-choice img{display:block;width:100%;height:100%;border-radius:11px;object-fit:cover}
       .avatar-choice.active{border-color:#4aa9ed;background:#e4f6ff;box-shadow:0 4px 0 #9edcf7}
       .menu-card .emoji img{width:38px;height:38px;border-radius:12px;object-fit:cover;vertical-align:middle}
       .profile-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -1338,6 +1338,8 @@
          </div>
          <div class="panel section-gap">
             <h3>Choisis ton avatar</h3>
+            <button class="btn btn-soft full" id="chooseAvatarFolder" type="button">Synchroniser le dossier d’avatars</button>
+            <p class="small-note" id="avatarFolderStatus" role="status">Les images du dossier seront chargées après autorisation.</p>
             <div class="avatar-grid" id="avatarGrid"></div>
             <label class="small-note" for="profileName">Ton pseudo</label>
             <input class="field" id="profileName" maxlength="18" placeholder="Ex. CalculMan">
@@ -1575,16 +1577,25 @@
             for (let n = 1; n <= 15; n++) { const b = document.createElement('button'), isDone = done.includes(`${section}-${n}`), open = n <= level; b.className = 'level-node ' + (isDone ? 'done' : open ? 'open' : ''); b.disabled = !open; b.textContent = (isDone ? '✓ ' : '') + n; b.onclick = () => { level = n; persist(); startSolo(); }; $('levelList').appendChild(b); }
          }
          const PROFILE_KEY='mathrush_player_profile_v1';
-         const AVATARS=['08d694a0343943d7d0b58c1a9c17b525.jpg','3d-rendering-cartoon-man-beach.jpg','3e41eb054e1de1da0adf117bcd0ef515.jpg','45bdf75eb0c698f62db653228a6c9528.jpg','5916012f876c456afd9404f2d4d6b4c8.jpg','825972f6e645e88ef00ca763c6660cc2.jpg','870714d34d7b5e28d7e754c0c5b0d3e6.jpg','8c7fbf419e03b81cab48b949cc5fb8b3.jpg','a608d953177e09b847ef842e017539e8.jpg','a8113f148c9636f0ccba6781c7499467.jpg','a87a30f6d944720837b21e6491576d97.jpg','cartoony-ostrich-studio.jpg','ef3a9408a7a62b5c687486eba0b11d7c.jpg','f355af61009f0a0be856871919d9262e.jpg'];
+         const AVATARS=['08d694a0343943d7d0b58c1a9c17b525.jpg','3d-rendering-cartoon-man-beach.jpg','3e41eb054e1de1da0adf117bcd0ef515.jpg','45bdf75eb0c698f62db653228a6c9528.jpg','5916012f876c456afd9404f2d4d6b4c8.jpg','825972f6e645e88ef00ca763c6660cc2.jpg','870714d34d7b5e28d7e754c0c5b0d3e6.jpg','8c7fbf419e03b81cab48b949cc5fb8b3.jpg','a608d953177e09b847ef842e017539e8.jpg','a8113f148c9636f0ccba6781c7499467.jpg','a87a30f6d944720837b21e6491576d97.jpg','Capture d’écran 2026-11-07 124510.jpg','Capture d’écran 2026-11-07 124609.jpg','Capture d’écran 2026-11-07 124656.jpg','Capture d’écran 2026-11-07 124723.jpg','Capture d’écran 2026-11-07 124812.jpg','Capture d’écran 2026-11-07 124852.jpg','Capture d’écran 2026-11-07 124928.jpg','Capture d’écran 2026-11-07 124956.jpg','Capture d’écran 2026-11-07 125020.jpg','Capture d’écran 2026-11-07 125053.jpg','Capture d’écran 2026-11-07 125128.jpg','cartoony-ostrich-studio.jpg','ef3a9408a7a62b5c687486eba0b11d7c.jpg','f355af61009f0a0be856871919d9262e.jpg','Screenshot_20261107-124451.png','Screenshot_20261107-124502.png','Screenshot_20261107-124522.png','Screenshot_20261107-124600.png','Screenshot_20261107-124609.png','Screenshot_20261107-124620.png','Screenshot_20261107-125032.png'];
          let playerProfile=(()=>{try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}})();
-         if(!AVATARS.includes(playerProfile.avatar))playerProfile.avatar=AVATARS[0];
+         if(!playerProfile.avatar)playerProfile.avatar=AVATARS[0];
          if(!playerProfile.name)playerProfile.name='Super calculateur';
-         function renderProfile(){
-            const avatarUrl=`assets/avatar/${playerProfile.avatar}`;
-            $('profileAvatarPreview').innerHTML=`<img src="${avatarUrl}" alt="Avatar du joueur">`;$('homeAvatar').innerHTML=`<img src="${avatarUrl}" alt="Avatar">`;
+         const AVATAR_DB='mathrush_avatar_directory_v1';
+         let avatarDirectoryHandle=null,avatarDirectoryReady=false,avatarDirectoryEmpty=false,avatarChoices=AVATARS.map(name=>({name,src:`assets/avatar/${name}`})),avatarObjectUrls=[];
+         function openAvatarDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(AVATAR_DB,1);request.onupgradeneeded=()=>request.result.createObjectStore('settings');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+         async function getSavedAvatarDirectory(){const db=await openAvatarDb();return new Promise((resolve,reject)=>{const request=db.transaction('settings','readonly').objectStore('settings').get('directory');request.onsuccess=()=>{db.close();resolve(request.result||null);};request.onerror=()=>{db.close();reject(request.error);};});}
+         async function saveAvatarDirectory(handle){const db=await openAvatarDb();return new Promise((resolve,reject)=>{const transaction=db.transaction('settings','readwrite');transaction.objectStore('settings').put(handle,'directory');transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>{db.close();reject(transaction.error);};});}
+         async function scanAvatarDirectory(handle){if(await handle.queryPermission({mode:'read'})!=='granted')return null;const images=[];for await(const entry of handle.values()){if(entry.kind==='file'&&/\.(avif|gif|jpe?g|png|webp)$/i.test(entry.name)){const file=await entry.getFile();images.push({name:file.name,src:URL.createObjectURL(file)});}}return images.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));}
+         async function renderProfile(){
+            try{avatarDirectoryHandle=avatarDirectoryHandle||await getSavedAvatarDirectory();if(avatarDirectoryHandle){const images=await scanAvatarDirectory(avatarDirectoryHandle);if(images){avatarDirectoryReady=images.length>0;avatarDirectoryEmpty=images.length===0;if(images.length){avatarObjectUrls.forEach(URL.revokeObjectURL);avatarObjectUrls=images.map(image=>image.src);avatarChoices=images;}}else avatarDirectoryReady=false;}}catch(error){avatarDirectoryHandle=null;avatarDirectoryReady=false;}
+            $('avatarFolderStatus').textContent=avatarDirectoryReady?'Dossier synchronisé : '+avatarChoices.length+' images.':avatarDirectoryEmpty?'Aucune image compatible trouvée dans ce dossier.':avatarDirectoryHandle?'Accès en attente : appuie sur le bouton pour autoriser le dossier.':'Sélectionne le dossier assets/avatar pour actualiser automatiquement les portraits.';
+            if(!avatarChoices.some(avatar=>avatar.name===playerProfile.avatar))playerProfile.avatar=avatarChoices[0]?.name||AVATARS[0];
+            const selectedAvatar=avatarChoices.find(avatar=>avatar.name===playerProfile.avatar)||avatarChoices[0];
+            const preview=document.createElement('img');preview.src=selectedAvatar.src;preview.alt='Avatar du joueur';$('profileAvatarPreview').replaceChildren(preview);
+            const homeImage=document.createElement('img');homeImage.src=selectedAvatar.src;homeImage.alt='Avatar';$('homeAvatar').replaceChildren(homeImage);
             $('profileDisplayName').textContent=playerProfile.name;$('profileName').value=playerProfile.name;
-            $('avatarGrid').innerHTML=AVATARS.map((a,i)=>`<button class="avatar-choice ${a===playerProfile.avatar?'active':''}" data-avatar="${a}" aria-label="Choisir l’avatar ${i+1}"><img src="assets/avatar/${a}" alt=""></button>`).join('');
-            $('avatarGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{playerProfile.avatar=b.dataset.avatar;renderProfile();});
+            const grid=$('avatarGrid');grid.replaceChildren();avatarChoices.forEach((avatar,index)=>{const button=document.createElement('button');button.className='avatar-choice'+(avatar.name===playerProfile.avatar?' active':'');button.dataset.avatar=avatar.name;button.setAttribute('aria-label',`Choisir l’avatar ${index+1}`);const image=document.createElement('img');image.src=avatar.src;image.alt='';button.append(image);button.onclick=()=>{playerProfile.avatar=avatar.name;renderProfile();};grid.append(button);});
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
             $('profileErrors').textContent=errors.length;$('profileStreak').textContent=best;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
             const badges=[];
@@ -1595,6 +1606,7 @@
             if(section>1||level>5)badges.push('🚀 Explorateur');
             $('profileBadges').innerHTML=badges.length?badges.map(x=>`<span class="profile-badge">${x}</span>`).join(''):'<p class="small-note">Tes premiers trophées apparaîtront au fil de tes parties.</p>';
          }
+         $('chooseAvatarFolder').onclick=async()=>{if(!window.showDirectoryPicker){$('avatarFolderStatus').textContent='La sélection de dossier nécessite un navigateur compatible sur localhost ou HTTPS.';return;}try{avatarDirectoryHandle=await window.showDirectoryPicker({mode:'read'});if(await avatarDirectoryHandle.requestPermission({mode:'read'})!=='granted')throw new Error('Permission refusée');await saveAvatarDirectory(avatarDirectoryHandle);avatarDirectoryReady=true;avatarDirectoryEmpty=false;await renderProfile();}catch(error){if(error.name!=='AbortError')$('avatarFolderStatus').textContent='Impossible de lire ce dossier. Vérifie son accès puis réessaie.';}};
          $('saveProfile').onclick=()=>{
             const proposed=$('profileName').value.trim();
             if(proposed)playerProfile.name=proposed.slice(0,18);
