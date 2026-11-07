@@ -804,7 +804,7 @@
             { q: "Le Groenland ou l'Afrique ? \n Est une île", opts: ["Le Groenland", "L'Afrique", "Les deux"], a: 0 },
             { q: "Le Vatican ou Paris ? \n Possède sa propre équipe de football nationale", opts: ["Le Vatican", "Paris", "Les deux"], a: 0 },
             { q: "Karánsebes ou une soirée entre amis ? \n A fait des milliers de morts sans ennemi", opts: ["Karánsebes", "La soirée", "Les deux"], a: 0 },
-            { q: "Neymar ou un homard ? \n Mange de la morue", opts: ["Neymar", "Un homard", "Les deux"], a: 1 },
+            { q: "Neymar ou un homard ? \n Mange de la morue", opts: ["Neymar", "Un homard", "Les deux"], a: 2 },
             { q: "Bernard Tapie ou un tapis ? \n Sait voler", opts: ["Bernard Tapie", "Le tapis", "Les deux"], a: 1 },
             { q: "Le homard ou la méduse ? \n Ne vieillit pas vraiment", opts: ["Le homard", "La méduse", "Les deux"], a: 2 },
             { q: "Le requin-baleine ou le cachalot ? \n Est un poisson", opts: ["Le requin-baleine", "Le cachalot", "Les deux"], a: 0 },
@@ -819,7 +819,7 @@
             { q: "Les astronautes ou les girafes ? \n Grandissent de quelques centimètres dans l'espace", opts: ["Les astronautes", "Les girafes", "Les deux"], a: 0 },
             { q: "Un barbecue ou une sortie spatiale ? \n Même odeur, selon certains astronautes", opts: ["Le barbecue", "La sortie spatiale", "Les deux"], a: 0 },
             { q: "Un T-rex ou un poulet ? \n Descend directement des dinosaures", opts: ["Le T-rex", "Le poulet", "Les deux"], a: 1 },
-            { q: "Une chauve-souris ou un oiseau ? \\n Est un mammifère capable de voler", opts: ["Une chauve-souris", "Un oiseau", "Les deux"], a: 0 }
+            { q: "Une chauve-souris ou un oiseau ? \n Est un mammifère capable de voler", opts: ["Une chauve-souris", "Un oiseau", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°3 (4 choix). */
          const BURGER_QUIZ3 = [
@@ -953,7 +953,7 @@
             { q: "Un caméléon ou un feu tricolore ? \n Change sans prévenir", opts: ["Le caméléon", "Le feu", "Les deux"], a: 0 },
             { q: "Une éclipse ou un couvre-feu ? \n Met la ville dans le noir", opts: ["L'éclipse", "Le couvre-feu", "Les deux"], a: 2 },
             { q: "Un ours polaire ou un nageur du dimanche ? \n Enchaîne les longueurs sans se reposer", opts: ["L'ours polaire", "Le nageur", "Les deux"], a: 0 },
-            { q: "Un poulpe ou un poisson ? \\n Possède trois cœurs", opts: ["Un poulpe", "Un poisson", "Les deux"], a: 0 }
+            { q: "Un poulpe ou un poisson ? \n Possède trois cœurs", opts: ["Un poulpe", "Un poisson", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°5 (4 choix). */
          const BURGER_QUIZ5 = [
@@ -1044,7 +1044,7 @@
             { q: "Un pigeon ou un GPS ? \n Retrouve son chemin à des centaines de kilomètres", opts: ["Le pigeon", "Le GPS", "Les deux"], a: 2 },
             { q: "Un chien ou un nez électronique ? \n Détecte des odeurs invisibles", opts: ["Le chien", "Le nez électronique", "Les deux"], a: 2 },
             { q: "Un poisson-globe ou un ballon de baudruche ? \n Se gonfle pour impressionner", opts: ["Le poisson-globe", "Le ballon", "Les deux"], a: 2 },
-            { q: "Un wombat ou un castor ? \\n Produit des crottes en forme de cube", opts: ["Un wombat", "Un castor", "Les deux"], a: 0 }
+            { q: "Un wombat ou un castor ? \n Produit des crottes en forme de cube", opts: ["Un wombat", "Un castor", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°6 (4 choix). */
          const BURGER_QUIZ6 = [
@@ -1543,8 +1543,8 @@
             { q: "Une libellule ou un drone ? \n Vole dans toutes les directions, même sur place", opts: ["La libellule", "Le drone", "Les deux"], a: 2 },
             { q: "Un mille-pattes ou un accordéon ? \n Se replie en zigzag", opts: ["Le mille-pattes", "L'accordéon", "Les deux"], a: 2 },
             { q: "Un requin-baleine ou un bus à étage ? \n Avale des bouchées géantes de plancton", opts: ["Le requin-baleine", "Le bus", "Les deux"], a: 0 },
-            { q: "Un blaireau ou un jardinier du dimanche ? \n Creuse des galeries sous la pelouse", opts: ["Le blaireau", "Le jardinier", "Les deux"], a: 2 },
-            { q: "Un tardigrade ou une fourmi ? \\n Peut survivre à des conditions extrêmes", opts: ["Un tardigrade", "Une fourmi", "Les deux"], a: 0 }
+            { q: "Une taupe ou un jardinier du dimanche ? \n Fait des trous dans la pelouse", opts: ["La taupe", "Le jardinier", "Les deux"], a: 2 },
+            { q: "Un tardigrade ou une fourmi ? \n Peut survivre à des conditions extrêmes", opts: ["Un tardigrade", "Une fourmi", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°6 (duels Sel ou poivre). */
          const SEL_PEPPER5 = [
@@ -1590,7 +1590,7 @@
             { q: "Le huard ou un cor de chasse ? \n S'entend à des kilomètres sur le lac", opts: ["Le huard", "Un cor de chasse", "Les deux"], a: 0 },
             { q: "Le canard ou un bouchon ? \n Remonte toujours à la surface", opts: ["Le canard", "Un bouchon", "Les deux"], a: 2 },
             { q: "La mouette ou un casse-croûte volant ? \n Pique les frites sur les digues", opts: ["La mouette", "Un casse-croûte", "Les deux"], a: 2 },
-            { q: "Un chameau ou un dromadaire ? \\n Possède deux bosses", opts: ["Un chameau", "Un dromadaire", "Les deux"], a: 0 }
+            { q: "Un chameau ou un dromadaire ? \n Possède deux bosses", opts: ["Un chameau", "Un dromadaire", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°7 (duels Sel ou poivre). */
          const SEL_PEPPER6 = [
@@ -1637,7 +1637,7 @@
             { q: "Les articulations ou des bouchons de champagne ? \n Éclatent à cause de bulles de gaz", opts: ["Les articulations", "Des bouchons", "Les deux"], a: 0 },
             { q: "L'ouïe ou un vieux vinyle ? \n Tourne encore à 90 ans", opts: ["L'ouïe", "Un vieux vinyle", "Les deux"], a: 0 },
             { q: "La rétine ou un capteur photo ? \n Transforme la lumière en messages", opts: ["La rétine", "Un capteur", "Les deux"], a: 0 },
-            { q: "Jupiter ou Saturne ? \\n Est la plus grande planète du système solaire", opts: ["Jupiter", "Saturne", "Les deux"], a: 0 }
+            { q: "Jupiter ou Saturne ? \n Est la plus grande planète du système solaire", opts: ["Jupiter", "Saturne", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°8 (duels Sel ou poivre). */
          const SEL_PEPPER7 = [
@@ -1684,7 +1684,7 @@
             { q: "L'aspirine ou une écorce de saule ? \n En partage la recette ancestrale", opts: ["L'aspirine", "Une écorce", "Les deux"], a: 2 },
             { q: "La roue ou une table de potier ? \n Tourne depuis 5 000 ans", opts: ["La roue", "Une table de potier", "Les deux"], a: 2 },
             { q: "Les lunettes ou une bougie ? \n Ont éclairé le travail des moines copistes", opts: ["Les lunettes", "Une bougie", "Les deux"], a: 2 },
-            { q: "Le chocolat noir ou le chocolat blanc ? \\n Contient généralement du cacao solide", opts: ["Le chocolat noir", "Le chocolat blanc", "Les deux"], a: 0 }
+            { q: "Le chocolat noir ou le chocolat blanc ? \n Contient généralement du cacao solide", opts: ["Le chocolat noir", "Le chocolat blanc", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°9 (duels Sel ou poivre). */
          const SEL_PEPPER8 = [
@@ -1731,7 +1731,7 @@
             { q: "L'escalade ou un travail de scales ? \n A rejoint les JO de Tokyo", opts: ["L'escalade", "Un travail de scales", "Les deux"], a: 0 },
             { q: "Le hockey sur glace ou une bagarre réglée ? \n Trois périodes, zéro pitié", opts: ["Le hockey sur glace", "Une bagarre réglée", "Les deux"], a: 0 },
             { q: "Les JO antiques ou une fête de l'Antiquité ? \n Se tenaient tous les quatre ans à Olympie", opts: ["Les JO antiques", "Une fête de l'Antiquité", "Les deux"], a: 2 },
-            { q: "Le Groenland ou Madagascar ? \\n Est la plus grande île du monde (hors continents)", opts: ["Le Groenland", "Madagascar", "Les deux"], a: 0 }
+            { q: "Le Groenland ou Madagascar ? \n Est la plus grande île du monde (hors continents)", opts: ["Le Groenland", "Madagascar", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°10 (duels Sel ou poivre). */
          const SEL_PEPPER9 = [
@@ -1778,7 +1778,7 @@
             { q: "Gutenberg ou un imprimeur de suffrages ? \n A démocratisé le livre avec ses caractères mobiles", opts: ["Gutenberg", "Un imprimeur", "Les deux"], a: 0 },
             { q: "Vercingétorix ou un Gaulois de terminale ? \n A jeté ses armes aux pieds de César", opts: ["Vercingétorix", "Un Gaulois", "Les deux"], a: 0 },
             { q: "Louis XVI ou un roi horloger ? \n Préférait les serrures aux affaires du royaume", opts: ["Louis XVI", "Un roi horloger", "Les deux"], a: 2 },
-            { q: "Queen ou ABBA ? \\n A enregistré Bohemian Rhapsody", opts: ["Queen", "ABBA", "Les deux"], a: 0 }
+            { q: "Queen ou ABBA ? \n A enregistré Bohemian Rhapsody", opts: ["Queen", "ABBA", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°11 (duels Sel ou poivre). */
          const SEL_PEPPER10 = [
@@ -1825,7 +1825,7 @@
             { q: "La marée noire ou une tache de nappe géante ? \n Salit les plages à cause du pétrole", opts: ["La marée noire", "Une tache", "Les deux"], a: 0 },
             { q: "La sécheresse ou un invité indésirable ? \n S'installe parfois des années", opts: ["La sécheresse", "Un invité", "Les deux"], a: 0 },
             { q: "Le courant-jet ou une rivière de vent ? \n File à 300 km/h au-dessus de nos têtes", opts: ["Le courant-jet", "Une rivière", "Les deux"], a: 0 },
-            { q: "Le tonnerre ou l’éclair ? \\n Est le bruit produit par un orage", opts: ["Le tonnerre", "L’éclair", "Les deux"], a: 0 }
+            { q: "Le tonnerre ou l’éclair ? \n Est le bruit produit par un orage", opts: ["Le tonnerre", "L’éclair", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°12 (duels Sel ou poivre). */
          const SEL_PEPPER11 = [
@@ -1872,7 +1872,7 @@
             { q: "Le funiculaire ou un escalier paresseux ? \n Monte à la place des jambes", opts: ["Le funiculaire", "Un escalier paresseux", "Les deux"], a: 2 },
             { q: "Le train à crémaillère ou une chenille de rails ? \n Grimpe où les autres renoncent", opts: ["Le train à crémaillère", "Une chenille de rails", "Les deux"], a: 2 },
             { q: "L'ascenseur de la tour Eiffel ou un sommelier de visite ? \n Monte sans qu'on s'en aperçoive", opts: ["L'ascenseur", "Un sommelier de visite", "Les deux"], a: 0 },
-            { q: "La statue de la Liberté ou Big Ben ? \\n Se trouve à New York", opts: ["La statue de la Liberté", "Big Ben", "Les deux"], a: 0 }
+            { q: "La statue de la Liberté ou Big Ben ? \n Se trouve à New York", opts: ["La statue de la Liberté", "Big Ben", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°13 (duels Sel ou poivre). */
          const SEL_PEPPER12 = [
@@ -1919,7 +1919,7 @@
             { q: "Le mot de passe ou un hoquet d'identité ? \n Doit contenir un chiffre et un regret", opts: ["Le mot de passe", "Un hoquet d'identité", "Les deux"], a: 0 },
             { q: "La mise à jour logicielle ou un huissier électronique ? \n Arrive toujours au mauvais moment", opts: ["La mise à jour", "Un huissier électronique", "Les deux"], a: 2 },
             { q: "Le mode sombre ou un chirurgien des yeux ? \n Soulage les écrans tardifs", opts: ["Le mode sombre", "Un chirurgien des yeux", "Les deux"], a: 0 },
-            { q: "Un QR code ou un code-barres classique ? \\n Peut contenir une adresse web à scanner", opts: ["Un QR code", "Un code-barres classique", "Les deux"], a: 0 }
+            { q: "Un QR code ou un code-barres classique ? \n Peut contenir une adresse web à scanner", opts: ["Un QR code", "Un code-barres classique", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°14 (duels Sel ou poivre). profondeurs océaniques + arbres et plantes */
          const SEL_PEPPER13 = [
@@ -1966,7 +1966,7 @@
             { q: "L'ortie ou un garde-fou végétal ? \n Punit qui la cueille sans gants", opts: ["L'ortie", "Un garde-fou végétal", "Les deux"], a: 0 },
             { q: "La mangrove ou une gardienne de côtes ? \n Plante ses pieds dans l'eau salée", opts: ["La mangrove", "Une gardienne de côtes", "Les deux"], a: 0 },
             { q: "L'olivier de Provence ou un patriarche de pierre ? \n Fleurit encore après mille ans", opts: ["L'olivier", "Un patriarche de pierre", "Les deux"], a: 2 },
-            { q: "Le cachalot ou le requin blanc ? \\n Possède le plus gros cerveau du règne animal", opts: ["Le cachalot", "Le requin blanc", "Les deux"], a: 0 }
+            { q: "Le cachalot ou le requin blanc ? \n Possède le plus gros cerveau du règne animal", opts: ["Le cachalot", "Le requin blanc", "Les deux"], a: 0 }
          ];
          /* Fournée manuscrite n°15 (duels Sel ou poivre). */
          const SEL_PEPPER14 = [
@@ -2013,7 +2013,7 @@
             { q: "Le Minotaure ou un loyer de labyrinthe ? \n Exigeait sept Athéniens par an", opts: ["Le Minotaure", "Un loyer de labyrinthe", "Les deux"], a: 0 },
             { q: "Zeus ou un météorologue de l'Olympe ? \n Expédiait la foudre en freelance", opts: ["Zeus", "Un météorologue de l'Olympe", "Les deux"], a: 0 },
             { q: "Poséidon ou un maire des océans ? \n Signait les tsunamis de sa fourche", opts: ["Poséidon", "Un maire des océans", "Les deux"], a: 0 },
-            { q: "Un ptérodactyle ou un vélociraptor ? \\n Était un reptile volant", opts: ["Un ptérodactyle", "Un vélociraptor", "Les deux"], a: 0 }
+            { q: "Un ptérodactyle ou un vélociraptor ? \n Était un reptile volant", opts: ["Un ptérodactyle", "Un vélociraptor", "Les deux"], a: 0 }
          ];
          let _allBurger = null;
          function getAllBurger() {
