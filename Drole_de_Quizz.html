@@ -486,6 +486,37 @@
          white-space: pre-line
       }
 
+      /* Avatars multijoueur */
+      .prow {
+         margin-bottom: 4px
+      }
+
+      .avatar-row {
+         display: flex;
+         gap: 5px;
+         flex-wrap: wrap;
+         margin: 4px 0 12px
+      }
+
+      .avatar-chip {
+         font-size: 20px;
+         line-height: 1.25;
+         background: #fff;
+         border: 2px solid var(--line);
+         border-radius: 10px;
+         padding: 4px 7px;
+         cursor: pointer
+      }
+
+      .avatar-chip.sel {
+         border-color: #8a68e5;
+         background: #f3edff
+      }
+
+      .avatar-mini {
+         margin-right: 5px
+      }
+
       #hostStart {
          margin-top: 12px
       }
@@ -557,6 +588,13 @@
          </div>
          <div id="soloThemeChoices" class="topic-grid"></div>
          <div class="panel">
+            <label class="small" for="soloQuestionCount">Nombre de questions</label><select class="field" id="soloQuestionCount">
+               <option>10</option>
+               <option selected>15</option>
+               <option>20</option>
+               <option>25</option>
+               <option>30</option>
+            </select>
             <div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full"
                id="startSoloGame" disabled>Commencer mon quiz</button>
          </div>
@@ -594,10 +632,17 @@
                <option value="local">Même appareil</option>
                <option value="online">En ligne (salon avec code)</option>
             </select>
+            <label class="small">Nombre de questions</label><select class="field" id="questionCount">
+               <option>10</option>
+               <option>15</option>
+               <option selected>20</option>
+               <option>25</option>
+               <option>30</option>
+            </select>
             <div id="names"></div>
             <div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton
                   pseudo</label><input class="field" id="onlinePlayerName" maxlength="18"
-                  placeholder="Choisis ton pseudo"></div>
+                  placeholder="Choisis ton pseudo"><label class="small">Ton avatar</label><div class="avatar-row" id="onlineAvatarRow"></div></div>
             <div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field"
                   id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
             <button class="btn full" id="startLocal">Lancer la partie</button>
@@ -647,6 +692,25 @@
          const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
+         /* ===== Identité multijoueur : pseudo + avatar emoji ===== */
+         const AVATARS = ['🦊', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦖', '🐝', '🦉'];
+         const multiNameKey = 'drole_quizz_multi_name', multiAvatarKey = 'drole_quizz_multi_avatar';
+         function savedMultiName() { try { return localStorage.getItem(multiNameKey) || '' } catch (e) { return '' } }
+         function savedMultiAvatar() { try { return localStorage.getItem(multiAvatarKey) || '' } catch (e) { return '' } }
+         function defaultMultiName() { return savedMultiName() || (($('profileName').value || '').trim()) || ''; }
+         function defaultMultiAvatar() { return savedMultiAvatar() || AVATARS[0]; }
+         function saveMultiIdentity(name, avatar) { try { if (name) localStorage.setItem(multiNameKey, name); if (avatar) localStorage.setItem(multiAvatarKey, avatar) } catch (e) { } }
+         function avatarRowHtml(selected) {
+            return AVATARS.map(a => `<button type="button" class="avatar-chip${a === selected ? ' sel' : ''}" data-a="${a}">${a}</button>`).join('');
+         }
+         function selectedAvatarIn(row) { const c = row.querySelector('.avatar-chip.sel'); return c ? c.dataset.a : AVATARS[0]; }
+         $('onlineAvatarRow').innerHTML = avatarRowHtml(defaultMultiAvatar());
+         $('onlinePlayerName').value = defaultMultiName();
+         document.body.addEventListener('click', e => {
+            const chip = e.target.closest('.avatar-chip'); if (!chip) return;
+            const row = chip.parentElement; row.querySelectorAll('.avatar-chip').forEach(c => c.classList.remove('sel')); chip.classList.add('sel');
+            if (row.id === 'onlineAvatarRow') saveMultiIdentity($('onlinePlayerName').value.trim(), chip.dataset.a);
+         });
          const BURGER_QUIZ = [
             { cat: 'KETCHUP', q: "Pourquoi les flamants roses sont-ils roses ?", opts: ["À cause des crevettes qu'ils bouffent en masse", "C'est un maquillage naturel de compétition", "Ils naissent roses, comme les bonbons", "Le stress permanent de la migration"], a: 0, ex: "Les flamants naissent gris : les pigments (caroténoïdes) des crevettes et algues qu'ils mangent colorent peu à peu leurs plumes." },
             { cat: 'MOUTARDE', q: "Combien de temps un escargot peut-il dormir d'affilée ?", opts: ["Une nuit bien méritée", "Jusqu'à 3 ans : champion du monde de la sieste", "6 mois maximum, comme l'ours", "Il ne dort jamais vraiment"], a: 1, ex: "En cas de sécheresse, certains escargots s'enferment dans leur coquille et entrent en estivation, un sommeil qui peut durer jusqu'à 3 ans." },
@@ -944,51 +1008,51 @@
             { cat: 'MAYO', q: "Combien de sortes de fromages la France produit-elle, environ ?", opts: ["Plus de 1 000", "Environ 50", "Exactement 365", "Une trentaine, qui suffit"], a: 0, ex: "Plus de 1 000 fromages français recensés : en goûter un par jour de l'année ne suffirait pas à faire le tour." }
          ];
          const SEL_PEPPER2 = [
-            { q: "Un pic-vert ou une perceuse ? \n Tambourine à 20 coups par seconde", opts: ["Le pic-vert", "La perceuse", "Les deux"], a: 2 },
-            { q: "Une banane ou une tomate ? \n Pousse la tête en bas", opts: ["La banane", "La tomate", "Les deux"], a: 2 },
-            { q: "Une araignée ou un plongeur ? \n Part avec sa réserve d'air", opts: ["L'araignée", "Le plongeur", "Les deux"], a: 2 },
-            { q: "Un igloo ou un four à pizza ? \n Peut cuire une pizza", opts: ["L'igloo", "Le four", "Les deux"], a: 2 },
-            { q: "Une bougie ou un diamant ? \n Contient du carbone", opts: ["La bougie", "Le diamant", "Les deux"], a: 2 },
-            { q: "Un chien ou un loup ? \n Descend du loup", opts: ["Le chien", "Le loup", "Les deux"], a: 0 },
-            { q: "Le café ou le thé ? \n Vient d'une plante", opts: ["Le café", "Le thé", "Les deux"], a: 2 },
-            { q: "L'or ou le cuivre ? \n Change de couleur en vieillissant", opts: ["L'or", "Le cuivre", "Les deux"], a: 1 },
-            { q: "Un piano ou un orgue ? \n Souffle de l'air pour chanter", opts: ["Le piano", "L'orgue", "Les deux"], a: 1 },
-            { q: "La Grande Ourse ou une casserole ? \n Sert à retrouver le Nord", opts: ["La Grande Ourse", "La casserole", "Les deux"], a: 2 },
-            { q: "Le miel ou la confiture ? \n Se garde des années au placard", opts: ["Le miel", "La confiture", "Les deux"], a: 2 },
-            { q: "Un hérisson ou un cactus ? \n Se manipule avec précaution", opts: ["Le hérisson", "Le cactus", "Les deux"], a: 2 },
-            { q: "Une chauve-souris ou un humain ? \n Est un mammifère", opts: ["La chauve-souris", "L'humain", "Les deux"], a: 2 },
-            { q: "Une poule ou un lézard ? \n Pond des œufs", opts: ["La poule", "Le lézard", "Les deux"], a: 2 },
-            { q: "Une chenille ou une boîte de conserve ? \n Se transforme complètement", opts: ["La chenille", "La boîte", "Les deux"], a: 0 },
-            { q: "Le sucre ou le sel ? \n Se dissout dans l'eau chaude", opts: ["Le sucre", "Le sel", "Les deux"], a: 2 },
-            { q: "Un colibri ou un hélicoptère ? \n Vole sur place", opts: ["Le colibri", "L'hélicoptère", "Les deux"], a: 2 },
-            { q: "Un flamant ou un ondulateur ? \n Se tient sur une patte", opts: ["Le flamant", "L'ondulateur", "Les deux"], a: 0 },
-            { q: "Un gerbille ou un ébéniste ? \n Creuse des galeries meublées", opts: ["La gerbille", "L'ébéniste", "Les deux"], a: 0 },
-            { q: "Une pomme ou une pomme de terre ? \n A des yeux", opts: ["La pomme", "La pomme de terre", "Les deux"], a: 1 },
-            { q: "Un ananas ou une carotte ? \n Pousse sous terre", opts: ["L'ananas", "La carotte", "Les deux"], a: 1 },
-            { q: "Une pastèque ou une courge ? \n Est un fruit pour les botanistes", opts: ["La pastèque", "La courge", "Les deux"], a: 2 },
-            { q: "Un kiwi (le fruit) ou un kiwi (l'oiseau) ? \n Vient de Nouvelle-Zélande", opts: ["Le fruit", "L'oiseau", "Les deux"], a: 2 },
-            { q: "Un poisson-clown ou un acteur ? \n Joue un rôle dans un studio", opts: ["Le poisson-clown", "L'acteur", "Les deux"], a: 2 },
-            { q: "Un gyroscope ou un funambule ? \n Tient en équilibre tout seul", opts: ["Le gyroscope", "Le funambule", "Les deux"], a: 2 },
-            { q: "Un ver de terre ou un jardinier ? \n Aère la terre", opts: ["Le ver de terre", "Le jardinier", "Les deux"], a: 2 },
-            { q: "Un requin ou un dentiste ? \n Remplace ses dents à l'infini", opts: ["Le requin", "Le dentiste", "Les deux"], a: 0 },
-            { q: "Un dahu ou un yéti ? \n Est un animal imaginaire de montagne", opts: ["Le dahu", "Le yéti", "Les deux"], a: 2 },
-            { q: "Le geai ou le perroquet ? \n Imitent les sons qu'ils entendent", opts: ["Le geai", "Le perroquet", "Les deux"], a: 2 },
-            { q: "Une pie ou un espion ? \n Subtilise tout ce qui brille", opts: ["La pie", "L'espion", "Les deux"], a: 2 },
-            { q: "Un scarabée ou un agent d'entretien ? \n Fait disparaître ce qui traîne", opts: ["Le scarabée", "L'agent", "Les deux"], a: 2 },
-            { q: "Un iceberg ou un mensonge ? \n Ne montre qu'un dixième de lui-même", opts: ["L'iceberg", "Le mensonge", "Les deux"], a: 2 },
-            { q: "La jetée ou le gilet ? \n Se portent en mer", opts: ["La jetée", "Le gilet", "Les deux"], a: 2 },
-            { q: "Un homard ou une crevette ? \n Devient rouge en cuisant", opts: ["Le homard", "La crevette", "Les deux"], a: 2 },
-            { q: "Une guêpe ou un frelon ? \n Pique et repart en vie", opts: ["La guêpe", "Le frelon", "Les deux"], a: 2 },
-            { q: "Une abeille ou un kamikaze du jeu ? \n Meurt après avoir piqué", opts: ["L'abeille", "Le kamikaze", "Les deux"], a: 2 },
-            { q: "Un moustique ou une sirène d'alarme ? \n Chante près de l'oreille la nuit", opts: ["Le moustique", "La sirène", "Les deux"], a: 0 },
-            { q: "Un dauphin ou un chien ? \n Répond quand on l'appelle par son nom", opts: ["Le dauphin", "Le chien", "Les deux"], a: 2 },
-            { q: "Un cygne ou un aviron ? \n Glisse sur l'eau", opts: ["Le cygne", "L'aviron", "Les deux"], a: 2 },
-            { q: "Une marmotte ou un traversin ? \n Dort six mois par an", opts: ["La marmotte", "Le traversin", "Les deux"], a: 0 },
-            { q: "Le héron ou le pêcheur à la ligne ? \n Reste immobile des heures", opts: ["Le héron", "Le pêcheur", "Les deux"], a: 2 },
-            { q: "Un caméléon ou un feu tricolore ? \n Change sans prévenir", opts: ["Le caméléon", "Le feu", "Les deux"], a: 0 },
-            { q: "Une éclipse ou un couvre-feu ? \n Met la ville dans le noir", opts: ["L'éclipse", "Le couvre-feu", "Les deux"], a: 2 },
-            { q: "Un ours polaire ou un nageur du dimanche ? \n Enchaîne les longueurs sans se reposer", opts: ["L'ours polaire", "Le nageur", "Les deux"], a: 0 },
-            { q: "Un poulpe ou un poisson ? \n Possède trois cœurs", opts: ["Un poulpe", "Un poisson", "Les deux"], a: 0 }
+            { q: "Un pic-vert ou une perceuse ? \n Tambourine à 20 coups par seconde", opts: ["Le pic-vert", "La perceuse", "Les deux"], a: 2, ex: "Les deux martèlent : le pic-vert tambourine jusqu'à 20 coups par seconde sur le bois, comme une perceuse à percussion." },
+            { q: "Une banane ou une tomate ? \n Pousse la tête en bas", opts: ["La banane", "La tomate", "Les deux"], a: 2, ex: "Les deux poussent la tête en bas : la banane se courbe vers le soleil en grossissant, la tomate pend à sa tige." },
+            { q: "Une araignée ou un plongeur ? \n Part avec sa réserve d'air", opts: ["L'araignée", "Le plongeur", "Les deux"], a: 2, ex: "Les deux : l'araignée aquatique emporte une bulle d'air sous l'eau sur son ventre pileux, comme un plongeur sa bouteille." },
+            { q: "Un igloo ou un four à pizza ? \n Peut cuire une pizza", opts: ["L'igloo", "Le four", "Les deux"], a: 2, ex: "Les deux : un igloo bien fermé garde la chaleur du feu, de quoi cuire une pizza — le four, évidemment, aussi." },
+            { q: "Une bougie ou un diamant ? \n Contient du carbone", opts: ["La bougie", "Le diamant", "Les deux"], a: 2, ex: "Les deux sont du carbone : la bougie brûle du carbone via sa cire, le diamant est du carbone pur cristallisé." },
+            { q: "Un chien ou un loup ? \n Descend du loup", opts: ["Le chien", "Le loup", "Les deux"], a: 0, ex: "Le chien descend du loup gris, domestiqué il y a au moins 15 000 ans. Le loup, lui, descend du loup." },
+            { q: "Le café ou le thé ? \n Vient d'une plante", opts: ["Le café", "Le thé", "Les deux"], a: 2, ex: "Les deux viennent de plantes : des grains torréfiés du caféier pour l'un, des feuilles du théier pour l'autre." },
+            { q: "L'or ou le cuivre ? \n Change de couleur en vieillissant", opts: ["L'or", "Le cuivre", "Les deux"], a: 1, ex: "Le cuivre verdit en oxydant avec l'âge ; l'or ne change jamais de couleur — c'est même sa signature chimique." },
+            { q: "Un piano ou un orgue ? \n Souffle de l'air pour chanter", opts: ["Le piano", "L'orgue", "Les deux"], a: 1, ex: "L'orgue chante grâce à de l'air soufflé dans ses tuyaux ; le piano frappe des cordes avec des marteaux." },
+            { q: "La Grande Ourse ou une casserole ? \n Sert à retrouver le Nord", opts: ["La Grande Ourse", "La casserole", "Les deux"], a: 2, ex: "Les deux indiquent le Nord : prolongez deux fois le bord de la casserole de la Grande Ourse, vous tombez sur l'étoile Polaire." },
+            { q: "Le miel ou la confiture ? \n Se garde des années au placard", opts: ["Le miel", "La confiture", "Les deux"], a: 2, ex: "Les deux se gardent : le miel quasiment éternel, une confiture bien sucrée et fermée tient des années au placard." },
+            { q: "Un hérisson ou un cactus ? \n Se manipule avec précaution", opts: ["Le hérisson", "Le cactus", "Les deux"], a: 2, ex: "Les deux se manipulent avec précaution : piques chez le hérisson, épines chez le cactus." },
+            { q: "Une chauve-souris ou un humain ? \n Est un mammifère", opts: ["La chauve-souris", "L'humain", "Les deux"], a: 2, ex: "Les deux sont des mammifères : poils, lait, sang chaud. La chauve-souris est d'ailleurs le seul mammifère capable du vol battu." },
+            { q: "Une poule ou un lézard ? \n Pond des œufs", opts: ["La poule", "Le lézard", "Les deux"], a: 2, ex: "Les deux pondent des œufs : la poule est un oiseau, le lézard un reptile, et tous deux sont ovipares." },
+            { q: "Une chenille ou une boîte de conserve ? \n Se transforme complètement", opts: ["La chenille", "La boîte", "Les deux"], a: 0, ex: "La chenille devient chrysalide puis papillon : une transformation complète. La boîte de conserve, elle, se contente d'être recyclée." },
+            { q: "Le sucre ou le sel ? \n Se dissout dans l'eau chaude", opts: ["Le sucre", "Le sel", "Les deux"], a: 2, ex: "Les deux se dissolvent dans l'eau chaude, et même dans l'eau froide — juste plus vite quand c'est chaud." },
+            { q: "Un colibri ou un hélicoptère ? \n Vole sur place", opts: ["Le colibri", "L'hélicoptère", "Les deux"], a: 2, ex: "Les deux volent sur place : le colibri est le seul oiseau capable du vol stationnaire, ailes battant en huit." },
+            { q: "Un flamant ou un ondulateur ? \n Se tient sur une patte", opts: ["Le flamant", "L'ondulateur", "Les deux"], a: 0, ex: "Le flamant se tient sur une patte pour économiser l'énergie ; l'ondulateur, lui, ne tient pas debout du tout." },
+            { q: "Un gerbille ou un ébéniste ? \n Creuse des galeries meublées", opts: ["La gerbille", "L'ébéniste", "Les deux"], a: 0, ex: "La gerbille creuse des galeries souterraines avec chambres de nid bien garnies — un ébéniste aménage aussi, mais au-dessus du sol." },
+            { q: "Une pomme ou une pomme de terre ? \n A des yeux", opts: ["La pomme", "La pomme de terre", "Les deux"], a: 1, ex: "La pomme de terre porte des yeux, les bourgeons qui germeront. La pomme, elle, n'a que des pépins." },
+            { q: "Un ananas ou une carotte ? \n Pousse sous terre", opts: ["L'ananas", "La carotte", "Les deux"], a: 1, ex: "La carotte pousse sous terre, comme les racines comestibles ; l'ananas mûrit au soleil, perché sur sa touffe." },
+            { q: "Une pastèque ou une courge ? \n Est un fruit pour les botanistes", opts: ["La pastèque", "La courge", "Les deux"], a: 2, ex: "Les deux sont des fruits pour les botanistes, puisqu'elles portent des graines. La cuisine, elle, les traite en légumes." },
+            { q: "Un kiwi (le fruit) ou un kiwi (l'oiseau) ? \n Vient de Nouvelle-Zélande", opts: ["Le fruit", "L'oiseau", "Les deux"], a: 2, ex: "Les deux portent le nom du kiwi, oiseau emblème du pays : le fruit fut rebaptisé ainsi par les producteurs néo-zélandais dans les années 1950." },
+            { q: "Un poisson-clown ou un acteur ? \n Joue un rôle dans un studio", opts: ["Le poisson-clown", "L'acteur", "Les deux"], a: 2, ex: "Les deux jouent des rôles : le poisson-clown est devenu une star de studio avec Nemo, et l'acteur, par métier, en joue aussi." },
+            { q: "Un gyroscope ou un funambule ? \n Tient en équilibre tout seul", opts: ["Le gyroscope", "Le funambule", "Les deux"], a: 2, ex: "Les deux défient la gravité : le gyroscope reste droit par inertie rotative, le funambule par concentration et bras en balancier." },
+            { q: "Un ver de terre ou un jardinier ? \n Aère la terre", opts: ["Le ver de terre", "Le jardinier", "Les deux"], a: 2, ex: "Les deux aèrent la terre : le ver de terre en creusant ses galeries, le jardinier en bêchant — le ver le fait gratuitement." },
+            { q: "Un requin ou un dentiste ? \n Remplace ses dents à l'infini", opts: ["Le requin", "Le dentiste", "Les deux"], a: 0, ex: "Le requin remplace ses dents en continu, rang après rang, toute sa vie : des dizaines de milliers au total. Le dentiste, lui, répare." },
+            { q: "Un dahu ou un yéti ? \n Est un animal imaginaire de montagne", opts: ["Le dahu", "Le yéti", "Les deux"], a: 2, ex: "Les deux sont des créatures imaginaires des montagnes : le dahu des Alpes et le yéti de l'Himalaya, jamais photographiés nettement." },
+            { q: "Le geai ou le perroquet ? \n Imitent les sons qu'ils entendent", opts: ["Le geai", "Le perroquet", "Les deux"], a: 2, ex: "Les deux imitent : le geai, corvidé facétieux, rejoue cris, chants et alarmes, tout comme le perroquet." },
+            { q: "Une pie ou un espion ? \n Subtilise tout ce qui brille", opts: ["La pie", "L'espion", "Les deux"], a: 2, ex: "Les deux sont attirés par ce qui brille : la pie dérobe les objets brillants pour son nid, l'espion des secrets." },
+            { q: "Un scarabée ou un agent d'entretien ? \n Fait disparaître ce qui traîne", opts: ["Le scarabée", "L'agent", "Les deux"], a: 2, ex: "Les deux font disparaître ce qui traîne : le scarabée roule et emporte, l'agent d'entretien balaie et jette." },
+            { q: "Un iceberg ou un mensonge ? \n Ne montre qu'un dixième de lui-même", opts: ["L'iceberg", "Le mensonge", "Les deux"], a: 2, ex: "Les deux cachent 90 pour cent d'eux-mêmes : l'iceberg ne montre qu'un dixième de sa masse, le mensonge le reste de la vérité." },
+            { q: "La jetée ou le gilet ? \n Se portent en mer", opts: ["La jetée", "Le gilet", "Les deux"], a: 2, ex: "Les deux sont en mer : la jetée s'avance sur l'eau, le gilet de sauvetage vous y maintient. Mais on ne porte pas la jetée." },
+            { q: "Un homard ou une crevette ? \n Devient rouge en cuisant", opts: ["Le homard", "La crevette", "Les deux"], a: 2, ex: "Les deux rougissent à la cuisson : leur carapace contient un pigment qui passe du bleu-vert au rouge sous la chaleur." },
+            { q: "Une guêpe ou un frelon ? \n Pique et repart en vie", opts: ["La guêpe", "Le frelon", "Les deux"], a: 2, ex: "Les deux piquent et repartent en vie : leurs dards lisses se retirent sans blesser l'insecte. Seule l'abeille laisse son dard." },
+            { q: "Une abeille ou un kamikaze du jeu ? \n Meurt après avoir piqué", opts: ["L'abeille", "Le kamikaze", "Les deux"], a: 2, ex: "L'abeille meurt après avoir piqué : son dard barbelé reste dans la peau. Le kamikaze du jeu, lui, saute et disparaît pareil." },
+            { q: "Un moustique ou une sirène d'alarme ? \n Chante près de l'oreille la nuit", opts: ["Le moustique", "La sirène", "Les deux"], a: 0, ex: "Le moustique vrombit près de l'oreille, surtout à 2 h du matin : c'est la femelle, en quête de sang, qui chante en aigu." },
+            { q: "Un dauphin ou un chien ? \n Répond quand on l'appelle par son nom", opts: ["Le dauphin", "Le chien", "Les deux"], a: 2, ex: "Les deux répondent à leur nom : le dauphin possède un sifflet signature unique et réagit à l'appel, comme un chien à son prénom." },
+            { q: "Un cygne ou un aviron ? \n Glisse sur l'eau", opts: ["Le cygne", "L'aviron", "Les deux"], a: 2, ex: "Les deux glissent sur l'eau : le cygne à force de pattes palmées, l'aviron à force de bras — question de propulsion." },
+            { q: "Une marmotte ou un traversin ? \n Dort six mois par an", opts: ["La marmotte", "Le traversin", "Les deux"], a: 0, ex: "La marmotte hiberne jusqu'à six mois par an ; le traversin, lui, dort toute l'année sur le lit." },
+            { q: "Le héron ou le pêcheur à la ligne ? \n Reste immobile des heures", opts: ["Le héron", "Le pêcheur", "Les deux"], a: 2, ex: "Les deux patientent immobiles des heures : le héron guette le poisson, le pêcheur guette pareil — et ment sur la prise." },
+            { q: "Un caméléon ou un feu tricolore ? \n Change sans prévenir", opts: ["Le caméléon", "Le feu", "Les deux"], a: 0, ex: "Le caméléon change de couleur selon son humeur et sa température, sans prévenir — personne ne le code, contrairement au feu." },
+            { q: "Une éclipse ou un couvre-feu ? \n Met la ville dans le noir", opts: ["L'éclipse", "Le couvre-feu", "Les deux"], a: 2, ex: "Les deux plongent dans le noir : l'éclipse coupe la lumière du Soleil quelques minutes, le couvre-feu éteint la ville la nuit." },
+            { q: "Un ours polaire ou un nageur du dimanche ? \n Enchaîne les longueurs sans se reposer", opts: ["L'ours polaire", "Le nageur", "Les deux"], a: 0, ex: "L'ours polaire nage des dizaines de kilomètres sans pause, des heures durant : le nageur du dimanche rendrait son bonnet." },
+            { q: "Un poulpe ou un poisson ? \n Possède trois cœurs", opts: ["Un poulpe", "Un poisson", "Les deux"], a: 0, ex: "Le poulpe possède trois cœurs ; les poissons n'en ont qu'un, comme vous. Ne les confondez plus." }
          ];
          /* Fournée manuscrite n°5 (4 choix). */
          const BURGER_QUIZ5 = [
@@ -1036,50 +1100,50 @@
             { cat: 'MAYO', q: "Combien de temps vit l'éphémère adulte ?", opts: ["De quelques heures à quelques jours", "Trois ans", "Six mois", "Une éternité, ironiquement"], a: 0, ex: "Quelques heures à quelques jours : l'éphémère vit son nom jusqu'au bout — une vie entière en une journée de lumière." }
          ];
          const SEL_PEPPER3 = [
-            { q: "Un escargot ou une lime ? \n Possède des milliers de dents", opts: ["L'escargot", "La lime", "Les deux"], a: 0 },
-            { q: "Une étoile de mer ou un prof absent ? \n S'en sort sans cerveau", opts: ["L'étoile de mer", "Le prof absent", "Les deux"], a: 0 },
-            { q: "Une mouche ou une romance de vacances ? \n Ne dure qu'un mois", opts: ["La mouche", "La romance", "Les deux"], a: 2 },
-            { q: "Une pieuvre ou un lézard ? \n Sacrifie un bout de lui-même pour survivre", opts: ["La pieuvre", "Le lézard", "Les deux"], a: 2 },
-            { q: "Un flamant ou un filtre à café ? \n Mange la tête à l'envers", opts: ["Le flamant", "Le filtre", "Les deux"], a: 0 },
-            { q: "Un hoatzin ou une étable ? \n Sent la ferme à des kilomètres", opts: ["Le hoatzin", "L'étable", "Les deux"], a: 2 },
-            { q: "Un éléphant ou une station de métro ? \n Porte son petit pendant 22 mois", opts: ["L'éléphant", "La station", "Les deux"], a: 0 },
-            { q: "Un kiwi ou une autruche ? \n Pond l'œuf le plus gros par rapport à sa taille", opts: ["Le kiwi", "L'autruche", "Les deux"], a: 0 },
-            { q: "Une chauve-souris ou un deltaplane ? \n Vole sans moteur", opts: ["La chauve-souris", "Le deltaplane", "Les deux"], a: 2 },
-            { q: "Un albatros ou un planeur ? \n Tient des heures sans un battement d'aile", opts: ["L'albatros", "Le planeur", "Les deux"], a: 2 },
-            { q: "Un chat ou un parachutiste ? \n Retombe sur ses pattes", opts: ["Le chat", "Le parachutiste", "Les deux"], a: 2 },
-            { q: "Un koala ou une sieste digestive ? \n S'étend sur 22 heures", opts: ["Le koala", "La sieste", "Les deux"], a: 0 },
-            { q: "Un lémurien ou le kangourou ? \n Ne vit nulle part qu'à Madagascar", opts: ["Le lémurien", "Le kangourou", "Les deux"], a: 0 },
-            { q: "La Chine ou Heinz ? \n A inventé le ketchup", opts: ["La Chine", "Heinz", "Les deux"], a: 0 },
-            { q: "Un bouillon fortifiant ou un resto ? \n L'un a donné son nom à l'autre", opts: ["Le bouillon", "Le resto", "Les deux"], a: 2 },
-            { q: "La statue de la Liberté ou la tour Eiffel ? \n Ont été construites en France", opts: ["La statue", "La tour", "Les deux"], a: 2 },
-            { q: "Le métro de Londres ou celui de Paris ? \n Roule depuis 1863", opts: ["Londres", "Paris", "Les deux"], a: 0 },
-            { q: "La Paz ou Paris ? \n Se niche à 3 600 m d'altitude", opts: ["La Paz", "Paris", "Les deux"], a: 0 },
-            { q: "L'Arabie saoudite ou le Sahara ? \n N'a aucune rivière", opts: ["L'Arabie saoudite", "Le Sahara", "Les deux"], a: 0 },
-            { q: "La Vallée de la Mort ou un four à pain ? \n Dépasse les 56 °C", opts: ["La Vallée de la Mort", "Le four", "Les deux"], a: 0 },
-            { q: "Oymiakon ou un congélateur ? \n Descend sous les -50 °C", opts: ["Oymiakon", "Le congélateur", "Les deux"], a: 2 },
-            { q: "Le lac Natron ou un laboratoire ? \n Transforme les corps en statues", opts: ["Le lac Natron", "Le laboratoire", "Les deux"], a: 0 },
-            { q: "Le lac Baïkal ou le lac Léman ? \n Contient 20 % de l'eau douce mondiale", opts: ["Le Baïkal", "Le Léman", "Les deux"], a: 0 },
-            { q: "Un séquoia ou un immeuble de 40 étages ? \n Dépasse les 115 mètres", opts: ["Le séquoia", "L'immeuble", "Les deux"], a: 0 },
-            { q: "Les arbres ou le Wi-Fi ? \n Communiquent par un réseau souterrain", opts: ["Les arbres", "Le Wi-Fi", "Les deux"], a: 0 },
-            { q: "La tour de Pise ou un clocher ? \n Sonne les messes malgré sa penchette", opts: ["La tour de Pise", "Le clocher", "Les deux"], a: 2 },
-            { q: "Venise ou une cabane sur pilotis ? \n Repose sur des millions de troncs", opts: ["Venise", "La cabane", "Les deux"], a: 2 },
-            { q: "Le Louvre ou Disneyland ? \n Accueille le plus de visiteurs au monde", opts: ["Le Louvre", "Disneyland", "Les deux"], a: 0 },
-            { q: "Les frères Lumière ou Edison ? \n Ont vendu les premiers tickets de cinéma", opts: ["Les frères Lumière", "Edison", "Les deux"], a: 0 },
-            { q: "Thriller ou Abbey Road ? \n S'est vendu à plus de 60 millions d'exemplaires", opts: ["Thriller", "Abbey Road", "Les deux"], a: 0 },
-            { q: "La cigale ou la fourmi ? \n Fait le plus de bruit", opts: ["La cigale", "La fourmi", "Les deux"], a: 0 },
-            { q: "La baudroie ou un pêcheur du dimanche ? \n Pêche avec sa canne intégrée", opts: ["La baudroie", "Le pêcheur", "Les deux"], a: 2 },
-            { q: "Le sterne arctique ou un retraité au soleil ? \n Voit deux étés par an", opts: ["Le sterne arctique", "Le retraité", "Les deux"], a: 0 },
-            { q: "Une fourmi ou un agriculteur ? \n Cultive des champignons", opts: ["La fourmi", "L'agriculteur", "Les deux"], a: 2 },
-            { q: "La sensitive ou un timide ? \n Se referme dès qu'on la touche", opts: ["La sensitive", "Le timide", "Les deux"], a: 2 },
-            { q: "L'arum titan ou une benne à ordures ? \n Sent la charogne", opts: ["L'arum titan", "La benne", "Les deux"], a: 2 },
-            { q: "Un figuier de Barbarie ou un kiwi ? \n Pousse sur un cactus", opts: ["Le figuier de Barbarie", "Le kiwi", "Les deux"], a: 0 },
-            { q: "Le safran ou la vanille ? \n Coûte une fortune au gramme", opts: ["Le safran", "La vanille", "Les deux"], a: 0 },
-            { q: "La France ou l'Italie ? \n Produit plus de 1 000 fromages", opts: ["La France", "L'Italie", "Les deux"], a: 0 },
-            { q: "Un mouton ou un photographe ? \n Reconnaît les visages", opts: ["Le mouton", "Le photographe", "Les deux"], a: 2 },
-            { q: "Un pigeon ou un GPS ? \n Retrouve son chemin à des centaines de kilomètres", opts: ["Le pigeon", "Le GPS", "Les deux"], a: 2 },
-            { q: "Un chien ou un nez électronique ? \n Détecte des odeurs invisibles", opts: ["Le chien", "Le nez électronique", "Les deux"], a: 2 },
-            { q: "Un poisson-globe ou un ballon de baudruche ? \n Se gonfle pour impressionner", opts: ["Le poisson-globe", "Le ballon", "Les deux"], a: 2 },
-            { q: "Un wombat ou un castor ? \n Produit des crottes en forme de cube", opts: ["Un wombat", "Un castor", "Les deux"], a: 0 }
+            { q: "Un escargot ou une lime ? \n Possède des milliers de dents", opts: ["L'escargot", "La lime", "Les deux"], a: 0, ex: "La radula de l'escargot porte des milliers de mini-dents en rangs : il râpe sa salade, exactement comme une lime." },
+            { q: "Une étoile de mer ou un prof absent ? \n S'en sort sans cerveau", opts: ["L'étoile de mer", "Le prof absent", "Les deux"], a: 0, ex: "L'étoile de mer n'a pas de cerveau centralisé : un simple réseau nerveux dans chaque bras suffit pour chasser et se régénérer." },
+            { q: "Une mouche ou une romance de vacances ? \n Ne dure qu'un mois", opts: ["La mouche", "La romance", "Les deux"], a: 2, ex: "Les deux s'éteignent vite : la mouche vit 3 à 4 semaines, la romance de vacances rarement plus longtemps." },
+            { q: "Une pieuvre ou un lézard ? \n Sacrifie un bout de lui-même pour survivre", opts: ["La pieuvre", "Le lézard", "Les deux"], a: 2, ex: "Les deux sacrifient un bout : le lézard largue sa queue, la pieuvre peut abandonner un bras. Les deux repoussent." },
+            { q: "Un flamant ou un filtre à café ? \n Mange la tête à l'envers", opts: ["Le flamant", "Le filtre", "Les deux"], a: 0, ex: "Le flamant filtre sa nourriture la tête en bas, bec retourné dans la boue : une plomberie de bec très efficace." },
+            { q: "Un hoatzin ou une étable ? \n Sent la ferme à des kilomètres", opts: ["Le hoatzin", "L'étable", "Les deux"], a: 2, ex: "Le hoatzin, oiseau amazonien, digère ses feuilles comme une vache : sa fermentation sent la ferme à des kilomètres." },
+            { q: "Un éléphant ou une station de métro ? \n Porte son petit pendant 22 mois", opts: ["L'éléphant", "La station", "Les deux"], a: 0, ex: "La gestation de l'éléphante dure environ 22 mois : la plus longue de tous les mammifères terrestres." },
+            { q: "Un kiwi ou une autruche ? \n Pond l'œuf le plus gros par rapport à sa taille", opts: ["Le kiwi", "L'autruche", "Les deux"], a: 0, ex: "L'œuf du kiwi peut peser jusqu'à un quart du poids de la femelle : record du monde rapporté à la taille de la maman." },
+            { q: "Une chauve-souris ou un deltaplane ? \n Vole sans moteur", opts: ["La chauve-souris", "Le deltaplane", "Les deux"], a: 2, ex: "Les deux volent sans moteur : ailes membraneuses chez la chauve-souris, toile tendue chez le deltaplane — même portance." },
+            { q: "Un albatros ou un planeur ? \n Tient des heures sans un battement d'aile", opts: ["L'albatros", "Le planeur", "Les deux"], a: 2, ex: "L'albatros exploite les rafales au ras des vagues pour planer des heures sans un battement d'aile, presque comme un planeur." },
+            { q: "Un chat ou un parachutiste ? \n Retombe sur ses pattes", opts: ["Le chat", "Le parachutiste", "Les deux"], a: 2, ex: "Les deux se rattrapent : le chat se retourne en chute libre en moins d'une seconde, le parachutiste ouvre sa voile." },
+            { q: "Un koala ou une sieste digestive ? \n S'étend sur 22 heures", opts: ["Le koala", "La sieste", "Les deux"], a: 0, ex: "Le koala dort jusqu'à 22 heures par jour : l'eucalyptus est si pauvre en énergie qu'il fait des économies." },
+            { q: "Un lémurien ou le kangourou ? \n Ne vit nulle part qu'à Madagascar", opts: ["Le lémurien", "Le kangourou", "Les deux"], a: 0, ex: "Les lémuriens ne vivent sauvages qu'à Madagascar, où l'évolution les a isolés depuis des millions d'années." },
+            { q: "La Chine ou Heinz ? \n A inventé le ketchup", opts: ["La Chine", "Heinz", "Les deux"], a: 0, ex: "Le ketchup descend d'un condiment chinois à base de poisson, le kôe-chiap, bien avant la version tomate américaine." },
+            { q: "Un bouillon fortifiant ou un resto ? \n L'un a donné son nom à l'autre", opts: ["Le bouillon", "Le resto", "Les deux"], a: 2, ex: "Le bouillon « restaurant », censé restaurer les forces, a donné son nom aux premiers restaurants parisiens du XVIIIe siècle." },
+            { q: "La statue de la Liberté ou la tour Eiffel ? \n Ont été construites en France", opts: ["La statue", "La tour", "Les deux"], a: 2, ex: "Les deux sont françaises : la statue de la Liberté a été construite à Paris par Bartholdi et offerte en 1886, la tour Eiffel suit en 1889." },
+            { q: "Le métro de Londres ou celui de Paris ? \n Roule depuis 1863", opts: ["Londres", "Paris", "Les deux"], a: 0, ex: "Le métro de Londres roule depuis 1863 : la première ligne souterraine du monde. Paris a attendu 1900." },
+            { q: "La Paz ou Paris ? \n Se niche à 3 600 m d'altitude", opts: ["La Paz", "Paris", "Les deux"], a: 0, ex: "La Paz se niche à environ 3 600 m d'altitude dans les Andes ; Paris reste à 35 m au-dessus de la mer." },
+            { q: "L'Arabie saoudite ou le Sahara ? \n N'a aucune rivière", opts: ["L'Arabie saoudite", "Le Sahara", "Les deux"], a: 0, ex: "L'Arabie saoudite n'a aucune rivière permanente, comme une poignée de pays désertiques dans le monde." },
+            { q: "La Vallée de la Mort ou un four à pain ? \n Dépasse les 56 °C", opts: ["La Vallée de la Mort", "Le four", "Les deux"], a: 0, ex: "La Vallée de la Mort a atteint 56,7 °C en 1913 : le record de chaleur jamais mesuré sur Terre. Le four, lui, fait ses preuves ailleurs." },
+            { q: "Oymiakon ou un congélateur ? \n Descend sous les -50 °C", opts: ["Oymiakon", "Le congélateur", "Les deux"], a: 2, ex: "Les deux gèlent : Oymiakon, village de Sibérie, descend sous -50 °C l'hiver, et certains congélateurs industriels aussi." },
+            { q: "Le lac Natron ou un laboratoire ? \n Transforme les corps en statues", opts: ["Le lac Natron", "Le laboratoire", "Les deux"], a: 0, ex: "Les eaux hyper-alcalines du lac Natron momifient les animaux qui s'y noient : une véritable statue de sel et de carbonate." },
+            { q: "Le lac Baïkal ou le lac Léman ? \n Contient 20 % de l'eau douce mondiale", opts: ["Le Baïkal", "Le Léman", "Les deux"], a: 0, ex: "Le lac Baïkal contient à lui seul environ 20 pour cent de l'eau douce non gelée de la planète." },
+            { q: "Un séquoia ou un immeuble de 40 étages ? \n Dépasse les 115 mètres", opts: ["Le séquoia", "L'immeuble", "Les deux"], a: 0, ex: "Le séquoia géant Hyperion culmine à près de 116 m : plus haut qu'un immeuble de 40 étages." },
+            { q: "Les arbres ou le Wi-Fi ? \n Communiquent par un réseau souterrain", opts: ["Les arbres", "Le Wi-Fi", "Les deux"], a: 0, ex: "Les arbres échangent sucres et signaux via les champignons du sol, un réseau souterrain surnommé le wood wide web." },
+            { q: "La tour de Pise ou un clocher ? \n Sonne les messes malgré sa penchette", opts: ["La tour de Pise", "Le clocher", "Les deux"], a: 2, ex: "La tour de Pise EST un clocher, celui de sa cathédrale : ses sept cloches sonnent toujours, penchées mais vaillantes." },
+            { q: "Venise ou une cabane sur pilotis ? \n Repose sur des millions de troncs", opts: ["Venise", "La cabane", "Les deux"], a: 2, ex: "Venise repose sur des millions de pilotis de bois enfoncés dans la vase : une cabane sur pilotis en version monumentale." },
+            { q: "Le Louvre ou Disneyland ? \n Accueille le plus de visiteurs au monde", opts: ["Le Louvre", "Disneyland", "Les deux"], a: 0, ex: "Le Louvre accueille environ 9 millions de visiteurs par an : le musée le plus visité du monde, devant tous les parcs." },
+            { q: "Les frères Lumière ou Edison ? \n Ont vendu les premiers tickets de cinéma", opts: ["Les frères Lumière", "Edison", "Les deux"], a: 0, ex: "Le 28 décembre 1895, le salon indien du Grand Café à Paris a vendu les premiers tickets payants de l'histoire du cinéma." },
+            { q: "Thriller ou Abbey Road ? \n S'est vendu à plus de 60 millions d'exemplaires", opts: ["Thriller", "Abbey Road", "Les deux"], a: 0, ex: "Thriller de Michael Jackson s'est vendu à plus de 66 millions d'exemplaires : l'album le plus vendu de tous les temps." },
+            { q: "La cigale ou la fourmi ? \n Fait le plus de bruit", opts: ["La cigale", "La fourmi", "Les deux"], a: 0, ex: "La cigale stridule à près de 100 décibels pour séduire ; la fourmi, elle, travaille en silence. Ésope l'avait déjà noté." },
+            { q: "La baudroie ou un pêcheur du dimanche ? \n Pêche avec sa canne intégrée", opts: ["La baudroie", "Le pêcheur", "Les deux"], a: 2, ex: "La baudroie pêche avec un leurre lumineux qui pend devant sa gueule : une canne à pêche intégrée, digne du dimanche." },
+            { q: "Le sterne arctique ou un retraité au soleil ? \n Voit deux étés par an", opts: ["Le sterne arctique", "Le retraité", "Les deux"], a: 0, ex: "Le sterne arctique voyage de l'Arctique à l'Antarctique et retour, environ 70 000 km par an : il vit deux étés." },
+            { q: "Une fourmi ou un agriculteur ? \n Cultive des champignons", opts: ["La fourmi", "L'agriculteur", "Les deux"], a: 2, ex: "Les deux cultivent : les fourmis coupe-feuilles élèvent des champignons sur des feuilles prédécoupées dans leurs nids souterrains." },
+            { q: "La sensitive ou un timide ? \n Se referme dès qu'on la touche", opts: ["La sensitive", "Le timide", "Les deux"], a: 2, ex: "La sensitive replie ses feuilles au moindre contact, réflexe de défense contre les insectes — le timide fait pareil, socialement." },
+            { q: "L'arum titan ou une benne à ordures ? \n Sent la charogne", opts: ["L'arum titan", "La benne", "Les deux"], a: 2, ex: "L'arum titan fleurit en dégageant une odeur de charogne pour attirer les mouches pollinisatrices : la benne, elle, subit." },
+            { q: "Un figuier de Barbarie ou un kiwi ? \n Pousse sur un cactus", opts: ["Le figuier de Barbarie", "Le kiwi", "Les deux"], a: 0, ex: "Le figuier de Barbarie pousse sur un cactus : ses figues sont les fruits des raquettes d'opuntia." },
+            { q: "Le safran ou la vanille ? \n Coûte une fortune au gramme", opts: ["Le safran", "La vanille", "Les deux"], a: 0, ex: "Le safran coûte plusieurs milliers d'euros le kilo : il faut environ 150 000 fleurs pour récolter un seul kilo de stigmates." },
+            { q: "La France ou l'Italie ? \n Produit plus de 1 000 fromages", opts: ["La France", "L'Italie", "Les deux"], a: 0, ex: "La France produit entre 1 000 et 1 200 fromages selon les comptes, devant l'Italie et ses quelque 500 variétés." },
+            { q: "Un mouton ou un photographe ? \n Reconnaît les visages", opts: ["Le mouton", "Le photographe", "Les deux"], a: 2, ex: "Les deux reconnaissent les visages : des études montrent que les moutons identifient des visages humains, jusqu'à 50 personnes." },
+            { q: "Un pigeon ou un GPS ? \n Retrouve son chemin à des centaines de kilomètres", opts: ["Le pigeon", "Le GPS", "Les deux"], a: 2, ex: "Les deux : le pigeon voyageur retrouve son chemin sur des centaines de kilomètres grâce au champ magnétique et aux repères, sans abonnement." },
+            { q: "Un chien ou un nez électronique ? \n Détecte des odeurs invisibles", opts: ["Le chien", "Le nez électronique", "Les deux"], a: 2, ex: "Les deux reniflent l'invisible : la truffe du chien détecte des molécules infinitésimales, comme les nez électroniques de labo." },
+            { q: "Un poisson-globe ou un ballon de baudruche ? \n Se gonfle pour impressionner", opts: ["Le poisson-globe", "Le ballon", "Les deux"], a: 2, ex: "Les deux se gonflent : le poisson-globe avale de l'eau pour tripler de volume, le ballon de baudruche son souffle." },
+            { q: "Un wombat ou un castor ? \n Produit des crottes en forme de cube", opts: ["Un wombat", "Un castor", "Les deux"], a: 0, ex: "Seul le wombat produit des crottes cubiques, grâce à l'élasticité particulière de son intestin. Le castor, lui, fait des tas." }
          ];
          /* Fournée manuscrite n°6 (4 choix). */
          const BURGER_QUIZ6 = [
@@ -1534,333 +1598,333 @@
             { cat: 'MAYO', q: "Quelle légende dit qu'un crocodile vit dans les égouts de New York ?", opts: ["Une rumeur urbaine jamais prouvée", "Un fait vérifié par la mairie", "Un documentaire animalier", "Une expérience de laboratoire"], a: 0, ex: "Les crocodiles dans les égouts de New York : une rumeur urbaine jamais prouvée, née des alligators échappés des villas floridiennes au début du XXe siècle — une légende qui se raconte encore." }
          ];
          const SEL_PEPPER4 = [
-            { q: "Une grenouille du Nord ou un surgelé ? \n Survit à l'hiver complètement gelé", opts: ["La grenouille", "Le surgelé", "Les deux"], a: 0 },
-            { q: "Un capucin ou un jongleur ? \n Se sert de sa queue comme d'une main", opts: ["Le capucin", "Le jongleur", "Les deux"], a: 0 },
-            { q: "Un paon ou un projecteur ? \n Éblouit pour mieux séduire", opts: ["Le paon", "Le projecteur", "Les deux"], a: 2 },
-            { q: "Le monarque ou un touriste ? \n Voyage 4 000 km sans bagage", opts: ["Le monarque", "Le touriste", "Les deux"], a: 2 },
-            { q: "Une abeille ou une araignée ? \n Compte six pattes", opts: ["L'abeille", "L'araignée", "Les deux"], a: 0 },
-            { q: "Un calmar géant ou un hublot ? \n Possède les plus grands yeux du monde", opts: ["Le calmar", "Le hublot", "Les deux"], a: 0 },
-            { q: "Le faucon pèlerin ou une voiture de sport ? \n Dépasse les 300 km/h", opts: ["Le faucon", "La voiture", "Les deux"], a: 0 },
-            { q: "Un manchot ou une mère de famille ? \n Reconnaît une voix parmi des milliers", opts: ["Le manchot", "La mère", "Les deux"], a: 2 },
-            { q: "Une autruche ou un général en retraite ? \n Baisse la tête en cas d'attaque", opts: ["L'autruche", "Le général", "Les deux"], a: 0 },
-            { q: "Une frégate ou un pilote de ligne ? \n Dort pendant le vol", opts: ["La frégate", "Le pilote", "Les deux"], a: 0 },
-            { q: "Un colibri ou une abeille ? \n Fait vrombir ses ailes", opts: ["Le colibri", "L'abeille", "Les deux"], a: 2 },
-            { q: "Un geai ou un banquier prudent ? \n Cache des provisions pour plus tard", opts: ["Le geai", "Le banquier", "Les deux"], a: 2 },
-            { q: "Un chat ou une caméra de nuit ? \n Voit dans le noir", opts: ["Le chat", "La caméra", "Les deux"], a: 2 },
-            { q: "Un lion ou une équipe de bureau ? \n Vit en groupe organisé", opts: ["Le lion", "L'équipe", "Les deux"], a: 2 },
-            { q: "Une limule ou une antiquité ? \n Existe depuis 450 millions d'années", opts: ["La limule", "L'antiquité", "Les deux"], a: 0 },
-            { q: "La limule ou la noblesse ? \n A le sang bleu", opts: ["La limule", "La noblesse", "Les deux"], a: 0 },
-            { q: "Un pin Bristlecone ou un arrière-grand-père ? \n Dépasse les 4 000 ans", opts: ["Le pin", "L'arrière-grand-père", "Les deux"], a: 0 },
-            { q: "Une dionée ou un piège à loup ? \n Se referme en un dixième de seconde", opts: ["La dionée", "Le piège", "Les deux"], a: 2 },
-            { q: "Le bambou ou un ascenseur express ? \n Monte de 90 cm par jour", opts: ["Le bambou", "L'ascenseur", "Les deux"], a: 0 },
-            { q: "L'agave ou une thèse ? \n Attend des décennies avant l'aboutissement", opts: ["L'agave", "La thèse", "Les deux"], a: 2 },
-            { q: "Un tournesol ou un radar ? \n Suit le soleil toute la journée", opts: ["Le tournesol", "Le radar", "Les deux"], a: 0 },
-            { q: "Une graine de lotus ou la Belle au bois dormant ? \n Se réveille après 1 000 ans", opts: ["La graine", "La Belle", "Les deux"], a: 2 },
-            { q: "Le cacao ou le billet ? \n Servait de monnaie", opts: ["Le cacao", "Le billet", "Les deux"], a: 0 },
-            { q: "La pomme de terre ou la tomate ? \n A été boudée comme toxique en Europe", opts: ["La pomme de terre", "La tomate", "Les deux"], a: 2 },
-            { q: "Un poisson des glaces ou une voiture d'hiver ? \n Fabrique son antigel", opts: ["Le poisson", "La voiture", "Les deux"], a: 0 },
-            { q: "Un colibri ou un hélicoptère ? \n Bat 50 fois par seconde", opts: ["Le colibri", "L'hélicoptère", "Les deux"], a: 0 },
-            { q: "Un serpent volant ou un planeur de compétition ? \n Se lance d'arbre en arbre", opts: ["Le serpent", "Le planeur", "Les deux"], a: 2 },
-            { q: "Un caméléon ou un surveillant général ? \n Observe partout sans tourner la tête", opts: ["Le caméléon", "Le surveillant", "Les deux"], a: 2 },
-            { q: "La langue de la girafe ou un pare-soleil ? \n Est teintée contre les UV", opts: ["La langue", "Le pare-soleil", "Les deux"], a: 0 },
-            { q: "Un hippopotame ou une esthéticienne ? \n Fabrique sa crème solaire", opts: ["L'hippopotame", "L'esthéticienne", "Les deux"], a: 0 },
-            { q: "Un rhinocéros ou un coiffeur ? \n Manie la kératine chaque jour", opts: ["Le rhinocéros", "Le coiffeur", "Les deux"], a: 2 },
-            { q: "Un serpent ou une chenille de train ? \n Compte plus de 300 pièces dans le dos", opts: ["Le serpent", "La chenille", "Les deux"], a: 0 },
-            { q: "Un serpent ou un sommelier ? \n Goûte l'air qui passe", opts: ["Le serpent", "Le sommelier", "Les deux"], a: 0 },
-            { q: "Un bombyx ou un parfumeur ? \n Sent sa belle à des kilomètres", opts: ["Le bombyx", "Le parfumeur", "Les deux"], a: 2 },
-            { q: "Une mouche ou un projectionniste ? \n Voit 250 images par seconde", opts: ["La mouche", "Le projectionniste", "Les deux"], a: 0 },
-            { q: "Une éphémère ou un jeûneur professionnel ? \n Ne mange jamais", opts: ["L'éphémère", "Le jeûneur", "Les deux"], a: 2 },
-            { q: "Une éphémère ou un feu d'artifice ? \n Ne dure que quelques heures", opts: ["L'éphémère", "Le feu d'artifice", "Les deux"], a: 2 },
-            { q: "Un poulpe ou un couteau suisse ? \n A un outil dans chaque bras", opts: ["Le poulpe", "Le couteau", "Les deux"], a: 2 },
-            { q: "La Grande Muraille ou le périphérique ? \n S'étend sur des milliers de kilomètres", opts: ["La Grande Muraille", "Le périph", "Les deux"], a: 0 },
-            { q: "Un ver de terre ou un ouvrier agricole ? \n Retourne la terre gratuitement", opts: ["Le ver de terre", "L'ouvrier", "Les deux"], a: 2 },
-            { q: "Une pieuvre ou un prestidigitateur ? \n Disparaît dans un nuage d'encre", opts: ["La pieuvre", "Le magicien", "Les deux"], a: 0 },
-            { q: "Une libellule ou un drone ? \n Vole dans toutes les directions, même sur place", opts: ["La libellule", "Le drone", "Les deux"], a: 2 },
-            { q: "Un mille-pattes ou un accordéon ? \n Se replie en zigzag", opts: ["Le mille-pattes", "L'accordéon", "Les deux"], a: 2 },
-            { q: "Un requin-baleine ou un bus à étage ? \n Avale des bouchées géantes de plancton", opts: ["Le requin-baleine", "Le bus", "Les deux"], a: 0 },
-            { q: "Une taupe ou un jardinier du dimanche ? \n Fait des trous dans la pelouse", opts: ["La taupe", "Le jardinier", "Les deux"], a: 2 },
-            { q: "Un tardigrade ou une fourmi ? \n Peut survivre à des conditions extrêmes", opts: ["Un tardigrade", "Une fourmi", "Les deux"], a: 0 }
+            { q: "Une grenouille du Nord ou un surgelé ? \n Survit à l'hiver complètement gelé", opts: ["La grenouille", "Le surgelé", "Les deux"], a: 0, ex: "La grenouille du Nord survit à l'hiver complètement gelée : son cœur s'arrête, un sucre naturel protège ses cellules, et elle repart au printemps. Le surgelé, lui, reste au congélateur." },
+            { q: "Un capucin ou un jongleur ? \n Se sert de sa queue comme d'une main", opts: ["Le capucin", "Le jongleur", "Les deux"], a: 0, ex: "Le capucin saisit branches et objets avec sa queue préhensile : une cinquième main. Le jongleur, lui, se débrouille avec ses deux mains." },
+            { q: "Un paon ou un projecteur ? \n Éblouit pour mieux séduire", opts: ["Le paon", "Le projecteur", "Les deux"], a: 2, ex: "Les deux éblouissent : la roue du paon est un show de couleurs pour séduire la paonne, le projecteur éclaire la salle — même but, impressionner." },
+            { q: "Le monarque ou un touriste ? \n Voyage 4 000 km sans bagage", opts: ["Le monarque", "Le touriste", "Les deux"], a: 2, ex: "Les deux parcourent des milliers de kilomètres : le monarque vole 4 000 km du Canada au Mexique sans bagage, le touriste avec des valises et en avion." },
+            { q: "Une abeille ou une araignée ? \n Compte six pattes", opts: ["L'abeille", "L'araignée", "Les deux"], a: 0, ex: "L'abeille a six pattes, comme tous les insectes ; l'araignée en a huit, ce n'est donc pas un insecte." },
+            { q: "Un calmar géant ou un hublot ? \n Possède les plus grands yeux du monde", opts: ["Le calmar", "Le hublot", "Les deux"], a: 0, ex: "Les yeux du calmar géant atteignent 27 cm de diamètre, les plus grands du monde animal. Le hublot, lui, garde toujours le même format." },
+            { q: "Le faucon pèlerin ou une voiture de sport ? \n Dépasse les 300 km/h", opts: ["Le faucon", "La voiture", "Les deux"], a: 0, ex: "En piqué, le faucon pèlerin dépasse 300 km/h : l'animal le plus rapide du monde. Une voiture de sport frôle ce chiffre en pointe, sur circuit." },
+            { q: "Un manchot ou une mère de famille ? \n Reconnaît une voix parmi des milliers", opts: ["Le manchot", "La mère", "Les deux"], a: 2, ex: "Les deux reconnaissent une voix : le manchot identifie le cri de son petit parmi des dizaines de milliers, la mère repère le sien dans une cour de récré." },
+            { q: "Une autruche ou un général en retraite ? \n Baisse la tête en cas d'attaque", opts: ["L'autruche", "Le général", "Les deux"], a: 0, ex: "L'autruche plaque sa tête au sol pour se fondre dans la savane, d'où la légende ; le général en retraite, lui, baisse juste les bras." },
+            { q: "Une frégate ou un pilote de ligne ? \n Dort pendant le vol", opts: ["La frégate", "Le pilote", "Les deux"], a: 0, ex: "La frégate dort par petits sommeils en plein vol, des semaines au-dessus de l'océan : elle ne peut pas se poser sur l'eau. Le pilote de ligne, lui, a un copilote." },
+            { q: "Un colibri ou une abeille ? \n Fait vrombir ses ailes", opts: ["Le colibri", "L'abeille", "Les deux"], a: 2, ex: "Les deux font vibrer l'air : le colibri bat des ailes jusqu'à 50 fois par seconde, l'abeille près de 200. Le vrombissement est leur signature." },
+            { q: "Un geai ou un banquier prudent ? \n Cache des provisions pour plus tard", opts: ["Le geai", "Le banquier", "Les deux"], a: 2, ex: "Les deux mettent de côté : le geai cache des milliers de graines et en retrouve l'essentiel, le banquier prudent constitue des réserves." },
+            { q: "Un chat ou une caméra de nuit ? \n Voit dans le noir", opts: ["Le chat", "La caméra", "Les deux"], a: 2, ex: "Les deux voient dans le noir : le chat grâce à un tapis réfléchissant derrière la rétine, la caméra de nuit grâce à ses capteurs infrarouges." },
+            { q: "Un lion ou une équipe de bureau ? \n Vit en groupe organisé", opts: ["Le lion", "L'équipe", "Les deux"], a: 2, ex: "Les deux vivent en groupe organisé : la fierté du lion répartit les rôles, l'équipe de bureau répartit les réunions. Seule la hiérarchie change." },
+            { q: "Une limule ou une antiquité ? \n Existe depuis 450 millions d'années", opts: ["La limule", "L'antiquité", "Les deux"], a: 0, ex: "La limule existe depuis 450 millions d'années, presque inchangée : un fossile vivant. Aucune antiquité humaine ne rivalise." },
+            { q: "La limule ou la noblesse ? \n A le sang bleu", opts: ["La limule", "La noblesse", "Les deux"], a: 0, ex: "Le sang de la limule est bleu, teinté par le cuivre de son hémocyanine — et bien plus utile que celui de la noblesse : il sert à tester les vaccins." },
+            { q: "Un pin Bristlecone ou un arrière-grand-père ? \n Dépasse les 4 000 ans", opts: ["Le pin", "L'arrière-grand-père", "Les deux"], a: 0, ex: "Les pins Bristlecone vivent plus de 4 000 ans : les plus vieux arbres connus de la planète. L'arrière-grand-père, respect, mais c'est court." },
+            { q: "Une dionée ou un piège à loup ? \n Se referme en un dixième de seconde", opts: ["La dionée", "Le piège", "Les deux"], a: 2, ex: "Les deux claquent : la dionée se referme en un dixième de seconde sur l'insecte, le piège à loup sur la patte. La mécanique gagne." },
+            { q: "Le bambou ou un ascenseur express ? \n Monte de 90 cm par jour", opts: ["Le bambou", "L'ascenseur", "Les deux"], a: 0, ex: "Le bambou peut pousser jusqu'à 90 cm par jour, la plante la plus rapide du monde : par nuit calme, on l'entend même craquer." },
+            { q: "L'agave ou une thèse ? \n Attend des décennies avant l'aboutissement", opts: ["L'agave", "La thèse", "Les deux"], a: 2, ex: "Les deux prennent leur temps : l'agave fleurit une seule fois après des décennies, puis meurt ; la thèse, elle, finit par se soutenir." },
+            { q: "Un tournesol ou un radar ? \n Suit le soleil toute la journée", opts: ["Le tournesol", "Le radar", "Les deux"], a: 0, ex: "Le jeune tournesol suit le soleil d'est en ouest toute la journée, c'est l'héliotropisme ; le radar tourne, lui, pour tout voir sans préférence." },
+            { q: "Une graine de lotus ou la Belle au bois dormant ? \n Se réveille après 1 000 ans", opts: ["La graine", "La Belle", "Les deux"], a: 2, ex: "Les deux dorment longtemps : des graines de lotus ont germé après 1 000 ans, la Belle au bois dormant après cent. Le vrai record dépasse le conte." },
+            { q: "Le cacao ou le billet ? \n Servait de monnaie", opts: ["Le cacao", "Le billet", "Les deux"], a: 0, ex: "Les Aztèques utilisaient les fèves de cacao comme monnaie : impôts et marchés se payaient en chocolat. Le billet, lui, n'existait pas encore." },
+            { q: "La pomme de terre ou la tomate ? \n A été boudée comme toxique en Europe", opts: ["La pomme de terre", "La tomate", "Les deux"], a: 2, ex: "Les deux ont été boudées : la pomme de terre fut soupçonnée de donner la lèpre, la tomate d'empoisonner — la famille des solanacées a traîné une sale réputation." },
+            { q: "Un poisson des glaces ou une voiture d'hiver ? \n Fabrique son antigel", opts: ["Le poisson", "La voiture", "Les deux"], a: 0, ex: "Le poisson des glaces fabrique des protéines antigel dans son sang pour vivre sous la banquise ; la voiture d'hiver, elle, se contente du liquide du même nom." },
+            { q: "Un colibri ou un hélicoptère ? \n Bat 50 fois par seconde", opts: ["Le colibri", "L'hélicoptère", "Les deux"], a: 0, ex: "Le colibri bat des ailes environ 50 fois par seconde pour planer sur place ; l'hélicoptère, lui, tourne à quelques tours par seconde." },
+            { q: "Un serpent volant ou un planeur de compétition ? \n Se lance d'arbre en arbre", opts: ["Le serpent", "Le planeur", "Les deux"], a: 2, ex: "Les deux planent : le serpent volant d'Asie s'élance d'arbre en arbre en s'aplatissant en vrille, le planeur de compétition avec ses grandes ailes." },
+            { q: "Un caméléon ou un surveillant général ? \n Observe partout sans tourner la tête", opts: ["Le caméléon", "Le surveillant", "Les deux"], a: 2, ex: "Les deux voient tout sans tourner la tête : les yeux du caméléon bougent indépendamment et couvrent presque tout l'horizon, le surveillant a des yeux dans le dos." },
+            { q: "La langue de la girafe ou un pare-soleil ? \n Est teintée contre les UV", opts: ["La langue", "Le pare-soleil", "Les deux"], a: 0, ex: "La langue de la girafe, gris foncé, est pigmentée pour résister aux UV : elle broute jusqu'à 6 heures par jour, la tête au soleil." },
+            { q: "Un hippopotame ou une esthéticienne ? \n Fabrique sa crème solaire", opts: ["L'hippopotame", "L'esthéticienne", "Les deux"], a: 0, ex: "L'hippopotame sécrète une substance rougeâtre, le sang de sueur, qui le protège du soleil et des infections : sa crème solaire maison." },
+            { q: "Un rhinocéros ou un coiffeur ? \n Manie la kératine chaque jour", opts: ["Le rhinocéros", "Le coiffeur", "Les deux"], a: 2, ex: "Les deux manient la kératine : la corne du rhinocéros est un paquet de poils agglomérés, le coiffeur apprivoise la même protéine en coupe." },
+            { q: "Un serpent ou une chenille de train ? \n Compte plus de 300 pièces dans le dos", opts: ["Le serpent", "La chenille", "Les deux"], a: 0, ex: "La colonne du serpent compte jusqu'à 400 vertèbres avec leurs côtes : plus de 300 pièces mobiles dans le dos. La chenille de train, elle, reste au ras du sol." },
+            { q: "Un serpent ou un sommelier ? \n Goûte l'air qui passe", opts: ["Le serpent", "Le sommelier", "Les deux"], a: 0, ex: "Le serpent goûte l'air avec sa langue fourchue : il capte les particules et les analyse avec son organe de Jacobson. Le sommelier, lui, a le nez dans le verre." },
+            { q: "Un bombyx ou un parfumeur ? \n Sent sa belle à des kilomètres", opts: ["Le bombyx", "Le parfumeur", "Les deux"], a: 2, ex: "Les deux ont le flair : le bombyx mâle détecte la femelle à des kilomètres grâce à ses antennes plumeuses, le parfumeur au bout de son nez." },
+            { q: "Une mouche ou un projectionniste ? \n Voit 250 images par seconde", opts: ["La mouche", "Le projectionniste", "Les deux"], a: 0, ex: "La mouche voit environ 250 images par seconde : le monde semble ralenti pour elle, d'où l'impossibilité de l'attraper à la main. Le projectionniste, lui, projette 24 images." },
+            { q: "Une éphémère ou un jeûneur professionnel ? \n Ne mange jamais", opts: ["L'éphémère", "Le jeûneur", "Les deux"], a: 2, ex: "L'éphémère adulte n'a pas de bouche fonctionnelle : elle vit sur ses réserves quelques heures, sans jamais manger, le temps de se reproduire." },
+            { q: "Une éphémère ou un feu d'artifice ? \n Ne dure que quelques heures", opts: ["L'éphémère", "Le feu d'artifice", "Les deux"], a: 2, ex: "Les deux brillent bref : l'éphémère ne dure que quelques heures à l'état adulte, le feu d'artifice quelques minutes." },
+            { q: "Un poulpe ou un couteau suisse ? \n A un outil dans chaque bras", opts: ["Le poulpe", "Le couteau", "Les deux"], a: 2, ex: "Les deux sont multifonctions : chaque bras du poulpe goûte, ventouse et agit presque indépendamment, comme les lames d'un couteau suisse." },
+            { q: "La Grande Muraille ou le périphérique ? \n S'étend sur des milliers de kilomètres", opts: ["La Grande Muraille", "Le périph", "Les deux"], a: 0, ex: "La Grande Muraille cumule plus de 20 000 km de tronçons ; le périphérique parisien plafonne à 35 km — avec plus de bouchons au km." },
+            { q: "Un ver de terre ou un ouvrier agricole ? \n Retourne la terre gratuitement", opts: ["Le ver de terre", "L'ouvrier", "Les deux"], a: 2, ex: "Les deux retournent la terre : le ver de terre l'aère et la fertilise gratuitement, l'ouvrier agricole facture ses heures." },
+            { q: "Une pieuvre ou un prestidigitateur ? \n Disparaît dans un nuage d'encre", opts: ["La pieuvre", "Le magicien", "Les deux"], a: 0, ex: "La pieuvre disparaît dans un nuage d'encre, son écran de fumée naturel ; le prestidigitateur, lui, travaille plutôt avec des jeux de manches." },
+            { q: "Une libellule ou un drone ? \n Vole dans toutes les directions, même sur place", opts: ["La libellule", "Le drone", "Les deux"], a: 2, ex: "Les deux volent dans toutes les directions : la libellule maîtrise le vol sur place, arrière et latéral avec quatre ailes indépendantes — le drone copie son style." },
+            { q: "Un mille-pattes ou un accordéon ? \n Se replie en zigzag", opts: ["Le mille-pattes", "L'accordéon", "Les deux"], a: 2, ex: "Les deux se replient en zigzag : le mille-pattes ondule en vagues, l'accordéon en soufflets. L'un joue moins bien la musette." },
+            { q: "Un requin-baleine ou un bus à étage ? \n Avale des bouchées géantes de plancton", opts: ["Le requin-baleine", "Le bus", "Les deux"], a: 0, ex: "Le requin-baleine filtre des tonnes de plancton en avalant des bouchées géantes, gueule béante ; le bus à étage, lui, avale des passagers." },
+            { q: "Une taupe ou un jardinier du dimanche ? \n Fait des trous dans la pelouse", opts: ["La taupe", "Le jardinier", "Les deux"], a: 2, ex: "Les deux percent la pelouse : la taupe creuse ses galeries en quête de vers, le jardinier du dimanche pour planter ses tomates." },
+            { q: "Un tardigrade ou une fourmi ? \n Peut survivre à des conditions extrêmes", opts: ["Un tardigrade", "Une fourmi", "Les deux"], a: 0, ex: "Le tardigrade survit au vide spatial, aux rayonnements et aux températures extrêmes en se déshydratant : le champion absolu. La fourmi, vaillante, s'incline." }
          ];
          /* Fournée manuscrite n°6 (duels Sel ou poivre). */
          const SEL_PEPPER5 = [
-            { q: "Un paresseux ou un végétal ? \n Porte des algues sur le dos", opts: ["Un paresseux", "Un végétal", "Les deux"], a: 2 },
-            { q: "La girafe ou un deejay ? \n Communique en infrasons", opts: ["La girafe", "Un deejay", "Les deux"], a: 0 },
-            { q: "Le tigre ou un maître-nageur ? \n Traverse les fleuves à la nage", opts: ["Le tigre", "Un maître-nageur", "Les deux"], a: 2 },
-            { q: "La femelle moustique ou une future maman ? \n A besoin de protéines", opts: ["La femelle moustique", "Une future maman", "Les deux"], a: 2 },
-            { q: "La mygale ou un capteur WiFi ? \n Sent tout avec ses poils", opts: ["La mygale", "Un capteur WiFi", "Les deux"], a: 2 },
-            { q: "La phrygane ou un maçon ? \n Construit sa maison en cailloux", opts: ["La phrygane", "Un maçon", "Les deux"], a: 0 },
-            { q: "La saltique ou un gymnaste ? \n Saute sans élastique", opts: ["La saltique", "Un gymnaste", "Les deux"], a: 0 },
-            { q: "Les mouches ou les enquêteurs ? \n Aident à dater les crimes", opts: ["Les mouches", "Les enquêteurs", "Les deux"], a: 0 },
-            { q: "La mangouste ou un antidouleur ? \n Résiste au venin", opts: ["La mangouste", "Un antidouleur", "Les deux"], a: 0 },
-            { q: "Le castor ou un entrepreneur de travaux publics ? \n Construit des barrages", opts: ["Le castor", "Un entrepreneur", "Les deux"], a: 2 },
-            { q: "L'ornithorynque ou un canard ? \n Porte un bec", opts: ["L'ornithorynque", "Un canard", "Les deux"], a: 0 },
-            { q: "L'ornithorynque ou un sonar ? \n Chasse sans voir ses proies", opts: ["L'ornithorynque", "Un sonar", "Les deux"], a: 0 },
-            { q: "L'ornithorynque ou l'échidné ? \n Pond des œufs", opts: ["L'ornithorynque", "L'échidné", "Les deux"], a: 2 },
-            { q: "La baleine boréale ou un patriarche ? \n Dépasse les 200 ans", opts: ["La baleine boréale", "Un patriarche", "Les deux"], a: 0 },
-            { q: "Le saumon ou un GPS de série ? \n Retrouve sa rivière natale", opts: ["Le saumon", "Un GPS de série", "Les deux"], a: 0 },
-            { q: "L'anguille ou un globe-trotter ? \n Traverse l'Atlantique pour l'amour", opts: ["L'anguille", "Un globe-trotter", "Les deux"], a: 2 },
-            { q: "La narvale ou une licorne ? \n Porte une longue défense en spirale", opts: ["La narvale", "Une licorne", "Les deux"], a: 0 },
-            { q: "Le cachalot ou un klaxon de brume ? \n Émet jusqu'à 230 décibels", opts: ["Le cachalot", "Un klaxon de brume", "Les deux"], a: 0 },
-            { q: "Le cachalot ou un plongeur des abysses ? \n Chasse le calmar géant", opts: ["Le cachalot", "Un plongeur", "Les deux"], a: 0 },
-            { q: "L'orque ou un stratège militaire ? \n Chasse le grand requin blanc", opts: ["L'orque", "Un stratège", "Les deux"], a: 0 },
-            { q: "Un requin retourné ou un ours en peluche ? \n Devient tout mou", opts: ["Un requin retourné", "Un ours en peluche", "Les deux"], a: 2 },
-            { q: "Le bernard-l'hermite ou un locataire en déménagement ? \n Change de coquille pour grandir", opts: ["Le bernard-l'hermite", "Un locataire", "Les deux"], a: 2 },
-            { q: "L'étoile de mer ou une cantine à ciel ouvert ? \n Sort son estomac pour manger", opts: ["L'étoile de mer", "Une cantine", "Les deux"], a: 0 },
-            { q: "L'étoile de mer ou la salamandre ? \n Repousse un membre perdu", opts: ["L'étoile de mer", "La salamandre", "Les deux"], a: 2 },
-            { q: "Le ver lacet ou un ruban de ménage ? \n Dépasse les 50 mètres", opts: ["Le ver lacet", "Un ruban", "Les deux"], a: 0 },
-            { q: "Le ver planaire ou un magicien ? \n Se reconstitue à partir d'un fragment", opts: ["Le ver planaire", "Un magicien", "Les deux"], a: 2 },
-            { q: "La sangsue ou l'infirmière de campagne ? \n Soignait les malades jadis", opts: ["La sangsue", "L'infirmière de campagne", "Les deux"], a: 2 },
-            { q: "La sangsue ou l'aspirine ? \n Fluidifie le sang", opts: ["La sangsue", "L'aspirine", "Les deux"], a: 2 },
-            { q: "L'étoile de mer ou une griffe de levage ? \n Ouvre les moules à la force brute", opts: ["L'étoile de mer", "Une griffe", "Les deux"], a: 0 },
-            { q: "Le chameau ou un camion citerne ? \n Boit 100 litres d'un coup", opts: ["Le chameau", "Un camion citerne", "Les deux"], a: 0 },
-            { q: "La bosse du chameau ou une banque ? \n Stocke la graisse de réserve", opts: ["La bosse du chameau", "Une banque", "Les deux"], a: 2 },
-            { q: "Les cils du chameau ou un masque de chantier ? \n Protègent du sable", opts: ["Les cils du chameau", "Un masque", "Les deux"], a: 2 },
-            { q: "Le poisson-pierre ou un tapis ? \n Se cache à plat dans le sable", opts: ["Le poisson-pierre", "Un tapis", "Les deux"], a: 2 },
-            { q: "Le poisson-globe ou un hérisson ? \n Se hérisse de piquants", opts: ["Le poisson-globe", "Un hérisson", "Les deux"], a: 0 },
-            { q: "Le mérou ou un gardien de nuit ? \n Change de sexe en vieillissant", opts: ["Le mérou", "Un gardien", "Les deux"], a: 0 },
-            { q: "Le poisson archer ou un sniper ? \n Crache sur ses proies", opts: ["Le poisson archer", "Un sniper", "Les deux"], a: 0 },
-            { q: "L'hippocampe ou une coccinelle ? \n Se déplace à la verticale", opts: ["L'hippocampe", "Une coccinelle", "Les deux"], a: 0 },
-            { q: "La loutre ou un enfant turbulent ? \n Fait des toboggans pour le plaisir", opts: ["La loutre", "Un enfant turbulent", "Les deux"], a: 2 },
-            { q: "La loutre ou un dormeur léger ? \n Flotte sur le dos pour dormir", opts: ["La loutre", "Un dormeur léger", "Les deux"], a: 0 },
-            { q: "Le huard ou un cor de chasse ? \n S'entend à des kilomètres sur le lac", opts: ["Le huard", "Un cor de chasse", "Les deux"], a: 0 },
-            { q: "Le canard ou un bouchon ? \n Remonte toujours à la surface", opts: ["Le canard", "Un bouchon", "Les deux"], a: 2 },
-            { q: "La mouette ou un casse-croûte volant ? \n Pique les frites sur les digues", opts: ["La mouette", "Un casse-croûte", "Les deux"], a: 2 },
-            { q: "Un chameau ou un dromadaire ? \n Possède deux bosses", opts: ["Un chameau", "Un dromadaire", "Les deux"], a: 0 }
+            { q: "Un paresseux ou un végétal ? \n Porte des algues sur le dos", opts: ["Un paresseux", "Un végétal", "Les deux"], a: 2, ex: "Les deux portent des algues : le pelage du paresseux est un mini-écosystème d'algues vertes, son camouflage vivant." },
+            { q: "La girafe ou un deejay ? \n Communique en infrasons", opts: ["La girafe", "Un deejay", "Les deux"], a: 0, ex: "La girafe communique en infrasons, trop graves pour nos oreilles : elle discute sans que personne ne l'entende." },
+            { q: "Le tigre ou un maître-nageur ? \n Traverse les fleuves à la nage", opts: ["Le tigre", "Un maître-nageur", "Les deux"], a: 2, ex: "Les deux traversent à la nage : le tigre franchit des fleuves larges de plusieurs kilomètres, le maître-nageur boucle ses longueurs." },
+            { q: "La femelle moustique ou une future maman ? \n A besoin de protéines", opts: ["La femelle moustique", "Une future maman", "Les deux"], a: 2, ex: "Les deux ont besoin de protéines : la femelle moustique pique pour nourrir ses œufs de sang riche en protéines, la future maman surveille son assiette." },
+            { q: "La mygale ou un capteur WiFi ? \n Sent tout avec ses poils", opts: ["La mygale", "Un capteur WiFi", "Les deux"], a: 2, ex: "Les deux sentent tout avec leurs poils : ceux de la mygale captent les vibrations les plus fines, les antennes du capteur les ondes." },
+            { q: "La phrygane ou un maçon ? \n Construit sa maison en cailloux", opts: ["La phrygane", "Un maçon", "Les deux"], a: 0, ex: "La phrygane, larve aquatique, se construit un fourreau de petits cailloux collés un à un : un vrai travail de maçon miniature." },
+            { q: "La saltique ou un gymnaste ? \n Saute sans élastique", opts: ["La saltique", "Un gymnaste", "Les deux"], a: 0, ex: "La saltique, araignée sauteuse, bondit des dizaines de fois sa hauteur sans élastique : le gymnaste reste dans sa catégorie." },
+            { q: "Les mouches ou les enquêteurs ? \n Aident à dater les crimes", opts: ["Les mouches", "Les enquêteurs", "Les deux"], a: 0, ex: "Les mouches colonisent un cadavre en vagues successives et horodatées : l'entomologie forensique date les crimes grâce à leurs larves." },
+            { q: "La mangouste ou un antidouleur ? \n Résiste au venin", opts: ["La mangouste", "Un antidouleur", "Les deux"], a: 0, ex: "La mangouste résiste au venin des serpents grâce à ses récepteurs nerveux modifiés : elle croque le cobra malgré tout." },
+            { q: "Le castor ou un entrepreneur de travaux publics ? \n Construit des barrages", opts: ["Le castor", "Un entrepreneur", "Les deux"], a: 2, ex: "Les deux construisent des barrages : celui du castor, en rondins et recalé chaque année, fait honte aux devis des entreprises." },
+            { q: "L'ornithorynque ou un canard ? \n Porte un bec", opts: ["L'ornithorynque", "Un canard", "Les deux"], a: 0, ex: "L'ornithorynque porte un bec de canard sur un corps de mammifère fourré : l'un des animaux les plus étranges du monde." },
+            { q: "L'ornithorynque ou un sonar ? \n Chasse sans voir ses proies", opts: ["L'ornithorynque", "Un sonar", "Les deux"], a: 0, ex: "Les yeux de l'ornithorynque se ferment sous l'eau : il chasse avec son bec électrosensible qui détecte les champs des proies, comme un sonar." },
+            { q: "L'ornithorynque ou l'échidné ? \n Pond des œufs", opts: ["L'ornithorynque", "L'échidné", "Les deux"], a: 2, ex: "Les deux pondent : l'ornithorynque et l'échidné sont les seuls mammifères ovipares, tout en allaitant leurs petits." },
+            { q: "La baleine boréale ou un patriarche ? \n Dépasse les 200 ans", opts: ["La baleine boréale", "Un patriarche", "Les deux"], a: 0, ex: "La baleine boréale dépasse les 200 ans : des individus ont été capturés avec des harpons du XIXe siècle logés dans la chair." },
+            { q: "Le saumon ou un GPS de série ? \n Retrouve sa rivière natale", opts: ["Le saumon", "Un GPS de série", "Les deux"], a: 0, ex: "Le saumon revient pondre dans sa rivière natale après des années en mer, guidé par l'odeur chimique de l'eau où il est né." },
+            { q: "L'anguille ou un globe-trotter ? \n Traverse l'Atlantique pour l'amour", opts: ["L'anguille", "Un globe-trotter", "Les deux"], a: 2, ex: "Les deux traversent l'Atlantique pour l'amour : l'anguille européenne va frayer dans la mer des Sargasses, des milliers de kilomètres de sa rivière." },
+            { q: "La narvale ou une licorne ? \n Porte une longue défense en spirale", opts: ["La narvale", "Une licorne", "Les deux"], a: 0, ex: "Le narvale mâle porte une longue défense en spirale, une canine géante truffée de nerfs : la licorne des mers, elle, reste imaginaire." },
+            { q: "Le cachalot ou un klaxon de brume ? \n Émet jusqu'à 230 décibels", opts: ["Le cachalot", "Un klaxon de brume", "Les deux"], a: 0, ex: "Le cachalot émet des clics jusqu'à 230 décibels, le son le plus fort du règne animal : de quoi assommer un calmar dans le noir." },
+            { q: "Le cachalot ou un plongeur des abysses ? \n Chasse le calmar géant", opts: ["Le cachalot", "Un plongeur", "Les deux"], a: 0, ex: "Le cachalot chasse le calmar géant à plus de 2 000 m de profondeur : les cicatrices de ventouses sur sa peau racontent les combats." },
+            { q: "L'orque ou un stratège militaire ? \n Chasse le grand requin blanc", opts: ["L'orque", "Un stratège", "Les deux"], a: 0, ex: "L'orque, super-prédatrice des océans, chasse le grand requin blanc, parfois en le retournant sur le dos pour le paralyser." },
+            { q: "Un requin retourné ou un ours en peluche ? \n Devient tout mou", opts: ["Un requin retourné", "Un ours en peluche", "Les deux"], a: 2, ex: "Retourné sur le dos, le requin entre en transe tonique et devient tout mou ; l'ours en peluche, lui, n'a jamais eu de muscles." },
+            { q: "Le bernard-l'hermite ou un locataire en déménagement ? \n Change de coquille pour grandir", opts: ["Le bernard-l'hermite", "Un locataire", "Les deux"], a: 2, ex: "Les deux changent de coquille : le bernard-l'hermite troque la sienne pour une plus grande en grandissant, le locataire cherche mieux en déménageant." },
+            { q: "L'étoile de mer ou une cantine à ciel ouvert ? \n Sort son estomac pour manger", opts: ["L'étoile de mer", "Une cantine", "Les deux"], a: 0, ex: "L'étoile de mer sort son estomac par la bouche, enveloppe la moule et la digère sur place avant de tout rentrer : la cantine, elle, sert en barquette." },
+            { q: "L'étoile de mer ou la salamandre ? \n Repousse un membre perdu", opts: ["L'étoile de mer", "La salamandre", "Les deux"], a: 2, ex: "Les deux repoussent : l'étoile de mer régénère un bras entier, la salamandre une patte ou une queue, grâce à leurs cellules souches." },
+            { q: "Le ver lacet ou un ruban de ménage ? \n Dépasse les 50 mètres", opts: ["Le ver lacet", "Un ruban", "Les deux"], a: 0, ex: "Le ver lacet s'étire au-delà de 50 mètres dans les failles rocheuses : l'un des plus longs animaux du monde, loin des rubans de ménage." },
+            { q: "Le ver planaire ou un magicien ? \n Se reconstitue à partir d'un fragment", opts: ["Le ver planaire", "Un magicien", "Les deux"], a: 2, ex: "Coupé en fragments, le ver planaire régénère plusieurs vers complets à partir d'un seul morceau : de la vraie magie cellulaire." },
+            { q: "La sangsue ou l'infirmière de campagne ? \n Soignait les malades jadis", opts: ["La sangsue", "L'infirmière de campagne", "Les deux"], a: 2, ex: "Jadis, on appliquait des sangsues pour soigner presque tout : la saignée était une panacée. L'infirmière de campagne, elle, avait vraiment le diplôme." },
+            { q: "La sangsue ou l'aspirine ? \n Fluidifie le sang", opts: ["La sangsue", "L'aspirine", "Les deux"], a: 2, ex: "Les deux fluidifient : la salive de la sangsue contient de l'hirudine, un anticoagulant puissant, et l'aspirine fluidifie le sang en pharmacie." },
+            { q: "L'étoile de mer ou une griffe de levage ? \n Ouvre les moules à la force brute", opts: ["L'étoile de mer", "Une griffe", "Les deux"], a: 0, ex: "L'étoile de mer écarte les valves de la moule à la force de ses bras et de ses centaines de pieds à succion, jusqu'à ce qu'elle cède." },
+            { q: "Le chameau ou un camion citerne ? \n Boit 100 litres d'un coup", opts: ["Le chameau", "Un camion citerne", "Les deux"], a: 0, ex: "Le chameau boit jusqu'à 100 litres d'un coup pour refaire ses réserves ; le camion citerne, lui, se remplit à la pompe." },
+            { q: "La bosse du chameau ou une banque ? \n Stocke la graisse de réserve", opts: ["La bosse du chameau", "Une banque", "Les deux"], a: 2, ex: "La bosse du chameau est une réserve de graisse, transformée en énergie et en eau quand le désert s'éternise : une vraie banque de survie." },
+            { q: "Les cils du chameau ou un masque de chantier ? \n Protègent du sable", opts: ["Les cils du chameau", "Un masque", "Les deux"], a: 2, ex: "Les deux protègent du sable : les cils doubles du chameau et ses narines à clapet filtrent le vent, comme un masque de chantier." },
+            { q: "Le poisson-pierre ou un tapis ? \n Se cache à plat dans le sable", opts: ["Le poisson-pierre", "Un tapis", "Les deux"], a: 2, ex: "Les deux se cachent à plat : le poisson-pierre s'enterre dans le sable, invisible et venimeux, le tapis disparaît sous les meubles." },
+            { q: "Le poisson-globe ou un hérisson ? \n Se hérisse de piquants", opts: ["Le poisson-globe", "Un hérisson", "Les deux"], a: 0, ex: "Gonflé, le poisson-globe hérisse de vrais piquants qui sortent de sa peau : un oursin de mer. Le hérisson, lui, les porte en permanence." },
+            { q: "Le mérou ou un gardien de nuit ? \n Change de sexe en vieillissant", opts: ["Le mérou", "Un gardien", "Les deux"], a: 0, ex: "Le mérou change de sexe en vieillissant : beaucoup naissent femelles puis deviennent mâles. Le gardien de nuit, lui, ne change que de service." },
+            { q: "Le poisson archer ou un sniper ? \n Crache sur ses proies", opts: ["Le poisson archer", "Un sniper", "Les deux"], a: 0, ex: "Le poisson archer crache un jet d'eau sur les insectes au-dessus de la surface et les fait tomber dans sa bouche : un sniper qui tire des gouttes." },
+            { q: "L'hippocampe ou une coccinelle ? \n Se déplace à la verticale", opts: ["L'hippocampe", "Une coccinelle", "Les deux"], a: 0, ex: "L'hippocampe se déplace à la verticale, propulsé par une petite nageoire dorsale qui vibre des dizaines de fois par seconde." },
+            { q: "La loutre ou un enfant turbulent ? \n Fait des toboggans pour le plaisir", opts: ["La loutre", "Un enfant turbulent", "Les deux"], a: 2, ex: "Les deux s'amusent : les loutres dévalent des toboggans de boue et de neige pour le plaisir, l'enfant turbulent les imite au parc." },
+            { q: "La loutre ou un dormeur léger ? \n Flotte sur le dos pour dormir", opts: ["La loutre", "Un dormeur léger", "Les deux"], a: 0, ex: "La loutre flotte sur le dos pour dormir, ancrée aux algues pour ne pas dériver : son lit de rivière flottant." },
+            { q: "Le huard ou un cor de chasse ? \n S'entend à des kilomètres sur le lac", opts: ["Le huard", "Un cor de chasse", "Les deux"], a: 0, ex: "Le cri du huard porte à des kilomètres sur les lacs du Grand Nord : un cor de brume vivant, très demandé au cinéma." },
+            { q: "Le canard ou un bouchon ? \n Remonte toujours à la surface", opts: ["Le canard", "Un bouchon", "Les deux"], a: 2, ex: "Le duvet du canard est imperméable et son corps flotte : il remonte toujours à la surface, comme un bouchon de liège." },
+            { q: "La mouette ou un casse-croûte volant ? \n Pique les frites sur les digues", opts: ["La mouette", "Un casse-croûte", "Les deux"], a: 2, ex: "Les deux piquent les frites : la mouette fond sur le cornet posé sur la digue, le casse-croûte volant sur celui du frigo." },
+            { q: "Un chameau ou un dromadaire ? \n Possède deux bosses", opts: ["Un chameau", "Un dromadaire", "Les deux"], a: 0, ex: "Le chameau porte deux bosses, le dromadaire une seule. Un duel devenu un classique du jeu." }
          ];
          /* Fournée manuscrite n°7 (duels Sel ou poivre). */
          const SEL_PEPPER6 = [
-            { q: "Le Soleil ou une centrale nucléaire ? \n Fusionne des atomes pour briller", opts: ["Le Soleil", "Une centrale", "Les deux"], a: 0 },
-            { q: "La Lune ou un parasite de voyage ? \n Montre toujours la même face", opts: ["La Lune", "Un parasite", "Les deux"], a: 0 },
-            { q: "Mercure ou un coureur de fond ? \n File à 47 km par seconde autour du Soleil", opts: ["Mercure", "Un coureur", "Les deux"], a: 0 },
-            { q: "Vénus ou un four solaire ? \n Affiche 460°C de surface", opts: ["Vénus", "Un four solaire", "Les deux"], a: 0 },
-            { q: "Mars ou un désert poussiéreux ? \n Perd ses tempêtes de poussière mondiales", opts: ["Mars", "Un désert", "Les deux"], a: 2 },
-            { q: "Jupiter ou un sumo ? \n Pèse plus lourd que toutes les autres planètes réunies", opts: ["Jupiter", "Un sumo", "Les deux"], a: 0 },
-            { q: "Saturne ou un canard en plastique ? \n Flotterait sur l'eau, moins dense qu'elle", opts: ["Saturne", "Un canard en plastique", "Les deux"], a: 0 },
-            { q: "Uranus ou un canoniste ? \n Roule couchée sur le côté", opts: ["Uranus", "Un canoniste", "Les deux"], a: 0 },
-            { q: "Neptune ou un skieur de vitesse ? \n Souffle des vents à 2 000 km/h", opts: ["Neptune", "Un skieur", "Les deux"], a: 0 },
-            { q: "Un trou noir ou une bouche de métro ? \n Avale tout ce qui passe trop près", opts: ["Un trou noir", "Une bouche de métro", "Les deux"], a: 0 },
-            { q: "Une comète ou un rayon de soleil sale ? \n Traîne une queue de poussière", opts: ["Une comète", "Un rayon", "Les deux"], a: 0 },
-            { q: "La Voie lactée ou une barre chocolatée ? \n Contient des milliards d'étoiles", opts: ["La Voie lactée", "Une barre", "Les deux"], a: 0 },
-            { q: "Un astronaute ou un poisson rouge ? \n Grandit un peu en apesanteur", opts: ["Un astronaute", "Un poisson rouge", "Les deux"], a: 0 },
-            { q: "La Station spatiale ou un flatshare ? \n Onze personnes s'y croisent en orbite", opts: ["La Station spatiale", "Un flatshare", "Les deux"], a: 2 },
-            { q: "Neil Armstrong ou un promeneur du dimanche ? \n Laisse des empreintes éternelles", opts: ["Neil Armstrong", "Un promeneur", "Les deux"], a: 0 },
-            { q: "La lumière ou un courrier prioritaire ? \n Met 8 minutes à venir du Soleil", opts: ["La lumière", "Un courrier", "Les deux"], a: 0 },
-            { q: "Le vide spatial ou un congélateur industriel ? \n Descend vers -270°C", opts: ["Le vide spatial", "Un congélateur", "Les deux"], a: 0 },
-            { q: "Une étoile filante ou un grillon ? \n Ne dure qu'un éclair", opts: ["Une étoile filante", "Un grillon", "Les deux"], a: 0 },
-            { q: "Le Soleil ou une chaufferie géante ? \n Finira en géante rouge boursouflée", opts: ["Le Soleil", "Une chaufferie", "Les deux"], a: 0 },
-            { q: "Un satellite GPS ou un facteur de l'espace ? \n Envoie des repères toute la journée", opts: ["Un satellite GPS", "Un facteur", "Les deux"], a: 2 },
-            { q: "Proxima du Centaure ou un voisin discret ? \n Habite à 4 années-lumière", opts: ["Proxima du Centaure", "Un voisin", "Les deux"], a: 0 },
-            { q: "Le foie ou un chat revenant ? \n Repousse après une ablation partielle", opts: ["Le foie", "Un chat", "Les deux"], a: 0 },
-            { q: "La langue ou un gymnaste ? \n Le seul muscle attaché d'un seul côté", opts: ["La langue", "Un gymnaste", "Les deux"], a: 0 },
-            { q: "La peau ou un survêtement ? \n Couvre environ 2 m² de surface", opts: ["La peau", "Un survêtement", "Les deux"], a: 0 },
-            { q: "Les os ou une agence immobilière ? \n Logent la moelle osseuse", opts: ["Les os", "Une agence", "Les deux"], a: 0 },
-            { q: "La mâchoire ou une pince de jardinier ? \n Le muscle le plus fort pour sa taille", opts: ["La mâchoire", "Une pince", "Les deux"], a: 0 },
-            { q: "La paupière ou un essuie-glace ? \n Le muscle le plus rapide du corps", opts: ["La paupière", "Un essuie-glace", "Les deux"], a: 2 },
-            { q: "Le cerveau ou un radiateur économe ? \n 2% du poids, 20% de l'oxygène", opts: ["Le cerveau", "Un radiateur", "Les deux"], a: 0 },
-            { q: "Le cœur ou un métronome infatigable ? \n Bat environ 100 000 fois par jour", opts: ["Le cœur", "Un métronome", "Les deux"], a: 0 },
-            { q: "Les reins ou une station d'épuration ? \n Filtrent le sang en continu", opts: ["Les reins", "Une station", "Les deux"], a: 0 },
-            { q: "L'estomac ou une cave acide ? \n Digère avec de l'acide chlorhydrique", opts: ["L'estomac", "Une cave", "Les deux"], a: 0 },
-            { q: "Les intestins ou un parcours de santé ? \n Enroulés sur 7 à 9 mètres", opts: ["Les intestins", "Un parcours", "Les deux"], a: 0 },
-            { q: "L'appendice ou un garde-manger ? \n Stocke des bactéries amies", opts: ["L'appendice", "Un garde-manger", "Les deux"], a: 0 },
-            { q: "Le hoquet ou un moteur qui cale ? \n Le diaphragme tousse par spasmes", opts: ["Le hoquet", "Un moteur", "Les deux"], a: 0 },
-            { q: "Les sourcils ou un pare-brise ? \n Bloquent la sueur avant les yeux", opts: ["Les sourcils", "Un pare-brise", "Les deux"], a: 0 },
-            { q: "Les ongles ou une peinture fraîche ? \n Avancent de 3 mm par mois", opts: ["Les ongles", "Une peinture", "Les deux"], a: 0 },
-            { q: "Le nombril ou une étiquette d'origine ? \n Cicatrice du cordon ombilical", opts: ["Le nombril", "Une étiquette", "Les deux"], a: 0 },
-            { q: "Les globules rouges ou des routiers pressés ? \n Livrent l'oxygène sans pause", opts: ["Les globules rouges", "Des routiers", "Les deux"], a: 0 },
-            { q: "La sueur ou une climatisation ? \n Rafraîchit le corps en s'évaporant", opts: ["La sueur", "Une climatisation", "Les deux"], a: 2 },
-            { q: "Le sommeil paradoxal ou un cinéaste ? \n Projette vos rêves les yeux fermés", opts: ["Le sommeil paradoxal", "Un cinéaste", "Les deux"], a: 0 },
-            { q: "Les articulations ou des bouchons de champagne ? \n Éclatent à cause de bulles de gaz", opts: ["Les articulations", "Des bouchons", "Les deux"], a: 0 },
-            { q: "L'ouïe ou un vieux vinyle ? \n Tourne encore à 90 ans", opts: ["L'ouïe", "Un vieux vinyle", "Les deux"], a: 0 },
-            { q: "La rétine ou un capteur photo ? \n Transforme la lumière en messages", opts: ["La rétine", "Un capteur", "Les deux"], a: 0 },
-            { q: "Jupiter ou Saturne ? \n Est la plus grande planète du système solaire", opts: ["Jupiter", "Saturne", "Les deux"], a: 0 }
+            { q: "Le Soleil ou une centrale nucléaire ? \n Fusionne des atomes pour briller", opts: ["Le Soleil", "Une centrale", "Les deux"], a: 0, ex: "Le Soleil fusionne 600 millions de tonnes d'hydrogène par seconde : la centrale nucléaire, elle, se contente de fission, moins énergétique." },
+            { q: "La Lune ou un parasite de voyage ? \n Montre toujours la même face", opts: ["La Lune", "Un parasite", "Les deux"], a: 0, ex: "La Lune montre toujours la même face : sa rotation est verrouillée sur sa révolution par les marées terrestres." },
+            { q: "Mercure ou un coureur de fond ? \n File à 47 km par seconde autour du Soleil", opts: ["Mercure", "Un coureur", "Les deux"], a: 0, ex: "Mercure file à 47 km par seconde autour du Soleil : la planète la plus rapide, dopée par sa proximité au four principal." },
+            { q: "Vénus ou un four solaire ? \n Affiche 460°C de surface", opts: ["Vénus", "Un four solaire", "Les deux"], a: 0, ex: "Vénus affiche 460 °C en surface sous son effet de serre d'enfer : de quoi faire fondre le plomb, records du four solaire battus." },
+            { q: "Mars ou un désert poussiéreux ? \n Perd ses tempêtes de poussière mondiales", opts: ["Mars", "Un désert", "Les deux"], a: 2, ex: "Les deux : Mars est un désert poussiéreux balayé par des tempêtes capables d'envelopper la planète entière pendant des semaines." },
+            { q: "Jupiter ou un sumo ? \n Pèse plus lourd que toutes les autres planètes réunies", opts: ["Jupiter", "Un sumo", "Les deux"], a: 0, ex: "Jupiter pèse plus lourd que toutes les autres planètes du système solaire réunies, et de loin : 2,5 fois la masse de Saturne." },
+            { q: "Saturne ou un canard en plastique ? \n Flotterait sur l'eau, moins dense qu'elle", opts: ["Saturne", "Un canard en plastique", "Les deux"], a: 0, ex: "Saturne est moins dense que l'eau : dans un océan géant, elle flotterait, comme un canard en plastique dans une baignoire." },
+            { q: "Uranus ou un canoniste ? \n Roule couchée sur le côté", opts: ["Uranus", "Un canoniste", "Les deux"], a: 0, ex: "Uranus roule couchée sur le côté, l'axe incliné à 98 degrés, probablement suite à une collision géante dans sa jeunesse." },
+            { q: "Neptune ou un skieur de vitesse ? \n Souffle des vents à 2 000 km/h", opts: ["Neptune", "Un skieur", "Les deux"], a: 0, ex: "Neptune souffle des vents à plus de 2 000 km/h, les plus rapides du système solaire : le skieur de vitesse reste à 250." },
+            { q: "Un trou noir ou une bouche de métro ? \n Avale tout ce qui passe trop près", opts: ["Un trou noir", "Une bouche de métro", "Les deux"], a: 0, ex: "Le trou noir avale tout ce qui franchit son horizon, même la lumière ; la bouche de métro, elle, ne prend que les voyageurs pressés." },
+            { q: "Une comète ou un rayon de soleil sale ? \n Traîne une queue de poussière", opts: ["Une comète", "Un rayon", "Les deux"], a: 0, ex: "La comète traîne une queue de poussière et de gaz soufflée par le vent solaire, parfois sur des millions de kilomètres." },
+            { q: "La Voie lactée ou une barre chocolatée ? \n Contient des milliards d'étoiles", opts: ["La Voie lactée", "Une barre", "Les deux"], a: 0, ex: "La Voie lactée contient 100 à 400 milliards d'étoiles ; la barre chocolatée, elle, contient surtout du sucre." },
+            { q: "Un astronaute ou un poisson rouge ? \n Grandit un peu en apesanteur", opts: ["Un astronaute", "Un poisson rouge", "Les deux"], a: 0, ex: "En apesanteur, la colonne de l'astronaute se décompresse : il grandit de 3 à 5 cm, puis reprend sa taille au retour sur Terre." },
+            { q: "La Station spatiale ou un flatshare ? \n Onze personnes s'y croisent en orbite", opts: ["La Station spatiale", "Un flatshare", "Les deux"], a: 2, ex: "Les deux hébergent du monde : l'ISS, colocation en orbite, a accueilli jusqu'à 13 personnes — le flatshare londonien rarement autant." },
+            { q: "Neil Armstrong ou un promeneur du dimanche ? \n Laisse des empreintes éternelles", opts: ["Neil Armstrong", "Un promeneur", "Les deux"], a: 0, ex: "Les empreintes d'Armstrong sont gravées pour des millions d'années, faute de vent lunaire ; le promeneur du dimanche laisse des traces dans la boue." },
+            { q: "La lumière ou un courrier prioritaire ? \n Met 8 minutes à venir du Soleil", opts: ["La lumière", "Un courrier", "Les deux"], a: 0, ex: "La lumière du Soleil met 8 minutes et 20 secondes à nous parvenir : le courrier prioritaire, lui, exige un timbre en plus." },
+            { q: "Le vide spatial ou un congélateur industriel ? \n Descend vers -270°C", opts: ["Le vide spatial", "Un congélateur", "Les deux"], a: 0, ex: "L'espace descend vers -270 °C, juste au-dessus du zéro absolu : le congélateur industriel reste vers -40, en usine." },
+            { q: "Une étoile filante ou un grillon ? \n Ne dure qu'un éclair", opts: ["Une étoile filante", "Un grillon", "Les deux"], a: 0, ex: "Une étoile filante n'est qu'un grain de poussière qui brûle en une demi-seconde dans l'atmosphère : un éclair de comète, sans comète au sens propre." },
+            { q: "Le Soleil ou une chaufferie géante ? \n Finira en géante rouge boursouflée", opts: ["Le Soleil", "Une chaufferie", "Les deux"], a: 0, ex: "Dans 5 milliards d'années, le Soleil gonflera en géante rouge et engloutira Mercure et Vénus : la chaufferie rendra son tablier, en beauté." },
+            { q: "Un satellite GPS ou un facteur de l'espace ? \n Envoie des repères toute la journée", opts: ["Un satellite GPS", "Un facteur", "Les deux"], a: 2, ex: "Les deux guident : chaque satellite GPS envoie ses signaux horodatés en continu, et le facteur de l'espace livre des repères à la minute." },
+            { q: "Proxima du Centaure ou un voisin discret ? \n Habite à 4 années-lumière", opts: ["Proxima du Centaure", "Un voisin", "Les deux"], a: 0, ex: "Proxima du Centaure habite à 4,2 années-lumière : notre voisine d'étoile la plus proche, mais invisible à l'œil nu." },
+            { q: "Le foie ou un chat revenant ? \n Repousse après une ablation partielle", opts: ["Le foie", "Un chat", "Les deux"], a: 0, ex: "Le foie est le seul organe humain capable de repousser après une ablation partielle : il regagne sa taille en quelques mois." },
+            { q: "La langue ou un gymnaste ? \n Le seul muscle attaché d'un seul côté", opts: ["La langue", "Un gymnaste", "Les deux"], a: 0, ex: "La langue est le seul muscle attaché à un seul bout ; le gymnaste, lui, s'attache à ses agrès des deux côtés." },
+            { q: "La peau ou un survêtement ? \n Couvre environ 2 m² de surface", opts: ["La peau", "Un survêtement", "Les deux"], a: 0, ex: "La peau couvre environ 2 m² de surface : le plus grand organe du corps, taillé comme un survêtement sur mesure." },
+            { q: "Les os ou une agence immobilière ? \n Logent la moelle osseuse", opts: ["Les os", "Une agence", "Les deux"], a: 0, ex: "Les os logent la moelle qui fabrique les cellules du sang : une agence immobilière spécialisée, locataire vital." },
+            { q: "La mâchoire ou une pince de jardinier ? \n Le muscle le plus fort pour sa taille", opts: ["La mâchoire", "Une pince", "Les deux"], a: 0, ex: "Le masseter de la mâchoire est le muscle le plus fort rapporté à sa taille : jusqu'à 90 kg sur les molaires. La pince de jardinier s'incline." },
+            { q: "La paupière ou un essuie-glace ? \n Le muscle le plus rapide du corps", opts: ["La paupière", "Un essuie-glace", "Les deux"], a: 2, ex: "Les deux clignent vite : le muscle de la paupière est le plus rapide du corps, et l'essuie-glace balaie pareil à l'avant du pare-brise." },
+            { q: "Le cerveau ou un radiateur économe ? \n 2% du poids, 20% de l'oxygène", opts: ["Le cerveau", "Un radiateur", "Les deux"], a: 0, ex: "Le cerveau pèse 2 % du corps mais consomme 20 % de l'oxygène, même la nuit : le radiateur économe, lui, se met en veille." },
+            { q: "Le cœur ou un métronome infatigable ? \n Bat environ 100 000 fois par jour", opts: ["Le cœur", "Un métronome", "Les deux"], a: 0, ex: "Le cœur bat environ 100 000 fois par jour sans congé ni week-end : le métronome infatigable reste au conservatoire." },
+            { q: "Les reins ou une station d'épuration ? \n Filtrent le sang en continu", opts: ["Les reins", "Une station", "Les deux"], a: 0, ex: "Les reins filtrent le sang en continu, 180 litres par jour : une station d'épuration intégrée, sans interruption de service." },
+            { q: "L'estomac ou une cave acide ? \n Digère avec de l'acide chlorhydrique", opts: ["L'estomac", "Une cave", "Les deux"], a: 0, ex: "L'estomac digère avec de l'acide chlorhydrique, un pH entre 1 et 2 : la cave acide, elle, se contente de faire vieillir le vin." },
+            { q: "Les intestins ou un parcours de santé ? \n Enroulés sur 7 à 9 mètres", opts: ["Les intestins", "Un parcours", "Les deux"], a: 0, ex: "Les intestins s'enroulent sur 7 à 9 mètres dans l'abdomen : le parcours de santé, lui, plafonne à 400 m." },
+            { q: "L'appendice ou un garde-manger ? \n Stocke des bactéries amies", opts: ["L'appendice", "Un garde-manger", "Les deux"], a: 0, ex: "L'appendice stocke des bactéries amies, une réserve pour relancer la flore intestinale : un garde-manger de sécurité longtemps sous-estimé." },
+            { q: "Le hoquet ou un moteur qui cale ? \n Le diaphragme tousse par spasmes", opts: ["Le hoquet", "Un moteur", "Les deux"], a: 0, ex: "Le hoquet vient du diaphragme qui se contracte par spasmes, comme un moteur qui cale avant de repartir." },
+            { q: "Les sourcils ou un pare-brise ? \n Bloquent la sueur avant les yeux", opts: ["Les sourcils", "Un pare-brise", "Les deux"], a: 0, ex: "Les sourcils dévient la sueur du front avant qu'elle n'atteigne les yeux : un pare-brise naturel, fourni d'origine." },
+            { q: "Les ongles ou une peinture fraîche ? \n Avancent de 3 mm par mois", opts: ["Les ongles", "Une peinture", "Les deux"], a: 0, ex: "Les ongles poussent d'environ 3 mm par mois, encore plus lentement aux pieds : la peinture fraîche, elle, ne pousse pas du tout." },
+            { q: "Le nombril ou une étiquette d'origine ? \n Cicatrice du cordon ombilical", opts: ["Le nombril", "Une étiquette", "Les deux"], a: 0, ex: "Le nombril est la cicatrice du cordon ombilical tombé après la naissance : l'étiquette d'origine de chaque humain." },
+            { q: "Les globules rouges ou des routiers pressés ? \n Livrent l'oxygène sans pause", opts: ["Les globules rouges", "Des routiers", "Les deux"], a: 0, ex: "Les globules rouges livrent l'oxygène sans pause dans des milliers de kilomètres de vaisseaux : des routiers pressés, en sens unique." },
+            { q: "La sueur ou une climatisation ? \n Rafraîchit le corps en s'évaporant", opts: ["La sueur", "Une climatisation", "Les deux"], a: 2, ex: "Les deux rafraîchissent : la sueur évapore la chaleur de la peau, la climatisation celle du salon. Même physique, même effet." },
+            { q: "Le sommeil paradoxal ou un cinéaste ? \n Projette vos rêves les yeux fermés", opts: ["Le sommeil paradoxal", "Un cinéaste", "Les deux"], a: 0, ex: "Le sommeil paradoxal projette vos rêves, les yeux fermés et le corps paralysé : le cinéaste interne ne dort jamais vraiment." },
+            { q: "Les articulations ou des bouchons de champagne ? \n Éclatent à cause de bulles de gaz", opts: ["Les articulations", "Des bouchons", "Les deux"], a: 0, ex: "Les craquements des articulations viennent de bulles de gaz qui éclatent dans le liquide synovial : des mini bouchons de champagne." },
+            { q: "L'ouïe ou un vieux vinyle ? \n Tourne encore à 90 ans", opts: ["L'ouïe", "Un vieux vinyle", "Les deux"], a: 0, ex: "L'ouïe fonctionne encore à 90 ans, même émoussée dans les aigus : le vieux vinyle, lui, gratte, mais il tourne." },
+            { q: "La rétine ou un capteur photo ? \n Transforme la lumière en messages", opts: ["La rétine", "Un capteur", "Les deux"], a: 0, ex: "La rétine transforme la lumière en messages nerveux : le capteur photo du cerveau, 500 millions d'années de mise au point." },
+            { q: "Jupiter ou Saturne ? \n Est la plus grande planète du système solaire", opts: ["Jupiter", "Saturne", "Les deux"], a: 0, ex: "Jupiter est la plus grande planète du système solaire ; Saturne, plus légère, compense avec ses anneaux." }
          ];
          /* Fournée manuscrite n°8 (duels Sel ou poivre). */
          const SEL_PEPPER7 = [
-            { q: "Le miel ou un conservateur de musée ? \n Ne pourrit jamais", opts: ["Le miel", "Un conservateur", "Les deux"], a: 0 },
-            { q: "Le safran ou l'or ? \n Se vend au prix fort au kilo", opts: ["Le safran", "L'or", "Les deux"], a: 0 },
-            { q: "La tomate ou un fruit déguisé ? \n Se cache parmi les légumes", opts: ["La tomate", "Un fruit déguisé", "Les deux"], a: 0 },
-            { q: "Le piment ou un immeuble en feu ? \n Monte le thermomètre en bouche", opts: ["Le piment", "Un immeuble", "Les deux"], a: 0 },
-            { q: "Le lait ou un extincteur ? \n Éteint le feu du piment", opts: ["Le lait", "Un extincteur", "Les deux"], a: 2 },
-            { q: "Le pop-corn ou un feu d'artifice ? \n Explose sous la chaleur", opts: ["Le pop-corn", "Un feu d'artifice", "Les deux"], a: 0 },
-            { q: "Le fugu ou un plat de roulette russe ? \n Exige un cuisinier diplômé", opts: ["Le fugu", "Un plat de casino", "Les deux"], a: 2 },
-            { q: "La margherita ou un drapeau ? \n Porte les couleurs de l'Italie", opts: ["La margherita", "Un drapeau", "Les deux"], a: 2 },
-            { q: "Le sushi ou un bento de précision ? \n Né comme conserve de poisson", opts: ["Le sushi", "Un bento", "Les deux"], a: 0 },
-            { q: "Le chocolat ou une boisson d'empereurs ? \n Se buvait amer avant d'être sucré", opts: ["Le chocolat", "Une boisson d'empereurs", "Les deux"], a: 0 },
-            { q: "La vanille ou un orchidée espiègle ? \n Pousse sur une liane fleurie", opts: ["La vanille", "Une orchidée", "Les deux"], a: 0 },
-            { q: "L'ail ou un repoussoir de vampires ? \n Se dispute la première place", opts: ["L'ail", "Un repoussoir", "Les deux"], a: 0 },
-            { q: "Le roquefort ou un fromage de grotte ? \n Affine dans les caves de Combalou", opts: ["Le roquefort", "Un fromage de grotte", "Les deux"], a: 2 },
-            { q: "Le camembert ou un moine ? \n Doit sa recette à un secret de monastère", opts: ["Le camembert", "Un moine", "Les deux"], a: 0 },
-            { q: "La baguette ou une baguette de chef ? \n Se portent toutes les deux fièrement", opts: ["La baguette", "Une baguette de chef", "Les deux"], a: 2 },
-            { q: "Le croissant ou un croissant de lune ? \n A une forme empruntée aux étoiles", opts: ["Le croissant", "Un croissant de lune", "Les deux"], a: 2 },
-            { q: "Le ketchup ou une sauce de Canton ? \n Part d'une recette asiatique fermentée", opts: ["Le ketchup", "Une sauce de Canton", "Les deux"], a: 0 },
-            { q: "Le bœuf bourguignon ou un élixir de cave ? \n Mariner au vin rouge le rend tendre", opts: ["Le bœuf bourguignon", "Un élixir", "Les deux"], a: 2 },
-            { q: "La blanquette ou une blanquette d'examens ? \n Rien à voir, l'une est servie en sauce", opts: ["La blanquette", "Une blanquette d'examens", "Les deux"], a: 0 },
-            { q: "La tarte Tatin ou un accident de cuisine ? \n Née d'une tarte renversée rattrapée à la hâte", opts: ["La tarte Tatin", "Un accident", "Les deux"], a: 2 },
-            { q: "L'escargot ou un dietéticien ? \n Riche en protéines et pauvre en gras", opts: ["L'escargot", "Un dietéticien", "Les deux"], a: 0 },
-            { q: "L'huître ou un calendrier de marées ? \n Se consomme surtout les mois en R, selon la tradition", opts: ["L'huître", "Un calendrier", "Les deux"], a: 0 },
-            { q: "La moutarde ou une pique-nique de Dijon ? \n Montre enflée quand on la pousse à bout", opts: ["La moutarde", "Une pique-nique", "Les deux"], a: 0 },
-            { q: "Le pain d'épices ou un cadeau de foire ? \n Se décore à Pâques comme à Noël", opts: ["Le pain d'épices", "Un cadeau de foire", "Les deux"], a: 2 },
-            { q: "La choucroute ou un plat de patate ? \n De la famille de la marmite de fête", opts: ["La choucroute", "Un plat de patate", "Les deux"], a: 0 },
-            { q: "La tapa ou un casse-croûte debout ? \n Se mange en une bouchée au comptoir", opts: ["La tapa", "Un casse-croûte", "Les deux"], a: 2 },
-            { q: "La pizza napolitaine ou un patrimoine de l'humanité ? \n Inscrire à l'UNESCO, c'est fait", opts: ["La pizza", "Un patrimoine", "Les deux"], a: 2 },
-            { q: "Le sashimi ou un couteau de samouraï ? \n Se coupe en tranches parfaites", opts: ["Le sashimi", "Un couteau", "Les deux"], a: 0 },
-            { q: "Le kebab ou une broche qui tourne ? \n Découpe en fines lamelles", opts: ["Le kebab", "Une broche", "Les deux"], a: 2 },
-            { q: "Le stéthoscope ou un timide ? \n Inventé pour garder ses distances", opts: ["Le stéthoscope", "Un timide", "Les deux"], a: 2 },
-            { q: "Le velcro ou une promenade de chien ? \n Inventé après des fleurs de bardane", opts: ["Le velcro", "Une promenade", "Les deux"], a: 0 },
-            { q: "Le Post-it ou un raté utile ? \n Né d'une colle trop faible", opts: ["Le Post-it", "Un raté", "Les deux"], a: 2 },
-            { q: "L'imprimerie ou un moine pressé ? \n Accélère la copie des livres", opts: ["L'imprimerie", "Un moine pressé", "Les deux"], a: 2 },
-            { q: "La montgolfière ou un courage de roi ? \n A volé avec un mouton, un canard et un coq", opts: ["La montgolfière", "Un courage de roi", "Les deux"], a: 0 },
-            { q: "Le braille ou un alphabet de points ? \n Se lit du bout des doigts", opts: ["Le braille", "Un alphabet", "Les deux"], a: 2 },
-            { q: "Le paratonnerre ou un cerf-volant ? \n A été testé sous l'orage, prudence en moins", opts: ["Le paratonnerre", "Un cerf-volant", "Les deux"], a: 2 },
-            { q: "Le vaccin de Jenner ou une fermière de campagne ? \n Part d'une observation des vaches", opts: ["Le vaccin", "Une fermière", "Les deux"], a: 0 },
-            { q: "Le cinéma ou un train en gare ? \n A fait sursauter le premier public", opts: ["Le cinéma", "Un train en gare", "Les deux"], a: 2 },
-            { q: "La radioactivité ou une nuit de labo ? \n A valu deux Nobel à Marie Curie", opts: ["La radioactivité", "Une nuit de labo", "Les deux"], a: 0 },
-            { q: "Le ballon de baudruche ou une fuite de gaz ? \n Siffle en se dégonflant", opts: ["Le ballon", "Une fuite de gaz", "Les deux"], a: 2 },
-            { q: "L'aspirine ou une écorce de saule ? \n En partage la recette ancestrale", opts: ["L'aspirine", "Une écorce", "Les deux"], a: 2 },
-            { q: "La roue ou une table de potier ? \n Tourne depuis 5 000 ans", opts: ["La roue", "Une table de potier", "Les deux"], a: 2 },
-            { q: "Les lunettes ou une bougie ? \n Ont éclairé le travail des moines copistes", opts: ["Les lunettes", "Une bougie", "Les deux"], a: 2 },
-            { q: "Le chocolat noir ou le chocolat blanc ? \n Contient généralement du cacao solide", opts: ["Le chocolat noir", "Le chocolat blanc", "Les deux"], a: 0 }
+            { q: "Le miel ou un conservateur de musée ? \n Ne pourrit jamais", opts: ["Le miel", "Un conservateur", "Les deux"], a: 0, ex: "Le miel ne pourrit jamais : très peu d'eau, acidité naturelle et peroxyde font le vide autour des bactéries. Des pots vieux de 3 000 ans sont restés comestibles." },
+            { q: "Le safran ou l'or ? \n Se vend au prix fort au kilo", opts: ["Le safran", "L'or", "Les deux"], a: 0, ex: "Le safran est l'épice la plus chère du monde, plusieurs milliers d'euros le kilo : 150 000 fleurs pour un kilo. L'or reste au-dessus, mais le safran règne sur les étals." },
+            { q: "La tomate ou un fruit déguisé ? \n Se cache parmi les légumes", opts: ["La tomate", "Un fruit déguisé", "Les deux"], a: 0, ex: "La tomate est un fruit pour le botaniste, puisqu'elle porte des graines, et un légume pour le cuisinier : le déguisement le plus réussi de l'étal." },
+            { q: "Le piment ou un immeuble en feu ? \n Monte le thermomètre en bouche", opts: ["Le piment", "Un immeuble", "Les deux"], a: 0, ex: "La capsaïcine du piment trompe les récepteurs de douleur de la bouche : un faux incendie très réel qui monte le thermomètre en trompe-l'œil." },
+            { q: "Le lait ou un extincteur ? \n Éteint le feu du piment", opts: ["Le lait", "Un extincteur", "Les deux"], a: 2, ex: "Les deux éteignent : la caséine du lait lave la capsaïcine, liposoluble, là où l'eau ne fait qu'étaler le feu. L'extincteur a le même réflexe." },
+            { q: "Le pop-corn ou un feu d'artifice ? \n Explose sous la chaleur", opts: ["Le pop-corn", "Un feu d'artifice", "Les deux"], a: 0, ex: "Le grain de maïs à pop-corn enferme une goutte d'eau sous coque : chauffée, la pression monte jusqu'à l'explosion en fleur d'amidon." },
+            { q: "Le fugu ou un plat de roulette russe ? \n Exige un cuisinier diplômé", opts: ["Le fugu", "Un plat de casino", "Les deux"], a: 2, ex: "Le fugu exige au Japon un cuisinier diplômé : sa tétrodotoxine est mortelle sans antidote. La roulette russe fait pareil, avec moins de préparation." },
+            { q: "La margherita ou un drapeau ? \n Porte les couleurs de l'Italie", opts: ["La margherita", "Un drapeau", "Les deux"], a: 2, ex: "Les deux portent vert, blanc, rouge : la margherita a été composée en 1889 en l'honneur de la reine — un drapeau comestible." },
+            { q: "Le sushi ou un bento de précision ? \n Né comme conserve de poisson", opts: ["Le sushi", "Un bento", "Les deux"], a: 0, ex: "Le sushi est né comme conserve : le poisson était pressé dans du riz fermenté, qu'on jetait. Le Japon a renversé la recette en mets frais." },
+            { q: "Le chocolat ou une boisson d'empereurs ? \n Se buvait amer avant d'être sucré", opts: ["Le chocolat", "Une boisson d'empereurs", "Les deux"], a: 0, ex: "Le chocolat des Aztèques se buvait amer et épicé, sans un gramme de sucre ; l'Europe ne l'a adouci qu'au XVIIe siècle." },
+            { q: "La vanille ou un orchidée espiègle ? \n Pousse sur une liane fleurie", opts: ["La vanille", "Une orchidée", "Les deux"], a: 0, ex: "La vanille est la seule orchidée comestible : sa gousse pousse sur une liane, fécondée à la main, fleur par fleur." },
+            { q: "L'ail ou un repoussoir de vampires ? \n Se dispute la première place", opts: ["L'ail", "Un repoussoir", "Les deux"], a: 0, ex: "L'ail a servi de médecine et de repoussoir de vampires dans le folklore d'Europe de l'Est : la panacée la plus parfumée du comptoir." },
+            { q: "Le roquefort ou un fromage de grotte ? \n Affine dans les caves de Combalou", opts: ["Le roquefort", "Un fromage de grotte", "Les deux"], a: 2, ex: "Les deux affinent en cave : le roquefort mûrit dans les grottes de Combalou, à Roquefort-sur-Soulzon, sur un pain oublié providentiel." },
+            { q: "Le camembert ou un moine ? \n Doit sa recette à un secret de monastère", opts: ["Le camembert", "Un moine", "Les deux"], a: 0, ex: "La légende dit que Marie Harel, de Vimoutiers, a reçu le secret du brie d'un prêtre en fuite pendant la Révolution : le camembert, né d'un secret de monastère." },
+            { q: "La baguette ou une baguette de chef ? \n Se portent toutes les deux fièrement", opts: ["La baguette", "Une baguette de chef", "Les deux"], a: 2, ex: "Jeu de mots assumé : la baguette de pain sous le bras, celle du chef d'orchestre en main — les deux se portent fièrement." },
+            { q: "Le croissant ou un croissant de lune ? \n A une forme empruntée aux étoiles", opts: ["Le croissant", "Un croissant de lune", "Les deux"], a: 2, ex: "Les deux empruntent leur forme à la lune : le croissant de lune du ciel, et le croissant du kipferl viennois, célébré après un siège victorieux." },
+            { q: "Le ketchup ou une sauce de Canton ? \n Part d'une recette asiatique fermentée", opts: ["Le ketchup", "Une sauce de Canton", "Les deux"], a: 0, ex: "Le ketchup part du kôe-chiap, une sauce fermentée de Canton à base de poisson, avant de rencontrer la tomate en Amérique." },
+            { q: "Le bœuf bourguignon ou un élixir de cave ? \n Mariner au vin rouge le rend tendre", opts: ["Le bœuf bourguignon", "Un élixir", "Les deux"], a: 2, ex: "Les deux doivent tout au vin : la marinade au rouge attendrit et parfume le bœuf, l'élixir de cave se débouche en attendant." },
+            { q: "La blanquette ou une blanquette d'examens ? \n Rien à voir, l'une est servie en sauce", opts: ["La blanquette", "Une blanquette d'examens", "Les deux"], a: 0, ex: "La blanquette de veau se sert en sauce blanche ; la blanquée d'examens est l'épreuve de sauvetage du brevet — sans sauce ni beurre." },
+            { q: "La tarte Tatin ou un accident de cuisine ? \n Née d'une tarte renversée rattrapée à la hâte", opts: ["La tarte Tatin", "Un accident", "Les deux"], a: 2, ex: "Les deux naissent d'un raté : la légende dit que les sœurs Tatin ont renversé leur tarte aux pommes et l'ont rattrapée en la recuisant. Succès immédiat." },
+            { q: "L'escargot ou un dietéticien ? \n Riche en protéines et pauvre en gras", opts: ["L'escargot", "Un dietéticien", "Les deux"], a: 0, ex: "L'escargot est riche en protéines et pauvre en gras : le dietéticien le validerait, s'il n'était pas noyé dans le beurre persillé." },
+            { q: "L'huître ou un calendrier de marées ? \n Se consomme surtout les mois en R, selon la tradition", opts: ["L'huître", "Un calendrier", "Les deux"], a: 0, ex: "La tradition conseille les huîtres les mois en R, de septembre à avril : hors saison, elles deviennent laiteuses et la chaleur ne pardonne pas." },
+            { q: "La moutarde ou une pique-nique de Dijon ? \n Montre enflée quand on la pousse à bout", opts: ["La moutarde", "Une pique-nique", "Les deux"], a: 0, ex: "La moutarde monte au nez dès qu'on la presse : la graine broyée libère son souffle mordant. Le pique-nique, lui, se presse plutôt vers midi." },
+            { q: "Le pain d'épices ou un cadeau de foire ? \n Se décore à Pâques comme à Noël", opts: ["Le pain d'épices", "Un cadeau de foire", "Les deux"], a: 2, ex: "Les deux se décorent : le pain d'épices se pare de glace et de motifs à Noël comme à Pâques, cadeau de foire par excellence." },
+            { q: "La choucroute ou un plat de patate ? \n De la famille de la marmite de fête", opts: ["La choucroute", "Un plat de patate", "Les deux"], a: 0, ex: "La choucroute est du chou fermenté, tête de la marmite de fête alsacienne, servie avec ses saucisses et ses pommes de terre." },
+            { q: "La tapa ou un casse-croûte debout ? \n Se mange en une bouchée au comptoir", opts: ["La tapa", "Un casse-croûte", "Les deux"], a: 2, ex: "Les deux se mangent debout : la tapa se croque en une bouchée au comptoir espagnol, le casse-croûte en trois au chantier." },
+            { q: "La pizza napolitaine ou un patrimoine de l'humanité ? \n Inscrire à l'UNESCO, c'est fait", opts: ["La pizza", "Un patrimoine", "Les deux"], a: 2, ex: "Les deux sont classés : l'art du pizzaiuolo napolitain est inscrit au patrimoine culturel immatériel de l'humanité depuis 2017." },
+            { q: "Le sashimi ou un couteau de samouraï ? \n Se coupe en tranches parfaites", opts: ["Le sashimi", "Un couteau", "Les deux"], a: 0, ex: "Le sashimi se coupe en tranches parfaites, à la jonction des fibres, avec un couteau digne d'un katana de cuisine." },
+            { q: "Le kebab ou une broche qui tourne ? \n Découpe en fines lamelles", opts: ["Le kebab", "Une broche", "Les deux"], a: 2, ex: "Les deux tournent : la viande du kebab rôtit sur broche verticale, découpée en fines lamelles au couteau, au fil de la demande." },
+            { q: "Le stéthoscope ou un timide ? \n Inventé pour garder ses distances", opts: ["Le stéthoscope", "Un timide", "Les deux"], a: 2, ex: "Les deux gardent leurs distances : le stéthoscope a été inventé parce que Laennec, trop timide, voulait ausculter sans coller son oreille à la poitrine des patientes." },
+            { q: "Le velcro ou une promenade de chien ? \n Inventé après des fleurs de bardane", opts: ["Le velcro", "Une promenade", "Les deux"], a: 0, ex: "Le velcro est né des fleurs de bardane accrochées au pelage du chien de l'ingénieur George de Mestral : la promenade du chien, brevetée." },
+            { q: "Le Post-it ou un raté utile ? \n Né d'une colle trop faible", opts: ["Le Post-it", "Un raté", "Les deux"], a: 2, ex: "Les deux sont des ratés utiles : la colle du Post-it était trop faible pour tout coller — parfaite pour coller et décoller sans trace." },
+            { q: "L'imprimerie ou un moine pressé ? \n Accélère la copie des livres", opts: ["L'imprimerie", "Un moine pressé", "Les deux"], a: 2, ex: "Les deux accélèrent la copie : Gutenberg a mécanisé le travail des moines copistes, un moine pressé n'y suffisant plus." },
+            { q: "La montgolfière ou un courage de roi ? \n A volé avec un mouton, un canard et un coq", opts: ["La montgolfière", "Un courage de roi", "Les deux"], a: 0, ex: "La première montgolfière habitée a emporté un mouton, un canard et un coq devant Louis XVI en 1783 : les trois premiers passagers de l'air." },
+            { q: "Le braille ou un alphabet de points ? \n Se lit du bout des doigts", opts: ["Le braille", "Un alphabet", "Les deux"], a: 2, ex: "Les deux se lisent du bout des doigts : le braille de Louis Braille, alphabet de points en relief, ouvre la lecture aux non-voyants." },
+            { q: "Le paratonnerre ou un cerf-volant ? \n A été testé sous l'orage, prudence en moins", opts: ["Le paratonnerre", "Un cerf-volant", "Les deux"], a: 2, ex: "Les deux flirtent avec l'orage : Franklin a testé l'électricité atmosphérique au cerf-volant, le paratonnerre l'a ensuite domesticée au sol." },
+            { q: "Le vaccin de Jenner ou une fermière de campagne ? \n Part d'une observation des vaches", opts: ["Le vaccin", "Une fermière", "Les deux"], a: 0, ex: "Jenner a observé que les trayeuses atteintes de la vaccine, la maladie des vaches, résistaient à la variole : la vaccine a donné son nom au vaccin." },
+            { q: "Le cinéma ou un train en gare ? \n A fait sursauter le premier public", opts: ["Le cinéma", "Un train en gare", "Les deux"], a: 2, ex: "Les deux ont fait sursauter : l'Arrivée d'un train en gare de La Ciotat, en 1895, a impressionné le premier public jusqu'à la fuite des rangs." },
+            { q: "La radioactivité ou une nuit de labo ? \n A valu deux Nobel à Marie Curie", opts: ["La radioactivité", "Une nuit de labo", "Les deux"], a: 0, ex: "La radioactivité a valu deux Nobel à Marie Curie, en physique puis en chimie : la seule à ce jour couronnée dans deux sciences différentes." },
+            { q: "Le ballon de baudruche ou une fuite de gaz ? \n Siffle en se dégonflant", opts: ["Le ballon", "Une fuite de gaz", "Les deux"], a: 2, ex: "Les deux sifflent en se vidant : le ballon de baudruche relâché chante son air, la fuite de gaz chante son alarme." },
+            { q: "L'aspirine ou une écorce de saule ? \n En partage la recette ancestrale", opts: ["L'aspirine", "Une écorce", "Les deux"], a: 2, ex: "Les deux partagent la recette : l'aspirine est synthétisée à partir de l'acide salicylique, que l'on tirait jadis de l'écorce de saule." },
+            { q: "La roue ou une table de potier ? \n Tourne depuis 5 000 ans", opts: ["La roue", "Une table de potier", "Les deux"], a: 2, ex: "Les deux tournent depuis 5 000 ans : la roue a d'abord servi le tour de potier mésopotamien avant de rouler pour de bon." },
+            { q: "Les lunettes ou une bougie ? \n Ont éclairé le travail des moines copistes", opts: ["Les lunettes", "Une bougie", "Les deux"], a: 2, ex: "Les deux ont éclairé les copistes : les lunettes, inventées vers 1280, ont prolongé le travail des moines à la bougie, sauvant des manuscrits." },
+            { q: "Le chocolat noir ou le chocolat blanc ? \n Contient généralement du cacao solide", opts: ["Le chocolat noir", "Le chocolat blanc", "Les deux"], a: 0, ex: "Le chocolat noir contient de la fève de cacao et du beurre de cacao ; le blanc ne garde que le beurre : aucun cacao solide." }
          ];
          /* Fournée manuscrite n°9 (duels Sel ou poivre). */
          const SEL_PEPPER8 = [
-            { q: "L'Amazone ou un mégapole flottante ? \n Charrie plus d'eau que ses huit concurrents", opts: ["L'Amazone", "Une mégapole flottante", "Les deux"], a: 0 },
-            { q: "L'Antarctique ou un désert de glace ? \n Reçoit moins de pluie que le Sahara", opts: ["L'Antarctique", "Un désert de glace", "Les deux"], a: 0 },
-            { q: "Le Vatican ou un studio parisien ? \n Tient dans deux boucles de molette", opts: ["Le Vatican", "Un studio parisien", "Les deux"], a: 0 },
-            { q: "La Russie ou un colosse aux pieds d'argile ? \n S'étend sur onze fuseaux horaires", opts: ["La Russie", "Un colosse", "Les deux"], a: 0 },
-            { q: "La France ou un collectionneur de fuseaux ? \n En possède douze grâce à l'outre-mer", opts: ["La France", "Un collectionneur", "Les deux"], a: 2 },
-            { q: "Le Pacifique ou une autoroute de poissons ? \n Couvre un tiers de la planète", opts: ["Le Pacifique", "Une autoroute", "Les deux"], a: 0 },
-            { q: "La mer Morte ou un transat ? \n On y flotte sans faire un seul mouvement", opts: ["La mer Morte", "Un transat", "Les deux"], a: 2 },
-            { q: "L'Everest ou un plongeoir du ciel ? \n Grandit encore de quelques millimètres par an", opts: ["L'Everest", "Un plongeoir", "Les deux"], a: 0 },
-            { q: "Le Groenland ou une île mal nommée ? \n Est couvert de glace à 80%", opts: ["Le Groenland", "Une île mal nommée", "Les deux"], a: 2 },
-            { q: "Le Chili ou une allumette géante ? \n S'étire sur 4 300 kilomètres", opts: ["Le Chili", "Une allumette géante", "Les deux"], a: 0 },
-            { q: "Le canal de Panama ou un raccourci de luxe ? \n Évite de contourner un continent", opts: ["Le canal de Panama", "Un raccourci", "Les deux"], a: 2 },
-            { q: "Le détroit de Gibraltar ou un couloir de bus ? \n Sépare deux continents en 14 km", opts: ["Le détroit de Gibraltar", "Un couloir de bus", "Les deux"], a: 0 },
-            { q: "Tokyo ou une fourmilière polie ? \n Empile 37 millions d'habitants", opts: ["Tokyo", "Une fourmilière", "Les deux"], a: 0 },
-            { q: "Le Danube ou un eurotour ? \n Traverse dix pays", opts: ["Le Danube", "Un eurotour", "Les deux"], a: 0 },
-            { q: "Les Galápagos ou un laboratoire d'évolution ? \n A inspiré Darwin", opts: ["Les Galápagos", "Un laboratoire", "Les deux"], a: 0 },
-            { q: "Le Salto Angel ou une échelle cassée ? \n Tombe de près d'un kilomètre", opts: ["Le Salto Angel", "Une échelle cassée", "Les deux"], a: 0 },
-            { q: "La Sardaigne ou un fromage vivant ? \n Abrite les casu marzu avec leurs larves", opts: ["La Sardaigne", "Un fromage vivant", "Les deux"], a: 0 },
-            { q: "La Russie ou un frigo géant ? \n Abrite Oïmiakon, village le plus froid habité", opts: ["La Russie", "Un frigo géant", "Les deux"], a: 0 },
-            { q: "L'Australie ou un panier à corne ? \n Recèle des animaux qui n'existent nulle part ailleurs", opts: ["L'Australie", "Un panier à corne", "Les deux"], a: 0 },
-            { q: "Le Sahara ou un stock de sable de plage ? \n Recouvre une taille des États-Unis", opts: ["Le Sahara", "Un stock de sable", "Les deux"], a: 0 },
-            { q: "La montagne de table ou un plateau du petit-déjeuner ? \n Domine Le Cap", opts: ["La montagne de la Table", "Un plateau du petit-déjeuner", "Les deux"], a: 0 },
-            { q: "L'Islande ou une centrale géothermique ? \n Chauffe ses maisons avec ses volcans", opts: ["L'Islande", "Une centrale géothermique", "Les deux"], a: 0 },
-            { q: "Le marathon ou un messager pressé ? \n Né d'une course pour annoncer une victoire", opts: ["Le marathon", "Un messager pressé", "Les deux"], a: 2 },
-            { q: "Usain Bolt ou un éclair ? \n Boucle le 100 m en 9,58 secondes", opts: ["Usain Bolt", "Un éclair", "Les deux"], a: 0 },
-            { q: "Le cricket ou une série trop longue ? \n Peut durer cinq jours sans vainqueur", opts: ["Le cricket", "Une série trop longue", "Les deux"], a: 2 },
-            { q: "Le badminton ou une balle de fusil ? \n Expédie le volant à plus de 400 km/h", opts: ["Le badminton", "Une balle de fusil", "Les deux"], a: 0 },
-            { q: "Le tir à la corde ou un bras de fer géant ? \n Fut sport olympique jusqu'en 1920", opts: ["Le tir à la corde", "Un bras de fer géant", "Les deux"], a: 2 },
-            { q: "Le squash ou un cachot londonien ? \n Est né entre quatre murs de prison", opts: ["Le squash", "Un cachot", "Les deux"], a: 0 },
-            { q: "Le rugby ou un trophée de ménage ? \n Doit son ballon ovale à la vessie d'un porc", opts: ["Le rugby", "Un trophée de ménage", "Les deux"], a: 0 },
-            { q: "La Coupe du monde ou un meuble à trophées ? \n Le Brésil en a gagné cinq", opts: ["La Coupe du monde", "Un meuble à trophées", "Les deux"], a: 0 },
-            { q: "Eliud Kipchoge ou un chrono impossible ? \n A couru le marathon en moins de deux heures", opts: ["Eliud Kipchoge", "Un chrono impossible", "Les deux"], a: 2 },
-            { q: "Le Tour de France ou une caravane publicitaire ? \n Roule depuis 1903", opts: ["Le Tour de France", "Une caravane", "Les deux"], a: 0 },
-            { q: "La pétanque ou une partie de quartier ? \n Exige les pieds tanqués, pas question de bouger", opts: ["La pétanque", "Une partie de quartier", "Les deux"], a: 0 },
-            { q: "Le foot ou un sport de lords ? \n A été codifié dans les pubs anglais", opts: ["Le foot", "Un sport de lords", "Les deux"], a: 0 },
-            { q: "L'ultimate ou un match sans arbitre ? \n Se joue sur l'honneur et le frisbee", opts: ["L'ultimate", "Un match sans arbitre", "Les deux"], a: 2 },
-            { q: "Le curling ou un ménage sur glace ? \n Balaye la pierre vers la maison", opts: ["Le curling", "Un ménage sur glace", "Les deux"], a: 0 },
-            { q: "Le sumo ou un rite de sel ? \n Les lutteurs jettent du sel avant le combat", opts: ["Le sumo", "Un rite de sel", "Les deux"], a: 0 },
-            { q: "La natation synchronisée ou un ballet aquatique ? \n Nage en parfaite harmonie", opts: ["La natation synchronisée", "Un ballet aquatique", "Les deux"], a: 2 },
-            { q: "Le ski de fond ou un(e) facteur scandinave ? \n Né pour traverser la neige", opts: ["Le ski de fond", "Un facteur scandinave", "Les deux"], a: 0 },
-            { q: "Le handball ou un sport de raquette déguisé ? \n Se joue aux mains, pas à la raquette", opts: ["Le handball", "Un sport de raquette", "Les deux"], a: 0 },
-            { q: "L'escalade ou un travail de scales ? \n A rejoint les JO de Tokyo", opts: ["L'escalade", "Un travail de scales", "Les deux"], a: 0 },
-            { q: "Le hockey sur glace ou une bagarre réglée ? \n Trois périodes, zéro pitié", opts: ["Le hockey sur glace", "Une bagarre réglée", "Les deux"], a: 0 },
-            { q: "Les JO antiques ou une fête de l'Antiquité ? \n Se tenaient tous les quatre ans à Olympie", opts: ["Les JO antiques", "Une fête de l'Antiquité", "Les deux"], a: 2 },
-            { q: "Le Groenland ou Madagascar ? \n Est la plus grande île du monde (hors continents)", opts: ["Le Groenland", "Madagascar", "Les deux"], a: 0 }
+            { q: "L'Amazone ou un mégapole flottante ? \n Charrie plus d'eau que ses huit concurrents", opts: ["L'Amazone", "Une mégapole flottante", "Les deux"], a: 0, ex: "L'Amazone charrie plus d'eau que ses huit plus grands concurrents réunis : un cinquième de toute l'eau douce qui rejoint les océans." },
+            { q: "L'Antarctique ou un désert de glace ? \n Reçoit moins de pluie que le Sahara", opts: ["L'Antarctique", "Un désert de glace", "Les deux"], a: 0, ex: "L'Antarctique reçoit moins de 200 mm de précipitations par an : techniquement un désert, plus sec que le Sahara par endroits." },
+            { q: "Le Vatican ou un studio parisien ? \n Tient dans deux boucles de molette", opts: ["Le Vatican", "Un studio parisien", "Les deux"], a: 0, ex: "Le Vatican couvre 44 hectares, le plus petit État du monde : on en fait le tour à pied en moins d'une heure — studio parisien compris dans le loyer." },
+            { q: "La Russie ou un colosse aux pieds d'argile ? \n S'étend sur onze fuseaux horaires", opts: ["La Russie", "Un colosse", "Les deux"], a: 0, ex: "La Russie s'étend sur 11 fuseaux horaires : quand Vladivostok dîne, Kaliningrad pense déjà au déjeuner." },
+            { q: "La France ou un collectionneur de fuseaux ? \n En possède douze grâce à l'outre-mer", opts: ["La France", "Un collectionneur", "Les deux"], a: 2, ex: "Les deux comptent : la France couvre 12 fuseaux grâce à l'outre-mer, record mondial — la collection la plus fournie de la planète." },
+            { q: "Le Pacifique ou une autoroute de poissons ? \n Couvre un tiers de la planète", opts: ["Le Pacifique", "Une autoroute", "Les deux"], a: 0, ex: "Le Pacifique couvre un tiers de la planète : tous les continents tiendraient dedans, avec de la place pour l'autoroute de poissons." },
+            { q: "La mer Morte ou un transat ? \n On y flotte sans faire un seul mouvement", opts: ["La mer Morte", "Un transat", "Les deux"], a: 2, ex: "Les deux font flotter : la mer Morte, dix fois plus salée que l'océan, vous tient sans mouvement, le transat vous porte en sirotant." },
+            { q: "L'Everest ou un plongeoir du ciel ? \n Grandit encore de quelques millimètres par an", opts: ["L'Everest", "Un plongeoir", "Les deux"], a: 0, ex: "L'Everest grandit encore de quelques millimètres par an : la poussée de l'Inde sous l'Asie ne s'est pas arrêtée." },
+            { q: "Le Groenland ou une île mal nommée ? \n Est couvert de glace à 80%", opts: ["Le Groenland", "Une île mal nommée", "Les deux"], a: 2, ex: "Les deux : le Groenland, terre verte selon la publicité d'Erik le Rouge, est couvert de glace à 80 % — le plus beau mensonge immobilier de l'histoire." },
+            { q: "Le Chili ou une allumette géante ? \n S'étire sur 4 300 kilomètres", opts: ["Le Chili", "Une allumette géante", "Les deux"], a: 0, ex: "Le Chili s'étire sur 4 300 km du nord au sud pour 300 km de large : l'allumette de l'Amérique du Sud." },
+            { q: "Le canal de Panama ou un raccourci de luxe ? \n Évite de contourner un continent", opts: ["Le canal de Panama", "Un raccourci", "Les deux"], a: 2, ex: "Les deux économisent : le canal de Panama évite le détour par le cap Horn, soit 15 000 km de moins — le raccourci de luxe, à péage." },
+            { q: "Le détroit de Gibraltar ou un couloir de bus ? \n Sépare deux continents en 14 km", opts: ["Le détroit de Gibraltar", "Un couloir de bus", "Les deux"], a: 0, ex: "Le détroit de Gibraltar sépare l'Europe de l'Afrique en 14 km : nageurs et couloirs de bus le franchissent en une matinée." },
+            { q: "Tokyo ou une fourmilière polie ? \n Empile 37 millions d'habitants", opts: ["Tokyo", "Une fourmilière", "Les deux"], a: 0, ex: "Tokyo empile 37 millions d'habitants dans sa métropole : la fourmilière la plus polie du monde." },
+            { q: "Le Danube ou un eurotour ? \n Traverse dix pays", opts: ["Le Danube", "Un eurotour", "Les deux"], a: 0, ex: "Le Danube traverse dix pays, de l'Allemagne à la mer Noire : l'eurotour fluvial par excellence." },
+            { q: "Les Galápagos ou un laboratoire d'évolution ? \n A inspiré Darwin", opts: ["Les Galápagos", "Un laboratoire", "Les deux"], a: 0, ex: "Les Galápagos ont inspiré Darwin : les pinsons différents de chaque île ont fait naître la théorie de l'évolution — le laboratoire vivant." },
+            { q: "Le Salto Angel ou une échelle cassée ? \n Tombe de près d'un kilomètre", opts: ["Le Salto Angel", "Une échelle cassée", "Les deux"], a: 0, ex: "Le Salto Angel tombe de 979 m au Venezuela : la plus haute chute d'eau du monde, l'échelle cassée rend son âme avant la fin." },
+            { q: "La Sardaigne ou un fromage vivant ? \n Abrite les casu marzu avec leurs larves", opts: ["La Sardaigne", "Un fromage vivant", "Les deux"], a: 0, ex: "La Sardaigne abrite le casu marzu, fromage peuplé de larves vivantes : interdit à la vente, le seul fromage qui bouge encore dans l'assiette." },
+            { q: "La Russie ou un frigo géant ? \n Abrite Oïmiakon, village le plus froid habité", opts: ["La Russie", "Un frigo géant", "Les deux"], a: 0, ex: "La Russie abrite Oïmiakon, le village habité le plus froid du monde : jusqu'à -50 °C l'hiver, le frigo géant du pays." },
+            { q: "L'Australie ou un panier à corne ? \n Recèle des animaux qui n'existent nulle part ailleurs", opts: ["L'Australie", "Un panier à corne", "Les deux"], a: 0, ex: "L'Australie abrite une faune unique au monde : marsupiaux, ornithorynques et diables de Tasmanie, nés de son long isolement." },
+            { q: "Le Sahara ou un stock de sable de plage ? \n Recouvre une taille des États-Unis", opts: ["Le Sahara", "Un stock de sable", "Les deux"], a: 0, ex: "Le Sahara recouvre environ la taille des États-Unis : 9 millions de km² de sable et de pierre, le plus grand désert chaud du monde." },
+            { q: "La montagne de table ou un plateau du petit-déjeuner ? \n Domine Le Cap", opts: ["La montagne de la Table", "Un plateau du petit-déjeuner", "Les deux"], a: 0, ex: "La montagne de la Table domine Le Cap en Afrique du Sud : son plateau caractéristique, souvent drapé de sa nappe de nuages." },
+            { q: "L'Islande ou une centrale géothermique ? \n Chauffe ses maisons avec ses volcans", opts: ["L'Islande", "Une centrale géothermique", "Les deux"], a: 0, ex: "L'Islande chauffe ses maisons avec ses volcans : la géothermie alimente tuyaux et piscines — tout le pays est une centrale géothermique." },
+            { q: "Le marathon ou un messager pressé ? \n Né d'une course pour annoncer une victoire", opts: ["Le marathon", "Un messager pressé", "Les deux"], a: 2, ex: "La légende dit qu'un messager grec a couru de Marathon à Athènes pour annoncer la victoire avant de s'effondrer : le marathon en garde la distance." },
+            { q: "Usain Bolt ou un éclair ? \n Boucle le 100 m en 9,58 secondes", opts: ["Usain Bolt", "Un éclair", "Les deux"], a: 0, ex: "Usain Bolt a bouclé le 100 m en 9,58 s à Berlin en 2009 : 37 km/h de pointe, l'éclair de la piste." },
+            { q: "Le cricket ou une série trop longue ? \n Peut durer cinq jours sans vainqueur", opts: ["Le cricket", "Une série trop longue", "Les deux"], a: 2, ex: "Les deux s'éternisent : un test-match de cricket dure cinq jours — et peut se terminer sans vainqueur, match nul assumé." },
+            { q: "Le badminton ou une balle de fusil ? \n Expédie le volant à plus de 400 km/h", opts: ["Le badminton", "Une balle de fusil", "Les deux"], a: 0, ex: "Le badminton expédie le volant à plus de 400 km/h au smash : le record de vitesse pour un projectile de sport, plumes comprises." },
+            { q: "Le tir à la corde ou un bras de fer géant ? \n Fut sport olympique jusqu'en 1920", opts: ["Le tir à la corde", "Un bras de fer géant", "Les deux"], a: 2, ex: "Les deux tirent : le tir à la corde fut sport olympique jusqu'en 1920, le bras de fer géant a failli suivre le même chemin." },
+            { q: "Le squash ou un cachot londonien ? \n Est né entre quatre murs de prison", opts: ["Le squash", "Un cachot", "Les deux"], a: 0, ex: "Le squash est né dans une prison londonienne : les détenus de Fleet raquaient une balle contre les murs, d'où le petit ballon noir." },
+            { q: "Le rugby ou un trophée de ménage ? \n Doit son ballon ovale à la vessie d'un porc", opts: ["Le rugby", "Un trophée de ménage", "Les deux"], a: 0, ex: "Le ballon ovale du rugby vient d'une vessie de porc gonflée à la bouche : la forme est restée par la physique, pas pour le ménage." },
+            { q: "La Coupe du monde ou un meuble à trophées ? \n Le Brésil en a gagné cinq", opts: ["La Coupe du monde", "Un meuble à trophées", "Les deux"], a: 0, ex: "Le Brésil a gagné cinq Coupes du monde, record absolu : le meuble à trophées le plus fourni du football." },
+            { q: "Eliud Kipchoge ou un chrono impossible ? \n A couru le marathon en moins de deux heures", opts: ["Eliud Kipchoge", "Un chrono impossible", "Les deux"], a: 2, ex: "Les deux défient le chrono : Kipchoge a couru le marathon en 1 h 59 min 40 en 2019, performance hors compétition — le chrono impossible est tombé." },
+            { q: "Le Tour de France ou une caravane publicitaire ? \n Roule depuis 1903", opts: ["Le Tour de France", "Une caravane", "Les deux"], a: 0, ex: "Le Tour de France roule depuis 1903, créé par un journal pour vendre du papier : la caravane publicitaire est arrivée très vite après." },
+            { q: "La pétanque ou une partie de quartier ? \n Exige les pieds tanqués, pas question de bouger", opts: ["La pétanque", "Une partie de quartier", "Les deux"], a: 0, ex: "La pétanque exige les pieds tanqués, les pieds joints : on lance sans élan, la partie de quartier au cordeau." },
+            { q: "Le foot ou un sport de lords ? \n A été codifié dans les pubs anglais", opts: ["Le foot", "Un sport de lords", "Les deux"], a: 0, ex: "Le football a été codifié dans les pubs et les écoles anglaises au XIXe siècle : la FA naît en 1863. Le sport de lords, c'est plutôt le cricket." },
+            { q: "L'ultimate ou un match sans arbitre ? \n Se joue sur l'honneur et le frisbee", opts: ["L'ultimate", "Un match sans arbitre", "Les deux"], a: 2, ex: "L'ultimate se joue sans arbitre, sur l'honneur : les joueurs signalent eux-mêmes les fautes — avec un frisbee en toile de fond." },
+            { q: "Le curling ou un ménage sur glace ? \n Balaye la pierre vers la maison", opts: ["Le curling", "Un ménage sur glace", "Les deux"], a: 0, ex: "Le curling consiste à balayer la glace devant la pierre pour la faire glisser droit : le ménage sur glace, brosse comprise." },
+            { q: "Le sumo ou un rite de sel ? \n Les lutteurs jettent du sel avant le combat", opts: ["Le sumo", "Un rite de sel", "Les deux"], a: 0, ex: "Les lutteurs de sumo jettent du sel sur l'aire avant le combat : une purification du rite shinto, le sel qui porte bonheur." },
+            { q: "La natation synchronisée ou un ballet aquatique ? \n Nage en parfaite harmonie", opts: ["La natation synchronisée", "Un ballet aquatique", "Les deux"], a: 2, ex: "Les deux nagent ensemble : la natation synchronisée est un ballet aquatique chronométré, juges à l'appui." },
+            { q: "Le ski de fond ou un(e) facteur scandinave ? \n Né pour traverser la neige", opts: ["Le ski de fond", "Un facteur scandinave", "Les deux"], a: 0, ex: "Le ski de fond est né en Scandinavie pour traverser la neige : chasse, courses et tournées du facteur, le Grand Nord en tête." },
+            { q: "Le handball ou un sport de raquette déguisé ? \n Se joue aux mains, pas à la raquette", opts: ["Le handball", "Un sport de raquette", "Les deux"], a: 0, ex: "Le handball se joue aux mains, sans raquette : le sport de raquette le plus mal déguisé de toute la famille." },
+            { q: "L'escalade ou un travail de scales ? \n A rejoint les JO de Tokyo", opts: ["L'escalade", "Un travail de scales", "Les deux"], a: 0, ex: "L'escalade a rejoint les JO de Tokyo en 2020 : les grimpeurs s'affrontent en vitesse, bloc et difficulté, sur le mur le plus rapide du monde." },
+            { q: "Le hockey sur glace ou une bagarre réglée ? \n Trois périodes, zéro pitié", opts: ["Le hockey sur glace", "Une bagarre réglée", "Les deux"], a: 0, ex: "Le hockey sur glace enchaîne trois périodes à haute vitesse : les contacts sont réglés par le règlement, à peine." },
+            { q: "Les JO antiques ou une fête de l'Antiquité ? \n Se tenaient tous les quatre ans à Olympie", opts: ["Les JO antiques", "Une fête de l'Antiquité", "Les deux"], a: 2, ex: "Les deux se fêtent tous les quatre ans à Olympie : les jeux antiques, trêve sacrée comprise, ont duré plus de 1 000 ans." },
+            { q: "Le Groenland ou Madagascar ? \n Est la plus grande île du monde (hors continents)", opts: ["Le Groenland", "Madagascar", "Les deux"], a: 0, ex: "Le Groenland est la plus grande île du monde avec 2,2 millions de km² ; Madagascar est quatrième, derrière la Nouvelle-Guinée et Bornéo." }
          ];
          /* Fournée manuscrite n°10 (duels Sel ou poivre). */
          const SEL_PEPPER9 = [
-            { q: "Beethoven ou un chef d'orchestre sourd ? \n Écrivait ses partitions sans les entendre", opts: ["Beethoven", "Un chef d'orchestre", "Les deux"], a: 0 },
-            { q: "Les Beatles ou une fabrique de tubes ? \n Ont vendu plus de 600 millions d'albums", opts: ["Les Beatles", "Une fabrique de tubes", "Les deux"], a: 0 },
-            { q: "Michael Jackson ou un pas de danse antigravité ? \n A inventé le moonwalk", opts: ["Michael Jackson", "Un pas de danse", "Les deux"], a: 0 },
-            { q: "Ed Sheeran ou un milliard d'écoutes ? \n A franchi le premier ce cap sur Spotify", opts: ["Ed Sheeran", "Un milliard d'écoutes", "Les deux"], a: 0 },
-            { q: "L'orgue ou une cathédrale sonore ? \n Souffle par des milliers de tuyaux", opts: ["L'orgue", "Une cathédrale sonore", "Les deux"], a: 2 },
-            { q: "Le Bolero de Ravel ou un ressort qui monte ? \n Répète la même phrase en crescendo", opts: ["Le Bolero", "Un ressort", "Les deux"], a: 0 },
-            { q: "Le jazz ou un bateau de La Nouvelle-Orléans ? \n Né dans le Mississippi des années 1900", opts: ["Le jazz", "Un bateau", "Les deux"], a: 0 },
-            { q: "Tomorrowland ou une ville de festival ? \n Accueille 200 000 clubbers en Belgique", opts: ["Tomorrowland", "Une ville de festival", "Les deux"], a: 2 },
-            { q: "Les frères Lumière ou un train de cinéma ? \n Ont fait sursauter le public de 1895", opts: ["Les frères Lumière", "Un train de cinéma", "Les deux"], a: 2 },
-            { q: "Georges Méliès ou un magicien de la pellicule ? \n Envoyait une fusée dans l'œil de la Lune", opts: ["Georges Méliès", "Un magicien", "Les deux"], a: 2 },
-            { q: "Hitchcock ou un plongeur du suspense ? \n Apparaît une seconde dans chacun de ses films", opts: ["Hitchcock", "Un plongeur", "Les deux"], a: 0 },
-            { q: "Fenêtre sur cour ou un péripatéticien du fauteuil ? \n Espionne tout sans quitter sa chambre", opts: ["Fenêtre sur cour", "Un voyeur de fauteuil", "Les deux"], a: 0 },
-            { q: "Toy Story ou un jeu de rôle vivant ? \n Les jouets s'animent dès qu'on ferme la porte", opts: ["Toy Story", "Un jeu de rôle vivant", "Les deux"], a: 0 },
-            { q: "Mickey Mouse ou une star de trottoir ? \n Première étoile du Walk of Fame en 1978", opts: ["Mickey", "Une star de trottoir", "Les deux"], a: 0 },
-            { q: "Les Simpson ou une éternelle de Springfield ? \n Sèche l'école depuis 1989", opts: ["Les Simpson", "Une éternelle", "Les deux"], a: 0 },
-            { q: "Titanic ou un paquebot d'Oscars ? \n A raflé 11 statuettes", opts: ["Titanic", "Un paquebot d'Oscars", "Les deux"], a: 2 },
-            { q: "Tron ou un jeu vidéo des années 80 ? \n A tracé la route des images de synthèse", opts: ["Tron", "Un jeu vidéo", "Les deux"], a: 0 },
-            { q: "Auguste ou un premier de la classe ? \n Le premier empereur romain", opts: ["Auguste", "Un premier de la classe", "Les deux"], a: 0 },
-            { q: "Imhotep ou un architecte de l'éternité ? \n A dressé la première pyramide à degrés", opts: ["Imhotep", "Un architecte", "Les deux"], a: 2 },
-            { q: "La pyramide de Khéops ou un chantier de 20 ans ? \n A mobilisé des milliers d'ouvriers", opts: ["La pyramide", "Un chantier", "Les deux"], a: 2 },
-            { q: "Louis XIV ou un soleil de cour ? \n Dansait ballet à Versailles", opts: ["Louis XIV", "Un soleil de cour", "Les deux"], a: 2 },
-            { q: "La Bastille ou une prison de symbole ? \n Est tombée un 14 juillet", opts: ["La Bastille", "Une prison", "Les deux"], a: 2 },
-            { q: "Marie-Antoinette ou une reine de fin de règne ? \n A perdu la tête en 1793", opts: ["Marie-Antoinette", "Une reine", "Les deux"], a: 0 },
-            { q: "Napoléon ou un empereur de briques ? \n A couronné lui-même son chapeau, presque", opts: ["Napoléon", "Un empereur", "Les deux"], a: 0 },
-            { q: "Waterloo ou un dimanche de 1815 ? \n A clos l'aventure impériale", opts: ["Waterloo", "Un dimanche", "Les deux"], a: 0 },
-            { q: "Champollion ou un traducteur de cailloux ? \n A déchiffré les hiéroglyphes", opts: ["Champollion", "Un traducteur", "Les deux"], a: 2 },
-            { q: "Magellan ou un tour du monde inachevé ? \n Son équipage a bouclé le voyage sans lui", opts: ["Magellan", "Un tour du monde", "Les deux"], a: 0 },
-            { q: "Henry VIII ou un collectionneur d'épouses ? \n En a épousé six", opts: ["Henry VIII", "Un collectionneur", "Les deux"], a: 0 },
-            { q: "Charles Ier d'Angleterre ou un roi décapité ? \n A perdu la tête en 1649", opts: ["Charles Ier", "Un roi décapité", "Les deux"], a: 2 },
-            { q: "Amundsen ou un facteur du pôle ? \n Arrivé premier au pôle Sud en 1911", opts: ["Amundsen", "Un facteur du pôle", "Les deux"], a: 0 },
-            { q: "De Gaulle ou un général de la radio ? \n A dit « je vous ai compris » en 1958", opts: ["De Gaulle", "Un général de la radio", "Les deux"], a: 0 },
-            { q: "Le mur de Berlin ou un rideau de béton ? \n Est tombé en 1989", opts: ["Le mur de Berlin", "Un rideau de béton", "Les deux"], a: 2 },
-            { q: "La Chine ou une papeterie millénaire ? \n A inventé le papier", opts: ["La Chine", "Une papeterie", "Les deux"], a: 0 },
-            { q: "Les Sumériens ou des secrétaires de l'argile ? \n Ont gravé le cunéiforme", opts: ["Les Sumériens", "Des secrétaires", "Les deux"], a: 0 },
-            { q: "Leif Erikson ou un Viking en avance ? \n A mouillé en Amérique vers l'an 1000", opts: ["Leif Erikson", "Un Viking", "Les deux"], a: 0 },
-            { q: "Constantin ou un empereur converti ? \n A légalisé le christianisme à Milan", opts: ["Constantin", "Un empereur", "Les deux"], a: 0 },
-            { q: "Cléopâtre ou une diplomate de charme ? \n Parlait à ses alliés sans interprète", opts: ["Cléopâtre", "Une diplomate", "Les deux"], a: 0 },
-            { q: "La Renaissance ou un printemps des arts ? \n A fait renaître l'Antiquité en Italie", opts: ["La Renaissance", "Un printemps", "Les deux"], a: 2 },
-            { q: "Léonard de Vinci ou un cahier de brouillons ? \n A griffonné hélices et sourires", opts: ["Léonard de Vinci", "Un cahier", "Les deux"], a: 0 },
-            { q: "Jeanne d'Arc ou une bergère en armure ? \n A mené des armées à 17 ans", opts: ["Jeanne d'Arc", "Une bergère", "Les deux"], a: 0 },
-            { q: "Gutenberg ou un imprimeur de suffrages ? \n A démocratisé le livre avec ses caractères mobiles", opts: ["Gutenberg", "Un imprimeur", "Les deux"], a: 0 },
-            { q: "Vercingétorix ou un Gaulois de terminale ? \n A jeté ses armes aux pieds de César", opts: ["Vercingétorix", "Un Gaulois", "Les deux"], a: 0 },
-            { q: "Louis XVI ou un roi horloger ? \n Préférait les serrures aux affaires du royaume", opts: ["Louis XVI", "Un roi horloger", "Les deux"], a: 2 },
-            { q: "Queen ou ABBA ? \n A enregistré Bohemian Rhapsody", opts: ["Queen", "ABBA", "Les deux"], a: 0 }
+            { q: "Beethoven ou un chef d'orchestre sourd ? \n Écrivait ses partitions sans les entendre", opts: ["Beethoven", "Un chef d'orchestre", "Les deux"], a: 0, ex: "Devenu sourd, Beethoven écrivait ses partitions sans les entendre : la Neuvième a été composée dans le silence complet. Le chef d'orchestre, lui, a besoin de ses oreilles." },
+            { q: "Les Beatles ou une fabrique de tubes ? \n Ont vendu plus de 600 millions d'albums", opts: ["Les Beatles", "Une fabrique de tubes", "Les deux"], a: 0, ex: "Les Beatles ont vendu plus de 600 millions d'albums : la fabrique de tubes la plus productive de l'histoire de la musique." },
+            { q: "Michael Jackson ou un pas de danse antigravité ? \n A inventé le moonwalk", opts: ["Michael Jackson", "Un pas de danse", "Les deux"], a: 0, ex: "Michael Jackson a popularisé le moonwalk au Motown 25 en 1983 : le pas antigravité, déjà dansé dans la rue, est devenu sa signature." },
+            { q: "Ed Sheeran ou un milliard d'écoutes ? \n A franchi le premier ce cap sur Spotify", opts: ["Ed Sheeran", "Un milliard d'écoutes", "Les deux"], a: 0, ex: "Ed Sheeran a été le premier à franchir le milliard d'écoutes sur Spotify, avec Thinking Out Loud en 2015." },
+            { q: "L'orgue ou une cathédrale sonore ? \n Souffle par des milliers de tuyaux", opts: ["L'orgue", "Une cathédrale sonore", "Les deux"], a: 2, ex: "Les deux soufflent : l'orgue chante par des milliers de tuyaux et la cathédrale entière devient sa caisse de résonance — l'instrument le plus grand du monde." },
+            { q: "Le Bolero de Ravel ou un ressort qui monte ? \n Répète la même phrase en crescendo", opts: ["Le Bolero", "Un ressort", "Les deux"], a: 0, ex: "Le Bolero de Ravel répète une seule phrase en crescendo pendant quinze minutes : le ressort monte jusqu'au final, cymbales comprises." },
+            { q: "Le jazz ou un bateau de La Nouvelle-Orléans ? \n Né dans le Mississippi des années 1900", opts: ["Le jazz", "Un bateau", "Les deux"], a: 0, ex: "Le jazz est né à La Nouvelle-Orléans au tournant du XXe siècle : le Mississippi des bateaux à vapeur et des fanfares, berceau du genre." },
+            { q: "Tomorrowland ou une ville de festival ? \n Accueille 200 000 clubbers en Belgique", opts: ["Tomorrowland", "Une ville de festival", "Les deux"], a: 2, ex: "Les deux accueillent la foule : Tomorrowland reçoit 200 000 clubbers en Belgique chaque été — une ville de festival complète, avec ses hôtels." },
+            { q: "Les frères Lumière ou un train de cinéma ? \n Ont fait sursauter le public de 1895", opts: ["Les frères Lumière", "Un train de cinéma", "Les deux"], a: 2, ex: "Les deux ont fait sursauter : le train des frères Lumière, entrant en gare de La Ciotat en 1895, a marqué la naissance du cinéma." },
+            { q: "Georges Méliès ou un magicien de la pellicule ? \n Envoyait une fusée dans l'œil de la Lune", opts: ["Georges Méliès", "Un magicien", "Les deux"], a: 2, ex: "Les deux envoient des fusées : Méliès, magicien de la pellicule, a planté la sienne dans l'œil de la Lune en 1902 — le premier film de science-fiction." },
+            { q: "Hitchcock ou un plongeur du suspense ? \n Apparaît une seconde dans chacun de ses films", opts: ["Hitchcock", "Un plongeur", "Les deux"], a: 0, ex: "Hitchcock apparaît une seconde dans chacun de ses films : le caméo le plus couru du suspense. Le plongeur, lui, reste au bord du bassin." },
+            { q: "Fenêtre sur cour ou un péripatéticien du fauteuil ? \n Espionne tout sans quitter sa chambre", opts: ["Fenêtre sur cour", "Un voyeur de fauteuil", "Les deux"], a: 0, ex: "James Stewart espionne tout depuis son fauteuil, jambe plâtrée, dans Fenêtre sur cour : le voyeur de fauteuil par excellence." },
+            { q: "Toy Story ou un jeu de rôle vivant ? \n Les jouets s'animent dès qu'on ferme la porte", opts: ["Toy Story", "Un jeu de rôle vivant", "Les deux"], a: 0, ex: "Les jouets s'animent dès qu'on ferme la porte : Toy Story, premier long-métrage entièrement en images de synthèse, a ouvert la voie en 1995." },
+            { q: "Mickey Mouse ou une star de trottoir ? \n Première étoile du Walk of Fame en 1978", opts: ["Mickey", "Une star de trottoir", "Les deux"], a: 0, ex: "Mickey a reçu la première étoile du Walk of Fame en 1978 : la star de trottoir la plus souriante d'Hollywood." },
+            { q: "Les Simpson ou une éternelle de Springfield ? \n Sèche l'école depuis 1989", opts: ["Les Simpson", "Une éternelle", "Les deux"], a: 0, ex: "Bart sèche l'école depuis 1989 : la série de Springfield dépasse les 35 saisons, l'éternelle du petit écran." },
+            { q: "Titanic ou un paquebot d'Oscars ? \n A raflé 11 statuettes", opts: ["Titanic", "Un paquebot d'Oscars", "Les deux"], a: 2, ex: "Les deux ont raflé : Titanic a empoché 11 Oscars en 1998, record à égalité avec Ben-Hur et le Seigneur des anneaux." },
+            { q: "Tron ou un jeu vidéo des années 80 ? \n A tracé la route des images de synthèse", opts: ["Tron", "Un jeu vidéo", "Les deux"], a: 0, ex: "Tron a tracé la route des images de synthèse dès 1982 : Disney prenait un pari technologique, des décennies avant Avatar." },
+            { q: "Auguste ou un premier de la classe ? \n Le premier empereur romain", opts: ["Auguste", "Un premier de la classe", "Les deux"], a: 0, ex: "Auguste, alias Octavien, fut le premier empereur romain : le premier de la classe, régnant plus de 40 ans." },
+            { q: "Imhotep ou un architecte de l'éternité ? \n A dressé la première pyramide à degrés", opts: ["Imhotep", "Un architecte", "Les deux"], a: 2, ex: "Les deux bâtissent : Imhotep a dressé la pyramide à degrés de Djéser à Saqqarah vers 2650 av. J.-C. — le premier architecte nommé de l'histoire." },
+            { q: "La pyramide de Khéops ou un chantier de 20 ans ? \n A mobilisé des milliers d'ouvriers", opts: ["La pyramide", "Un chantier", "Les deux"], a: 2, ex: "Les deux s'étirent : la pyramide de Khéops a mobilisé des milliers d'ouvriers pendant une vingtaine d'années — un chantier pharaonique au sens propre." },
+            { q: "Louis XIV ou un soleil de cour ? \n Dansait ballet à Versailles", opts: ["Louis XIV", "Un soleil de cour", "Les deux"], a: 2, ex: "Les deux rayonnent : Louis XIV dansait ballet à Versailles, le Roi-Soleil — le soleil de cour, couronné de plumes." },
+            { q: "La Bastille ou une prison de symbole ? \n Est tombée un 14 juillet", opts: ["La Bastille", "Une prison", "Les deux"], a: 2, ex: "Les deux tombent : la Bastille, prison de symbole, est prise le 14 juillet 1789 — il n'y avait que sept prisonniers dedans." },
+            { q: "Marie-Antoinette ou une reine de fin de règne ? \n A perdu la tête en 1793", opts: ["Marie-Antoinette", "Une reine", "Les deux"], a: 0, ex: "Marie-Antoinette a littéralement perdu la tête en 1793 : guillotinée quelques mois après le roi, la reine de fin de règne." },
+            { q: "Napoléon ou un empereur de briques ? \n A couronné lui-même son chapeau, presque", opts: ["Napoléon", "Un empereur", "Les deux"], a: 0, ex: "En 1804, Napoléon a pris la couronne des mains du pape pour se couronner lui-même : pas question de devoir son chapeau à quelqu'un d'autre." },
+            { q: "Waterloo ou un dimanche de 1815 ? \n A clos l'aventure impériale", opts: ["Waterloo", "Un dimanche", "Les deux"], a: 0, ex: "Waterloo a clos l'aventure impériale le 18 juin 1815, un dimanche de boue : Napoléon a abdiqué quatre jours plus tard." },
+            { q: "Champollion ou un traducteur de cailloux ? \n A déchiffré les hiéroglyphes", opts: ["Champollion", "Un traducteur", "Les deux"], a: 2, ex: "Les deux traduisent : Champollion a déchiffré les hiéroglyphes en 1822 grâce à la pierre de Rosette — le traducteur de cailloux le plus célèbre." },
+            { q: "Magellan ou un tour du monde inachevé ? \n Son équipage a bouclé le voyage sans lui", opts: ["Magellan", "Un tour du monde", "Les deux"], a: 0, ex: "Magellan est mort aux Philippines : c'est son équipage, une poignée d'hommes, qui a bouclé le premier tour du monde sans lui." },
+            { q: "Henry VIII ou un collectionneur d'épouses ? \n En a épousé six", opts: ["Henry VIII", "Un collectionneur", "Les deux"], a: 0, ex: "Henry VIII a épousé six femmes — deux divorcées, deux décapitées : le collectionneur d'épouses le plus sinistre d'Angleterre." },
+            { q: "Charles Ier d'Angleterre ou un roi décapité ? \n A perdu la tête en 1649", opts: ["Charles Ier", "Un roi décapité", "Les deux"], a: 2, ex: "Les deux perdent la tête : Charles Ier a été décapité en 1649 après la guerre civile anglaise — un roi exécuté par son propre parlement." },
+            { q: "Amundsen ou un facteur du pôle ? \n Arrivé premier au pôle Sud en 1911", opts: ["Amundsen", "Un facteur du pôle", "Les deux"], a: 0, ex: "Amundsen est arrivé premier au pôle Sud le 14 décembre 1911 : 35 jours avant Scott. Le facteur du pôle a livré le premier." },
+            { q: "De Gaulle ou un général de la radio ? \n A dit « je vous ai compris » en 1958", opts: ["De Gaulle", "Un général de la radio", "Les deux"], a: 0, ex: "De Gaulle a dit je vous ai compris à Alger le 4 juin 1958 : le général de la radio, dans tous les postes de l'époque." },
+            { q: "Le mur de Berlin ou un rideau de béton ? \n Est tombé en 1989", opts: ["Le mur de Berlin", "Un rideau de béton", "Les deux"], a: 2, ex: "Les deux tombent : le mur de Berlin, rideau de béton de 155 km, s'est effondré le 9 novembre 1989." },
+            { q: "La Chine ou une papeterie millénaire ? \n A inventé le papier", opts: ["La Chine", "Une papeterie", "Les deux"], a: 0, ex: "La Chine a inventé le papier vers 105 après J.-C. : la papeterie millénaire, cinq siècles avant l'Europe." },
+            { q: "Les Sumériens ou des secrétaires de l'argile ? \n Ont gravé le cunéiforme", opts: ["Les Sumériens", "Des secrétaires", "Les deux"], a: 0, ex: "Les Sumériens ont gravé le cunéiforme dans l'argile vers 3400 av. J.-C. : les secrétaires de l'argile, première écriture de l'histoire." },
+            { q: "Leif Erikson ou un Viking en avance ? \n A mouillé en Amérique vers l'an 1000", opts: ["Leif Erikson", "Un Viking", "Les deux"], a: 0, ex: "Leif Erikson a mouillé en Amérique vers l'an 1000, cinq siècles avant Colomb : le Viking en avance de 500 ans." },
+            { q: "Constantin ou un empereur converti ? \n A légalisé le christianisme à Milan", opts: ["Constantin", "Un empereur", "Les deux"], a: 0, ex: "Constantin a légalisé le christianisme par l'édit de Milan en 313 : l'empereur converti, baptisé sur son lit de mort." },
+            { q: "Cléopâtre ou une diplomate de charme ? \n Parlait à ses alliés sans interprète", opts: ["Cléopâtre", "Une diplomate", "Les deux"], a: 0, ex: "Cléopâtre parlait à ses alliés sans interprète, plusieurs langues à son répertoire : la diplomate de charme la mieux diplômée du Nil." },
+            { q: "La Renaissance ou un printemps des arts ? \n A fait renaître l'Antiquité en Italie", opts: ["La Renaissance", "Un printemps", "Les deux"], a: 2, ex: "Les deux font renaître : la Renaissance a ressuscité l'Antiquité en Italie au XVe siècle, le printemps des arts a fleuri Florence." },
+            { q: "Léonard de Vinci ou un cahier de brouillons ? \n A griffonné hélices et sourires", opts: ["Léonard de Vinci", "Un cahier", "Les deux"], a: 0, ex: "Léonard a griffonné hélices volantes et sourires en écriture miroir dans ses cahiers : environ 7 000 pages de brouillons, inventions comprises." },
+            { q: "Jeanne d'Arc ou une bergère en armure ? \n A mené des armées à 17 ans", opts: ["Jeanne d'Arc", "Une bergère", "Les deux"], a: 0, ex: "Jeanne a mené des armées à 17 ans, bannière en tête : la bergère en armure, brûlée à 19 ans, canonisée 500 ans plus tard." },
+            { q: "Gutenberg ou un imprimeur de suffrages ? \n A démocratisé le livre avec ses caractères mobiles", opts: ["Gutenberg", "Un imprimeur", "Les deux"], a: 0, ex: "Gutenberg a inventé les caractères mobiles vers 1450 : le livre devient abordable, la connaissance circule — l'imprimerie change le monde." },
+            { q: "Vercingétorix ou un Gaulois de terminale ? \n A jeté ses armes aux pieds de César", opts: ["Vercingétorix", "Un Gaulois", "Les deux"], a: 0, ex: "Vercingétorix a jeté ses armes aux pieds de César après Alésia en 52 av. J.-C. : le Gaulois de terminale, héros de tous les manuels." },
+            { q: "Louis XVI ou un roi horloger ? \n Préférait les serrures aux affaires du royaume", opts: ["Louis XVI", "Un roi horloger", "Les deux"], a: 2, ex: "Louis XVI passait ses soirées aux serrures plutôt qu'aux affaires du royaume : le roi horloger, artisan passionné, moins doué pour l'histoire." },
+            { q: "Queen ou ABBA ? \n A enregistré Bohemian Rhapsody", opts: ["Queen", "ABBA", "Les deux"], a: 0, ex: "Queen a enregistré Bohemian Rhapsody en 1975 : six minutes d'opéra rock, un opéra sans équivalent chez ABBA." }
          ];
          /* Fournée manuscrite n°11 (duels Sel ou poivre). */
          const SEL_PEPPER10 = [
-            { q: "La foudre ou un photographe du ciel ? \n Frappe la Terre 100 fois par seconde", opts: ["La foudre", "Un photographe", "Les deux"], a: 0 },
-            { q: "Un éclair ou une soudure géante ? \n Chauffe l'air à 30 000°C", opts: ["Un éclair", "Une soudure", "Les deux"], a: 0 },
-            { q: "Les aurores boréales ou un écran solaire ? \n Illuminent le ciel de voiles verts", opts: ["Les aurores", "Un écran", "Les deux"], a: 0 },
-            { q: "Le cumulonimbus ou une tour de douze étages ? \n Porte les orages sur son dos", opts: ["Le cumulonimbus", "Une tour", "Les deux"], a: 0 },
-            { q: "Le mistral ou un couloir d'autoroute ? \n File dans la vallée du Rhône", opts: ["Le mistral", "Un couloir", "Les deux"], a: 0 },
-            { q: "Le foehn ou un sèche-cheveux alpin ? \n Fait fondre la neige en quelques heures", opts: ["Le foehn", "Un sèche-cheveux", "Les deux"], a: 2 },
-            { q: "Le sirocco ou un tourbillon de sable ? \n Apporte le Sahara jusqu'en Europe", opts: ["Le sirocco", "Un tourbillon", "Les deux"], a: 0 },
-            { q: "L'ozone ou un parasol planétaire ? \n Filtre les rayons du Soleil", opts: ["L'ozone", "Un parasol", "Les deux"], a: 0 },
-            { q: "La pierre ponce ou un liège de volcan ? \n Flotte sur l'eau", opts: ["La pierre ponce", "Un liège", "Les deux"], a: 2 },
-            { q: "Old Faithful ou un métronome de geyser ? \n Jaillit toutes les 90 minutes", opts: ["Old Faithful", "Un métronome", "Les deux"], a: 2 },
-            { q: "Un tsunami ou un train de fond ? \n Traverse un océan en quelques heures", opts: ["Un tsunami", "Un train", "Les deux"], a: 0 },
-            { q: "Les vagues scélérates ou des murs de 25 mètres ? \n Surprennent les navires par mer calme", opts: ["Les vagues scélérates", "Des murs", "Les deux"], a: 0 },
-            { q: "Un derecho ou un train de front ? \n Traverse un continent en une nuit", opts: ["Un derecho", "Un train de front", "Les deux"], a: 0 },
-            { q: "Un diable de poussière ou un fantôme de champ ? \n Danse dans les terres en été", opts: ["Un diable de poussière", "Un fantôme", "Les deux"], a: 0 },
-            { q: "La mer d'Aral ou un lac en partance ? \n A perdu 80% de sa surface", opts: ["La mer d'Aral", "Un lac", "Les deux"], a: 0 },
-            { q: "El Niño ou un thermomètre capricieux ? \n Réchauffe le Pacifique tous les deux à sept ans", opts: ["El Niño", "Un thermomètre", "Les deux"], a: 0 },
-            { q: "Le smog ou une soupe de fumée ? \n Encombrait le Londres des années 50", opts: ["Le smog", "Une soupe", "Les deux"], a: 0 },
-            { q: "L'Antarctique ou un congélateur planétaire ? \n A mesuré -89,2°C", opts: ["L'Antarctique", "Un congélateur", "Les deux"], a: 0 },
-            { q: "Le gel blanc ou un pyromane inversé ? \n Brûle les cultures au petit matin", opts: ["Le gel blanc", "Un pyromane inversé", "Les deux"], a: 0 },
-            { q: "Un grêlon de 10 cm ou une balle de golf ? \n A déjà bombé le sud de la France", opts: ["Un grêlon", "Une balle de golf", "Les deux"], a: 0 },
-            { q: "La brise thermique ou une marée d'air ? \n Se lève l'après-midi sur les côtes", opts: ["La brise", "Une marée d'air", "Les deux"], a: 2 },
-            { q: "Le crépuscule ou un interrupteur du soir ? \n Bascule le jour dans la nuit", opts: ["Le crépuscule", "Un interrupteur", "Les deux"], a: 2 },
-            { q: "L'espéranto ou un rêve de paix ? \n A voulu unir la planète par une langue", opts: ["L'espéranto", "Un rêve de paix", "Les deux"], a: 0 },
-            { q: "Le rotokas ou un alphabet de poche ? \n Se contente de 12 lettres", opts: ["Le rotokas", "Un alphabet de poche", "Les deux"], a: 2 },
-            { q: "Le mandarin ou une forêt de signes ? \n Écrit avec des milliers de caractères", opts: ["Le mandarin", "Une forêt", "Les deux"], a: 0 },
-            { q: "Les 7 000 langues ou un marché aux mots ? \n La moitié pourrait disparaître d'ici 2100", opts: ["Les 7 000 langues", "Un marché aux mots", "Les deux"], a: 0 },
-            { q: "La Schadenfreude ou un rire jaune ? \n Se réjouit du malheur d'autrui", opts: ["La Schadenfreude", "Un rire jaune", "Les deux"], a: 0 },
-            { q: "Le shinrin-yoku ou une sieste d'arbres ? \n Se pratique au milieu de la forêt", opts: ["Le shinrin-yoku", "Une sieste d'arbres", "Les deux"], a: 0 },
-            { q: "L'esprit de l'escalier ou un repartie ? \n Trouve la réponse quand tout est fini", opts: ["L'esprit de l'escalier", "Une repartie", "Les deux"], a: 0 },
-            { q: "Tirer le diable par la queue ou un compte en banque vide ? \n Décrit la fin de mois difficile", opts: ["Le diable", "Un compte vide", "Les deux"], a: 0 },
-            { q: "Poser un lapin ou un rendez-vous fantôme ? \n Fait attendre en vain", opts: ["Poser un lapin", "Un rendez-vous fantôme", "Les deux"], a: 2 },
-            { q: "Le mot restaurant ou un bouillon fortifiant ? \n A donné son nom aux cuisines du monde", opts: ["Le mot restaurant", "Un bouillon", "Les deux"], a: 0 },
-            { q: "Anticonstitutionnellement ou un marathon de lettres ? \n Déroule 25 signes d'un trait", opts: ["Anticonstitutionnellement", "Un marathon", "Les deux"], a: 0 },
-            { q: "L'arachnophobie ou un plafond en désordre ? \n Fait sauter sur la chaise", opts: ["L'arachnophobie", "Un plafond", "Les deux"], a: 0 },
-            { q: "La météo ou une science de nuages ? \n Vient du grec des choses en l'air", opts: ["La météo", "Une science de nuages", "Les deux"], a: 0 },
-            { q: "Le dictionnaire ou un garde-manger de mots ? \n Nourrit les écrivains du monde entier", opts: ["Le dictionnaire", "Un garde-manger", "Les deux"], a: 2 },
-            { q: "La bise ou une poignée de main ? \n Salue et refroidit en même temps", opts: ["La bise", "Une poignée de main", "Les deux"], a: 0 },
-            { q: "Le crachin ou une pluie timide ? \n Tombe sans prévenir, sans mouiller", opts: ["Le crachin", "Une pluie timide", "Les deux"], a: 0 },
-            { q: "L'arc-en-ciel ou un pont de pastels ? \n N'existe que face au Soleil", opts: ["L'arc-en-ciel", "Un pont", "Les deux"], a: 0 },
-            { q: "Le verglas ou un piège de trottoir ? \n Fait danser sans le vouloir", opts: ["Le verglas", "Un piège", "Les deux"], a: 0 },
-            { q: "La marée noire ou une tache de nappe géante ? \n Salit les plages à cause du pétrole", opts: ["La marée noire", "Une tache", "Les deux"], a: 0 },
-            { q: "La sécheresse ou un invité indésirable ? \n S'installe parfois des années", opts: ["La sécheresse", "Un invité", "Les deux"], a: 0 },
-            { q: "Le courant-jet ou une rivière de vent ? \n File à 300 km/h au-dessus de nos têtes", opts: ["Le courant-jet", "Une rivière", "Les deux"], a: 0 },
-            { q: "Le tonnerre ou l’éclair ? \n Est le bruit produit par un orage", opts: ["Le tonnerre", "L’éclair", "Les deux"], a: 0 }
+            { q: "La foudre ou un photographe du ciel ? \n Frappe la Terre 100 fois par seconde", opts: ["La foudre", "Un photographe", "Les deux"], a: 0, ex: "La foudre frappe la Terre environ 100 fois par seconde : le photographe du ciel mitraille en permanence, 24 heures sur 24." },
+            { q: "Un éclair ou une soudure géante ? \n Chauffe l'air à 30 000°C", opts: ["Un éclair", "Une soudure", "Les deux"], a: 0, ex: "L'éclair chauffe l'air à 30 000 °C, cinq fois la surface du Soleil : l'air explose et fait le tonnerre. La soudure, elle, plafonne vers 3 000." },
+            { q: "Les aurores boréales ou un écran solaire ? \n Illuminent le ciel de voiles verts", opts: ["Les aurores", "Un écran", "Les deux"], a: 0, ex: "Les aurores naissent des particules solaires piégées par le champ magnétique : l'écran naturel du ciel, voiles vertes à l'appui." },
+            { q: "Le cumulonimbus ou une tour de douze étages ? \n Porte les orages sur son dos", opts: ["Le cumulonimbus", "Une tour", "Les deux"], a: 0, ex: "Le cumulonimbus s'élève jusqu'à 12 km, bien plus haut qu'une tour de douze étages : c'est lui qui porte les orages sur son dos." },
+            { q: "Le mistral ou un couloir d'autoroute ? \n File dans la vallée du Rhône", opts: ["Le mistral", "Un couloir", "Les deux"], a: 0, ex: "Le mistral file dans le couloir du Rhône jusqu'à 100 km/h : l'autoroute du vent, de la vallée jusqu'à la mer." },
+            { q: "Le foehn ou un sèche-cheveux alpin ? \n Fait fondre la neige en quelques heures", opts: ["Le foehn", "Un sèche-cheveux", "Les deux"], a: 2, ex: "Les deux soufflent chaud : le foehn, vent alpin descendant, fait fondre la neige en quelques heures, comme un sèche-cheveux géant." },
+            { q: "Le sirocco ou un tourbillon de sable ? \n Apporte le Sahara jusqu'en Europe", opts: ["Le sirocco", "Un tourbillon", "Les deux"], a: 0, ex: "Le sirocco apporte poussière et chaleur du Sahara jusqu'en Europe : le tourbillon de sable qui colore même la pluie." },
+            { q: "L'ozone ou un parasol planétaire ? \n Filtre les rayons du Soleil", opts: ["L'ozone", "Un parasol", "Les deux"], a: 0, ex: "La couche d'ozone filtre les UV du Soleil à 25 km d'altitude : le parasol planétaire que les accords protègent depuis 1987." },
+            { q: "La pierre ponce ou un liège de volcan ? \n Flotte sur l'eau", opts: ["La pierre ponce", "Un liège", "Les deux"], a: 2, ex: "Les deux flottent : la pierre ponce, mousse de lave figée pleine de bulles, trône sur l'eau comme un liège de volcan." },
+            { q: "Old Faithful ou un métronome de geyser ? \n Jaillit toutes les 90 minutes", opts: ["Old Faithful", "Un métronome", "Les deux"], a: 2, ex: "Les deux cadrent : Old Faithful jaillit toutes les 60 à 90 minutes, le métronome de geyser du parc de Yellowstone." },
+            { q: "Un tsunami ou un train de fond ? \n Traverse un océan en quelques heures", opts: ["Un tsunami", "Un train", "Les deux"], a: 0, ex: "Un tsunami traverse un océan entier à 800 km/h, train de fond invisible : la côte seule le révèle, quand l'eau se dresse." },
+            { q: "Les vagues scélérates ou des murs de 25 mètres ? \n Surprennent les navires par mer calme", opts: ["Les vagues scélérates", "Des murs", "Les deux"], a: 0, ex: "Les vagues scélérates surgissent par mer calme à plus de 25 m : des murs longtemps niés par les scientifiques, jusqu'aux mesures satellitaires." },
+            { q: "Un derecho ou un train de front ? \n Traverse un continent en une nuit", opts: ["Un derecho", "Un train de front", "Les deux"], a: 0, ex: "Un derecho traverse un continent en une nuit, muraille d'orages alignés : le train de front des grandes plaines américaines." },
+            { q: "Un diable de poussière ou un fantôme de champ ? \n Danse dans les terres en été", opts: ["Un diable de poussière", "Un fantôme", "Les deux"], a: 0, ex: "Le diable de poussière danse dans les champs en été, colonne d'air chaud en pirouette : le fantôme de poussière qui ne hante personne." },
+            { q: "La mer d'Aral ou un lac en partance ? \n A perdu 80% de sa surface", opts: ["La mer d'Aral", "Un lac", "Les deux"], a: 0, ex: "La mer d'Aral a perdu 80 % de sa surface depuis 1960 : les détournements de rivières pour l'irrigation l'ont laissée en partance." },
+            { q: "El Niño ou un thermomètre capricieux ? \n Réchauffe le Pacifique tous les deux à sept ans", opts: ["El Niño", "Un thermomètre", "Les deux"], a: 0, ex: "El Niño réchauffe le Pacifique tous les deux à sept ans : le thermomètre capricieux qui dérègle la météo du monde entier." },
+            { q: "Le smog ou une soupe de fumée ? \n Encombrait le Londres des années 50", opts: ["Le smog", "Une soupe", "Les deux"], a: 0, ex: "Le smog de Londres a tué 12 000 personnes en cinq jours en 1952 : la soupe de fumée et de brume, chassée depuis par les lois sur l'air." },
+            { q: "L'Antarctique ou un congélateur planétaire ? \n A mesuré -89,2°C", opts: ["L'Antarctique", "Un congélateur", "Les deux"], a: 0, ex: "L'Antarctique a mesuré -89,2 °C en 1983 : le record mondial au sol, un congélateur planétaire gratuit et sans branchement." },
+            { q: "Le gel blanc ou un pyromane inversé ? \n Brûle les cultures au petit matin", opts: ["Le gel blanc", "Un pyromane inversé", "Les deux"], a: 0, ex: "Le gel blanc brûle les cultures au petit matin : l'eau des cellules gèle et les éclate — le pyromane inversé des vergers." },
+            { q: "Un grêlon de 10 cm ou une balle de golf ? \n A déjà bombé le sud de la France", opts: ["Un grêlon", "Une balle de golf", "Les deux"], a: 0, ex: "Des grêlons de 10 cm ont déjà bombardé le sud de la France : la taille d'une balle de golf, jusqu'à 500 grammes par bille." },
+            { q: "La brise thermique ou une marée d'air ? \n Se lève l'après-midi sur les côtes", opts: ["La brise", "Une marée d'air", "Les deux"], a: 2, ex: "Les deux montent : la brise thermique se lève l'après-midi sur les côtes, quand la terre réchauffe l'air — une marée d'air quotidienne." },
+            { q: "Le crépuscule ou un interrupteur du soir ? \n Bascule le jour dans la nuit", opts: ["Le crépuscule", "Un interrupteur", "Les deux"], a: 2, ex: "Les deux basculent : le crépuscule fait passer le jour à la nuit en trois nuances, l'interrupteur, lui, claque d'un seul coup." },
+            { q: "L'espéranto ou un rêve de paix ? \n A voulu unir la planète par une langue", opts: ["L'espéranto", "Un rêve de paix", "Les deux"], a: 0, ex: "L'espéranto a voulu unir la planète par une seule langue : créé par Zamenhof en 1887, le rêve de paix parle encore à des millions de personnes." },
+            { q: "Le rotokas ou un alphabet de poche ? \n Se contente de 12 lettres", opts: ["Le rotokas", "Un alphabet de poche", "Les deux"], a: 2, ex: "Les deux vont à l'essentiel : le rotokas, langue de Papouasie, se contente de 12 lettres, l'alphabet le plus court du monde." },
+            { q: "Le mandarin ou une forêt de signes ? \n Écrit avec des milliers de caractères", opts: ["Le mandarin", "Une forêt", "Les deux"], a: 0, ex: "Le mandarin écrit avec des milliers de caractères : environ 3 000 pour lire un journal, la forêt de signes la plus dense du monde." },
+            { q: "Les 7 000 langues ou un marché aux mots ? \n La moitié pourrait disparaître d'ici 2100", opts: ["Les 7 000 langues", "Un marché aux mots", "Les deux"], a: 0, ex: "Sur les 7 000 langues du monde, la moitié pourrait disparaître d'ici 2100 : le marché aux mots ferme ses stands un à un." },
+            { q: "La Schadenfreude ou un rire jaune ? \n Se réjouit du malheur d'autrui", opts: ["La Schadenfreude", "Un rire jaune", "Les deux"], a: 0, ex: "La Schadenfreude, mot allemand sans traduction exacte, se réjouit du malheur d'autrui : le rire jaune, mais en version précise." },
+            { q: "Le shinrin-yoku ou une sieste d'arbres ? \n Se pratique au milieu de la forêt", opts: ["Le shinrin-yoku", "Une sieste d'arbres", "Les deux"], a: 0, ex: "Le shinrin-yoku, bain de forêt japonais, se pratique au milieu des arbres : la sieste d'arbres certifiée bonne pour la santé." },
+            { q: "L'esprit de l'escalier ou un repartie ? \n Trouve la réponse quand tout est fini", opts: ["L'esprit de l'escalier", "Une repartie", "Les deux"], a: 0, ex: "L'esprit de l'escalier trouve la bonne réplique quand tout est fini, dans l'escalier de sortie : la repartie en retard d'un étage." },
+            { q: "Tirer le diable par la queue ou un compte en banque vide ? \n Décrit la fin de mois difficile", opts: ["Le diable", "Un compte vide", "Les deux"], a: 0, ex: "Tirer le diable par la queue, c'est joindre les deux bouts en fin de mois : le compte en banque vide en pleine forme littéraire." },
+            { q: "Poser un lapin ou un rendez-vous fantôme ? \n Fait attendre en vain", opts: ["Poser un lapin", "Un rendez-vous fantôme", "Les deux"], a: 2, ex: "Les deux font attendre : poser un lapin, c'est créer un rendez-vous fantôme — la salle d'attente reste déserte." },
+            { q: "Le mot restaurant ou un bouillon fortifiant ? \n A donné son nom aux cuisines du monde", opts: ["Le mot restaurant", "Un bouillon", "Les deux"], a: 0, ex: "Le mot restaurant vient du bouillon restaurant du XVIIIe siècle, censé restaurer les forces : le mot a depuis envahi les cuisines du monde." },
+            { q: "Anticonstitutionnellement ou un marathon de lettres ? \n Déroule 25 signes d'un trait", opts: ["Anticonstitutionnellement", "Un marathon", "Les deux"], a: 0, ex: "Anticonstitutionnellement déroule 25 signes : le marathon de lettres le plus long de la langue française, à dérouler d'un trait." },
+            { q: "L'arachnophobie ou un plafond en désordre ? \n Fait sauter sur la chaise", opts: ["L'arachnophobie", "Un plafond", "Les deux"], a: 0, ex: "L'arachnophobie fait sauter sur la chaise au moindre fil de plafond : la peur la plus répandue du règne des huit pattes." },
+            { q: "La météo ou une science de nuages ? \n Vient du grec des choses en l'air", opts: ["La météo", "Une science de nuages", "Les deux"], a: 0, ex: "Le mot météo vient du grec meteora, les choses en l'air : la science des nuages, précisément suspendus." },
+            { q: "Le dictionnaire ou un garde-manger de mots ? \n Nourrit les écrivains du monde entier", opts: ["Le dictionnaire", "Un garde-manger", "Les deux"], a: 2, ex: "Les deux nourrissent : le dictionnaire nourrit les écrivains du monde entier, un garde-manger de mots jamais vide." },
+            { q: "La bise ou une poignée de main ? \n Salue et refroidit en même temps", opts: ["La bise", "Une poignée de main", "Les deux"], a: 0, ex: "La bise salue par les joues et refroidit par le vent : le seul mot qui embrasse et glace en même temps." },
+            { q: "Le crachin ou une pluie timide ? \n Tombe sans prévenir, sans mouiller", opts: ["Le crachin", "Une pluie timide", "Les deux"], a: 0, ex: "Le crachin tombe sans prévenir et sans vraiment mouiller : la pluie timide de Bretagne et du Nord, tenace mais discrète." },
+            { q: "L'arc-en-ciel ou un pont de pastels ? \n N'existe que face au Soleil", opts: ["L'arc-en-ciel", "Un pont", "Les deux"], a: 0, ex: "L'arc-en-ciel n'existe que dos au Soleil : il se montre quand les gouttes s'interposent entre vous et lui, pont de pastels instantané." },
+            { q: "Le verglas ou un piège de trottoir ? \n Fait danser sans le vouloir", opts: ["Le verglas", "Un piège", "Les deux"], a: 0, ex: "Le verglas piège le trottoir sous une pellicule invisible : on danse sans le vouloir, pirouettes et fractures comprises." },
+            { q: "La marée noire ou une tache de nappe géante ? \n Salit les plages à cause du pétrole", opts: ["La marée noire", "Une tache", "Les deux"], a: 0, ex: "La marée noire salit les plages quand le pétrole s'échappe : la tache de nappe géante que l'océan n'a jamais commandée." },
+            { q: "La sécheresse ou un invité indésirable ? \n S'installe parfois des années", opts: ["La sécheresse", "Un invité", "Les deux"], a: 0, ex: "La sécheresse s'installe parfois des années, sans prévenir ni partir : l'invité indésirable qui vide les réservoirs un à un." },
+            { q: "Le courant-jet ou une rivière de vent ? \n File à 300 km/h au-dessus de nos têtes", opts: ["Le courant-jet", "Une rivière", "Les deux"], a: 0, ex: "Le courant-jet file à 300 km/h à 10 km d'altitude : la rivière de vent qui pousse les avions, d'où les vols New York-Paris plus courts." },
+            { q: "Le tonnerre ou l’éclair ? \n Est le bruit produit par un orage", opts: ["Le tonnerre", "L’éclair", "Les deux"], a: 0, ex: "Le tonnerre est le bruit de l'air que l'éclair chauffe : la lumière d'abord, le son ensuite, environ trois secondes par kilomètre." }
          ];
          /* Fournée manuscrite n°12 (duels Sel ou poivre). */
          const SEL_PEPPER11 = [
@@ -2164,7 +2228,8 @@
                names.innerHTML = '';
             } else {
                const n = Number($('playerCount').value);
-               names.innerHTML = Array.from({ length: n }, (_, i) => `<label class="small">Joueur ${i + 1}<input class="field pname" maxlength="18" value="${i === 0 ? 'Joueur 1' : `Joueur ${i + 1}`}" placeholder="Nom du joueur ${i + 1}"></label>`).join('');
+               const myName = defaultMultiName();
+               names.innerHTML = Array.from({ length: n }, (_, i) => `<div class="prow"><label class="small">Joueur ${i + 1}<input class="field pname" maxlength="18" value="${i === 0 && myName ? myName : `Joueur ${i + 1}`}" placeholder="Nom du joueur ${i + 1}"></label><label class="small">Avatar</label><div class="avatar-row local-avatar-row">${avatarRowHtml(AVATARS[i % AVATARS.length])}</div></div>`).join('');
             }
          }
          $('playerCount').onchange = drawNames;
@@ -2181,24 +2246,30 @@
          function setupPlayers() {
             if ($('playMode').value === 'online') {
                const name = $('onlinePlayerName').value.trim();
-               players = [{ name: name || 'Hôte', score: 0, team: 0 }];
+               players = [{ name: name || 'Hôte', avatar: selectedAvatarIn($('onlineAvatarRow')), score: 0, team: 0 }];
+               saveMultiIdentity(name, players[0].avatar);
             } else {
-               const names = [...document.querySelectorAll('.pname')].map((x, i) => x.value.trim() || `Joueur ${i + 1}`);
-               players = names.map((name, i) => ({ name, score: 0, team: $('teamMode').value === 'teams' ? i % 2 : i }));
+               const rows = [...document.querySelectorAll('#names .prow')];
+               players = rows.map((row, i) => ({
+                  name: (row.querySelector('.pname').value.trim() || `Joueur ${i + 1}`),
+                  avatar: selectedAvatarIn(row.querySelector('.local-avatar-row')),
+                  score: 0, team: $('teamMode').value === 'teams' ? i % 2 : i
+               }));
+               if (rows[0]) saveMultiIdentity(rows[0].querySelector('.pname').value.trim(), players[0].avatar);
             }
          }
          function refreshOnlineRoster() {
             $('onlineRoster').style.display = 'block';
-            $('onlineRoster').textContent = 'Salon prêt — ' + players.length + ' joueur(s) : ' + players.map(p => p.name).join(', ');
+            $('onlineRoster').textContent = 'Salon prêt — ' + players.length + ' joueur(s) : ' + players.map(p => (p.avatar || "🎲") + " " + p.name).join(', ');
          }
          function startGame() {
-            setupPlayers(); deck = buildDeck(20, selectedTopic); turn = 0; round = 1; locked = false; show('game'); render();
+            setupPlayers(); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); turn = 0; round = 1; locked = false; show('game'); render();
          }
          let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
          function renderProfile(){playerProfile.render();$('quizProfileScore').textContent=Number(localStorage.getItem('drole_quizz_best_solo')||0);$('quizProfileStreak').textContent=Number(localStorage.getItem('drole_quizz_best_streak')||0);}
          $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
          function startSolo() {
-            solo = true; players = [{ name: 'Moi', score: 0, team: 0 }]; soloDeck = buildSoloDeck(15, selectedTopic); soloRound = 1; soloScore = 0; soloStreak = 0; soloLocked = false;
+            solo = true; players = [{ name: 'Moi', score: 0, team: 0 }]; soloDeck = buildSoloDeck(Number($('soloQuestionCount').value) || 15, selectedTopic); soloRound = 1; soloScore = 0; soloStreak = 0; soloLocked = false;
             const topic = TOPICS.find(t => t.id === selectedTopic); $('soloThemeLabel').textContent = topic ? `${topic.emoji} ${topic.name}` : 'Quiz';
             show('soloGame'); renderSolo();
          }
@@ -2230,22 +2301,22 @@
          $('startSoloGame').onclick = startSolo;
          $('soloNext').onclick = () => { if (soloRound >= soloDeck.length) { finishSolo(); return } soloRound++; renderSolo() };
          $('soloQuit').onclick = () => { show('home') };
-         function render() { const p = players[turn % players.length], q = deck[(round - 1) % deck.length]; $('roundLabel').textContent = `Question ${round} / 20`; $('turnLabel').textContent = solo ? 'Mode solo' : `Au tour de ${p.name} · Passez l’appareil`; $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score}</b></span>`).join(''); $('question').textContent = q.q; $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join(''); $('feedback').innerHTML = ''; $('next').style.display = 'none'; locked = false; document.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(Number(b.dataset.i))) }
-         function answer(i) { if (locked) return; locked = true; const q = deck[(round - 1) % deck.length], p = players[turn % players.length], ok = i === q.a; if (ok) p.score += 100; $('answers').querySelectorAll('button').forEach(b => { b.disabled = true; if (Number(b.dataset.i) === q.a) b.style.border = '2px solid #159b68' }); $('feedback').className = 'feedback ' + (ok ? 'good' : 'bad'); $('feedback').innerHTML = (ok ? 'Bonne réponse ! +100 points' : `Raté ! Bonne réponse : ${q.opts[q.a]}`) + (q.ex ? `<div class="ex">💡 ${q.ex}</div>` : ''); $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score}</b></span>`).join(''); $('next').style.display = 'block' }
-         $('next').onclick = () => { if (onlineGame) { advanceOnlineQuestion(); return } if (!onlineGame && onlineHost && $('game').classList.contains('active')) { advanceOnlineQuestion(); return } round++; if (round > 20) { const sorted = [...players].sort((a, b) => b.score - a.score); $('question').textContent = 'Partie terminée !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good'; $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.name} — ${p.score} points`).join('<br>'); $('next').textContent = 'Rejouer'; $('next').onclick = () => { round = 1; players.forEach(p => p.score = 0); deck = buildDeck(20, selectedTopic); $('next').textContent = 'Question suivante'; $('next').onclick = () => { }; render() }; return } turn = (turn + 1) % players.length; render() };
+         function render() { const p = players[turn % players.length], q = deck[(round - 1) % deck.length]; $('roundLabel').textContent = `Question ${round} / ${deck.length}`; $('turnLabel').textContent = solo ? 'Mode solo' : `Au tour de ${p.avatar || "🎲"} ${p.name} · Passez l’appareil`; $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score}</b></span>`).join(''); $('question').textContent = q.q; $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join(''); $('feedback').innerHTML = ''; $('next').style.display = 'none'; locked = false; document.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(Number(b.dataset.i))) }
+         function answer(i) { if (locked) return; locked = true; const q = deck[(round - 1) % deck.length], p = players[turn % players.length], ok = i === q.a; if (ok) p.score += 100; $('answers').querySelectorAll('button').forEach(b => { b.disabled = true; if (Number(b.dataset.i) === q.a) b.style.border = '2px solid #159b68' }); $('feedback').className = 'feedback ' + (ok ? 'good' : 'bad'); $('feedback').innerHTML = (ok ? 'Bonne réponse ! +100 points' : `Raté ! Bonne réponse : ${q.opts[q.a]}`) + (q.ex ? `<div class="ex">💡 ${q.ex}</div>` : ''); $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score}</b></span>`).join(''); $('next').style.display = 'block' }
+         $('next').onclick = () => { if (onlineGame) { advanceOnlineQuestion(); return } if (!onlineGame && onlineHost && $('game').classList.contains('active')) { advanceOnlineQuestion(); return } round++; if (round > deck.length) { const sorted = [...players].sort((a, b) => b.score - a.score); $('question').textContent = 'Partie terminée !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good'; $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.avatar || "🎲"} ${p.name} — ${p.score} points`).join('<br>'); $('next').textContent = 'Rejouer'; $('next').onclick = () => { round = 1; players.forEach(p => p.score = 0); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); $('next').textContent = 'Question suivante'; $('next').onclick = () => { }; render() }; return } turn = (turn + 1) % players.length; render() };
          $('startLocal').onclick = () => { if (!selectedTopic) { alert('Choisis une thématique.'); return } if ($('playMode').value === 'online') { alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.'); return } startGame() };
 
          // ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
          let onlineGame = false, onlinePlayerId = '', onlineAnswers = {}, onlineQuestionIndex = 0, onlineDeck = [];
          function onlineRosterData() {
-            return players.map(p => ({ id: p.id, name: p.name, score: p.score || 0 }));
+            return players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar || "🎲", score: p.score || 0 }));
          }
          function broadcastOnline(message) {
             connections.forEach(c => { if (c && c.open) { try { c.send(message) } catch (e) { } } });
          }
          function updateOnlineRosterUI(prefix = 'Salon prêt') {
             $('onlineRoster').style.display = 'block';
-            $('onlineRoster').textContent = prefix + ' — ' + players.length + ' joueur(s) : ' + players.map(p => p.name).join(', ');
+            $('onlineRoster').textContent = prefix + ' — ' + players.length + ' joueur(s) : ' + players.map(p => (p.avatar || "🎲") + " " + p.name).join(', ');
          }
          function enterOnlineGame() {
             onlineGame = true; solo = false; round = 1; turn = 0; locked = false;
@@ -2256,8 +2327,8 @@
             if (!q) { finishOnlineGame(); return }
             round = onlineQuestionIndex + 1; locked = false; onlineAnswers = {};
             $('roundLabel').textContent = `Question ${round} / ${onlineDeck.length}`;
-            $('turnLabel').textContent = `Partie en ligne · ${players.find(p => p.id === onlinePlayerId)?.name || 'Joueur'}`;
-            $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            $('turnLabel').textContent = `Partie en ligne · ${(players.find(p => p.id === onlinePlayerId) || {}).avatar || "🎲"} ${(players.find(p => p.id === onlinePlayerId) || {}).name || "Joueur"}`;
+            $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score || 0}</b></span>`).join('');
             $('question').textContent = q.q;
             $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join('');
             $('feedback').className = 'feedback'; $('feedback').textContent = '';
@@ -2295,7 +2366,7 @@
                if (i === m.correct) b.style.border = '2px solid #159b68';
                else if (i === myChoice) b.style.border = '2px solid #d95368';
             });
-            $('scores').innerHTML = players.map(p => `<span>${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score || 0}</b></span>`).join('');
             $('feedback').className = 'feedback ' + (correct ? 'good' : 'bad');
             $('feedback').innerHTML = ((myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? 'Bonne réponse ! +100 points' : 'Raté !') + ' Bonne réponse : ' + q.opts[m.correct]) + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
             if (onlineHost) { $('next').style.display = 'block'; $('next').textContent = onlineQuestionIndex === onlineDeck.length - 1 ? 'Voir les résultats' : 'Question suivante'; }
@@ -2316,7 +2387,7 @@
             $('question').textContent = 'Bravo à tous !';
             $('answers').innerHTML = '';
             $('feedback').className = 'feedback good';
-            $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.name} — ${p.score || 0} points`).join('<br>');
+            $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.avatar || "🎲"} ${p.name} — ${p.score || 0} points`).join('<br>');
             $('next').style.display = 'block'; $('next').textContent = 'Retour au menu';
             if (onlineHost) broadcastOnline({ type: 'gameFinished', players: onlineRosterData() });
             $('next').onclick = () => { if (peer) { try { peer.destroy() } catch (e) { } } peer = null; connections = []; onlineHost = false; onlineGame = false; show('home') };
@@ -2327,7 +2398,7 @@
                if (players.length >= 6) { c.send({ type: 'rejected', reason: 'Ce salon est complet (6 joueurs maximum).' }); return }
                const name = String(m.name || 'Joueur').trim().slice(0, 18) || 'Joueur';
                if (!players.some(p => p.id === c.peer)) {
-                  players.push({ id: c.peer, name, score: 0, team: 0 });
+                  players.push({ id: c.peer, name, avatar: String(m.avatar || "🎲").slice(0, 4), score: 0, team: 0 });
                   connections.push(c);
                }
                const roster = onlineRosterData();
@@ -2380,7 +2451,7 @@
             const name = $('onlinePlayerName').value.trim();
             if (!name) { $('netStatus').textContent = 'Choisis ton pseudo avant de créer le salon.'; $('onlinePlayerName').focus(); return }
             if (peer) { try { peer.destroy() } catch (e) { } }
-            players = [{ id: '', name, score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
+            players = [{ id: '', name, avatar: selectedAvatarIn($('onlineAvatarRow')), score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
             $('netStatus').textContent = 'Création du salon…'; $('createOnline').style.display = 'none'; $('joinRoomWrap').style.display = 'none'; $('startLocal').style.display = 'none';
             $('onlineRoster').style.display = 'block'; $('onlineRoster').textContent = 'Création du salon…';
             peer = new Peer('drolequizz-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
@@ -2413,7 +2484,7 @@
             peer.on('open', () => {
                onlinePlayerId = peer.id;
                const c = peer.connect('drolequizz-' + code, { reliable: true }); connections = [c];
-               c.on('open', () => c.send({ type: 'join', name }));
+               c.on('open', () => { const av = selectedAvatarIn($('onlineAvatarRow')); c.send({ type: 'join', name, avatar: av }); saveMultiIdentity(name, av) });
                c.on('data', m => { handleOnlineData(c, m); if (m.type === 'joined') { acknowledged = true; clearTimeout(timeout) } });
                c.on('error', () => { clearTimeout(timeout); $('netStatus').textContent = 'Impossible de rejoindre ce salon. Vérifie le code.' });
             });
@@ -2421,7 +2492,7 @@
          };
          $('hostStart').onclick = () => {
             if (!onlineHost || players.length < 2) { $('netStatus').textContent = 'Il faut au moins 2 joueurs dans le salon pour démarrer.'; return }
-            onlineDeck = buildDeck(20, selectedTopic); onlineQuestionIndex = 0; players.forEach(p => p.score = 0);
+            onlineDeck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); onlineQuestionIndex = 0; players.forEach(p => p.score = 0);
             const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData() };
             broadcastOnline(msg); $('netStatus').textContent = 'La partie est lancée !'; enterOnlineGame();
          };
