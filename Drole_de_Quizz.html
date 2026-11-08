@@ -100,7 +100,7 @@
 
       .menu-grid {
          display: grid;
-         grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+         grid-template-columns: repeat(2, minmax(0, 1fr));
          gap: 12px
       }
 
@@ -612,7 +612,7 @@
                partie</span></div>
          <div class="panel">
             <div class="kicker" id="setupModeLabel">Multijoueur en ligne</div>
-            <div id="challengeModeWrap" style="display:none"><label class="small" for="challengePlayMode">Mode de jeu</label><select class="field" id="challengePlayMode"><option value="local">Même appareil</option><option value="online">En ligne</option></select></div>
+            <div id="challengeModeWrap" style="display:none"><label class="small" for="challengePlayMode">Mode de jeu</label><select class="field" id="challengePlayMode"><option value="online">En ligne</option><option value="local">Même appareil</option></select></div>
             <h2>Choisis une thématique</h2>
             <p class="small">Choisissez parmi les six thèmes pour cette partie.</p>
             <div id="themeChoices" class="topic-grid"></div>
@@ -2232,15 +2232,16 @@
          function drawNames() {
             const online = isOnlinePlay();
             const challenge = activeGameMode === 'challenge';
+            const showOrganization = activeGameMode === 'multiplayer';
             const names = $('names'), onlineWrap = $('onlineNameWrap');
             $('challengeModeWrap').style.display = challenge ? 'block' : 'none';
             names.style.setProperty('display', online ? 'none' : 'grid', 'important');
             names.setAttribute('aria-hidden', online ? 'true' : 'false');
             onlineWrap.style.display = online ? 'block' : 'none';
             $('playerCountWrap').style.display = challenge ? 'none' : online ? 'none' : 'block';
-            $('teamConfigWrap').style.display = online ? 'block' : 'none';
-            $('teamNameWrap').style.display = online && $('teamMode').value === 'teams' ? 'block' : 'none';
-            $('teamScoreWrap').style.display = online && $('teamMode').value === 'teams' ? 'block' : 'none';
+            $('teamConfigWrap').style.display = showOrganization ? 'block' : 'none';
+            $('teamNameWrap').style.display = showOrganization && $('teamMode').value === 'teams' ? 'block' : 'none';
+            $('teamScoreWrap').style.display = showOrganization && $('teamMode').value === 'teams' ? 'block' : 'none';
             $('teamRuleNote').style.display = $('teamScoreRule').value === 'eachCorrect' ? 'block' : 'none';
             $('startLocal').style.display = online ? 'none' : 'block';
             $('startLocal').textContent = challenge ? 'Lancer le défi' : 'Lancer la partie';
@@ -2292,8 +2293,8 @@
          };
          $('challengeBtn').onclick = () => {
             solo = false; activeGameMode = 'challenge'; selectedTopic = null;
-            $('playerCount').value = '2'; $('teamMode').value = 'free'; $('challengePlayMode').value = 'local';
-            $('setupModeLabel').textContent = 'Défi à deux · même appareil';
+            $('playerCount').value = '2'; $('teamMode').value = 'free'; $('challengePlayMode').value = 'online';
+            $('setupModeLabel').textContent = 'Défi à deux · en ligne';
             $('themeChosen').textContent = 'Aucune';
             show('setup'); randomTopicOffer(); drawNames();
          };
