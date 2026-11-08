@@ -144,5 +144,5 @@
       return { render, getProfile: () => ({ ...profile }) };
    }
 
-   window.PlayerProfile = { mount };
+   window.PlayerProfile = { mount, getAvatarOptions: () => [...DEFAULT_AVATARS] };
 })();

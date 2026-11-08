@@ -499,14 +499,18 @@
       }
 
       .avatar-chip {
-         font-size: 20px;
-         line-height: 1.25;
+         display: grid;
+         place-items: center;
+         width: 52px;
+         height: 52px;
          background: #fff;
          border: 2px solid var(--line);
          border-radius: 10px;
-         padding: 4px 7px;
+         padding: 4px;
          cursor: pointer
       }
+
+      .avatar-chip img { width: 100%; height: 100%; border-radius: 6px; object-fit: cover }
 
       .avatar-chip.sel {
          border-color: #8a68e5;
@@ -514,7 +518,12 @@
       }
 
       .avatar-mini {
-         margin-right: 5px
+         width: 30px;
+         height: 30px;
+         margin-right: 5px;
+         border-radius: 9px;
+         object-fit: cover;
+         vertical-align: middle
       }
 
       #hostStart {
@@ -549,9 +558,8 @@
             <p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p>
          </div>
          <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
-                  solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card"
-               id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en
-                  ligne ou sur le même appareil.</small></button><button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records solo.</small></button></div>
+                  solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card" id="challengeBtn"><span class="emoji">⚔️</span><strong>Défi à deux</strong><small>Affrontez-vous sur le même appareil.</small></button><button class="menu-card"
+               id="multiBtn"><span class="emoji">🌐</span><strong>Multijoueur en ligne</strong><small>Crée un salon et joue avec jusqu’à 5 amis.</small></button><button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records solo.</small></button></div>
       </section>
       <section class="screen" id="profileScreen">
          <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Espace joueur</span></div>
@@ -603,9 +611,10 @@
          <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la
                partie</span></div>
          <div class="panel">
+            <div class="kicker" id="setupModeLabel">Multijoueur en ligne</div>
+            <div id="challengeModeWrap" style="display:none"><label class="small" for="challengePlayMode">Mode de jeu</label><select class="field" id="challengePlayMode"><option value="local">Même appareil</option><option value="online">En ligne</option></select></div>
             <h2>Choisis une thématique</h2>
-            <p class="small">Choisissez parmi les six thèmes. Tous les joueurs répondent aux questions de la thématique
-               choisie.</p>
+            <p class="small">Choisissez parmi les six thèmes pour cette partie.</p>
             <div id="themeChoices" class="topic-grid"></div>
             <div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div>
          </div>
@@ -616,22 +625,26 @@
                <p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture
                   générale.</p>
             </div>
-            <label class="small">Nombre de joueurs</label><select class="field" id="playerCount">
+            <div id="playerCountWrap"><label class="small">Nombre de joueurs</label><select class="field" id="playerCount">
                <option>1</option>
                <option>2</option>
                <option>3</option>
                <option>4</option>
                <option>5</option>
                <option>6</option>
-            </select>
-            <label class="small">Organisation</label><select class="field" id="teamMode">
+            </select></div>
+            <div id="teamConfigWrap"><label class="small">Organisation</label><select class="field" id="teamMode">
                <option value="free">Chacun pour soi</option>
                <option value="teams">En équipes</option>
+            </select></div>
+            <label class="small" for="advanceRule">Fin des réponses</label><select class="field" id="advanceRule">
+               <option value="firstCorrect">Dès la première bonne réponse</option>
+               <option value="allAnswered">Après la réponse de tous</option>
             </select>
-            <label class="small">Type de partie</label><select class="field" id="playMode">
-               <option value="local">Même appareil</option>
-               <option value="online">En ligne (salon avec code)</option>
-            </select>
+            <div id="teamScoreWrap" style="display:none"><label class="small" for="teamScoreRule">Points d’équipe</label><select class="field" id="teamScoreRule">
+               <option value="firstCorrect">1 point pour la première bonne réponse</option>
+               <option value="eachCorrect">1 point par coéquipier qui répond juste</option>
+            </select><p class="small" id="teamRuleNote">Chaque coéquipier doit répondre avant le changement de question.</p></div>
             <label class="small">Nombre de questions</label><select class="field" id="questionCount">
                <option>10</option>
                <option>15</option>
@@ -641,11 +654,11 @@
             </select>
             <div id="names"></div>
             <div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton
-                  pseudo</label><input class="field" id="onlinePlayerName" maxlength="18"
-                  placeholder="Choisis ton pseudo"><label class="small">Ton avatar</label><div class="avatar-row" id="onlineAvatarRow"></div></div>
+               pseudo</label><input class="field" id="onlinePlayerName" maxlength="18"
+               placeholder="Choisis ton pseudo"><label class="small">Avatar du profil</label><div class="avatar-row" id="onlineAvatarRow"></div></div>
             <div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field"
                   id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
-            <button class="btn full" id="startLocal">Lancer la partie</button>
+            <button class="btn full" id="startLocal">Lancer le défi</button>
             <button class="btn soft full" id="createOnline">Créer un salon en ligne</button>
             <div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field"
                   id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full"
@@ -692,24 +705,29 @@
          const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
-         /* ===== Identité multijoueur : pseudo + avatar emoji ===== */
-         const AVATARS = ['🦊', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦖', '🐝', '🦉'];
-         const multiNameKey = 'drole_quizz_multi_name', multiAvatarKey = 'drole_quizz_multi_avatar';
+            /* Identité multijoueur partagée avec l’espace profil. */
+            const AVATARS = window.PlayerProfile.getAvatarOptions().slice(0, 10);
+         const multiNameKey = 'drole_quizz_multi_name';
          function savedMultiName() { try { return localStorage.getItem(multiNameKey) || '' } catch (e) { return '' } }
-         function savedMultiAvatar() { try { return localStorage.getItem(multiAvatarKey) || '' } catch (e) { return '' } }
-         function defaultMultiName() { return savedMultiName() || (($('profileName').value || '').trim()) || ''; }
-         function defaultMultiAvatar() { return savedMultiAvatar() || AVATARS[0]; }
-         function saveMultiIdentity(name, avatar) { try { if (name) localStorage.setItem(multiNameKey, name); if (avatar) localStorage.setItem(multiAvatarKey, avatar) } catch (e) { } }
+            function defaultMultiName() { return playerProfile.getProfile().name || savedMultiName() || ''; }
+            function profileAvatarIdentity() { const profile = playerProfile.getProfile(); return { avatar: profile.avatar, customAvatar: profile.avatar === 'custom' ? profile.customAvatar : '' }; }
+            function avatarSource(avatar, customAvatar = '') {
+               if (avatar === 'custom' && /^data:image\/(?:webp|png|jpe?g|gif);base64,[A-Za-z0-9+/=]+$/.test(customAvatar)) return customAvatar;
+               return `assets/avatar/${encodeURIComponent(String(avatar || AVATARS[0]).replace(/^assets\/avatar\//, ''))}`;
+            }
+            function avatarMarkup(avatar, customAvatar = '') { return `<img class="avatar-mini" src="${avatarSource(avatar, customAvatar)}" alt="">`; }
+            function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
+            function saveMultiIdentity(name) { try { if (name) localStorage.setItem(multiNameKey, name) } catch (e) { } }
          function avatarRowHtml(selected) {
-            return AVATARS.map(a => `<button type="button" class="avatar-chip${a === selected ? ' sel' : ''}" data-a="${a}">${a}</button>`).join('');
+               return AVATARS.map(a => `<button type="button" class="avatar-chip${a === selected ? ' sel' : ''}" data-a="${a}" aria-label="Choisir cet avatar"><img src="${avatarSource(a)}" alt=""></button>`).join('');
          }
-         function selectedAvatarIn(row) { const c = row.querySelector('.avatar-chip.sel'); return c ? c.dataset.a : AVATARS[0]; }
-         $('onlineAvatarRow').innerHTML = avatarRowHtml(defaultMultiAvatar());
+            function selectedAvatarIn(row) { const c = row.querySelector('.avatar-chip.sel'); return c ? c.dataset.a : AVATARS[0]; }
+            function renderOnlineProfileAvatar() { const identity = profileAvatarIdentity(); $('onlineAvatarRow').innerHTML = avatarMarkup(identity.avatar, identity.customAvatar); }
+            renderOnlineProfileAvatar();
          $('onlinePlayerName').value = defaultMultiName();
          document.body.addEventListener('click', e => {
             const chip = e.target.closest('.avatar-chip'); if (!chip) return;
             const row = chip.parentElement; row.querySelectorAll('.avatar-chip').forEach(c => c.classList.remove('sel')); chip.classList.add('sel');
-            if (row.id === 'onlineAvatarRow') saveMultiIdentity($('onlinePlayerName').value.trim(), chip.dataset.a);
          });
          const BURGER_QUIZ = [
             { cat: 'KETCHUP', q: "Pourquoi les flamants roses sont-ils roses ?", opts: ["À cause des crevettes qu'ils bouffent en masse", "C'est un maquillage naturel de compétition", "Ils naissent roses, comme les bonbons", "Le stress permanent de la migration"], a: 0, ex: "Les flamants naissent gris : les pigments (caroténoïdes) des crevettes et algues qu'ils mangent colorent peu à peu leurs plumes." },
@@ -2157,6 +2175,8 @@
             }
          };
          let players = [], turn = 0, round = 1, deck = [], solo = false, locked = false, peer = null, connections = [], roomRole = 'local', roomId = '', onlineHost = false;
+         let activeGameMode = 'multiplayer';
+         const isOnlinePlay = () => activeGameMode === 'multiplayer' || (activeGameMode === 'challenge' && $('challengePlayMode').value === 'online');
          function renderTopicChoices(target, topics) {
             $(target).innerHTML = topics.map(t => `<button class="topic-card" data-topic="${t.id}"><span class="topic-emoji">${t.emoji}</span><strong>${t.name}</strong><small>${t.desc}</small><span class="topic-select">Choisir cette thématique →</span></button>`).join('');
             $(target).querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -2166,7 +2186,7 @@
                $('soloThemeChosen') && ($('soloThemeChosen').textContent = label.name);
                $('themeChosen') && ($('themeChosen').textContent = label.name);
                $('startSoloGame') && ($('startSoloGame').disabled = false);
-               if ($('playMode').value === 'online') {
+               if (activeGameMode === 'multiplayer') {
                   $('createOnline').disabled = false;
                   $('startLocal').disabled = true;
                } else {
@@ -2210,13 +2230,20 @@
             return deck.slice(0, size);
          }
          function drawNames() {
-            const online = $('playMode').value === 'online';
+            const online = isOnlinePlay();
+            const challenge = activeGameMode === 'challenge';
             const names = $('names'), onlineWrap = $('onlineNameWrap');
+            $('challengeModeWrap').style.display = challenge ? 'block' : 'none';
             names.style.setProperty('display', online ? 'none' : 'grid', 'important');
             names.setAttribute('aria-hidden', online ? 'true' : 'false');
             onlineWrap.style.display = online ? 'block' : 'none';
-            $('teamNameWrap').style.display = (!online && $('teamMode').value === 'teams') ? 'block' : 'none';
+            $('playerCountWrap').style.display = challenge ? 'none' : online ? 'none' : 'block';
+            $('teamConfigWrap').style.display = online ? 'block' : 'none';
+            $('teamNameWrap').style.display = online && $('teamMode').value === 'teams' ? 'block' : 'none';
+            $('teamScoreWrap').style.display = online && $('teamMode').value === 'teams' ? 'block' : 'none';
+            $('teamRuleNote').style.display = $('teamScoreRule').value === 'eachCorrect' ? 'block' : 'none';
             $('startLocal').style.display = online ? 'none' : 'block';
+            $('startLocal').textContent = challenge ? 'Lancer le défi' : 'Lancer la partie';
             $('createOnline').style.display = online ? 'block' : 'none';
             $('joinRoomWrap').style.display = online ? 'block' : 'none';
             $('onlineRoster').style.display = 'none';
@@ -2224,47 +2251,77 @@
             const ready = !!selectedTopic;
             $('startLocal').disabled = online || !ready;
             $('createOnline').disabled = !online || !ready;
+            $('advanceRule').disabled = false;
             if (online) {
                names.innerHTML = '';
             } else {
-               const n = Number($('playerCount').value);
+               const n = challenge ? 2 : Number($('playerCount').value);
                const myName = defaultMultiName();
-               names.innerHTML = Array.from({ length: n }, (_, i) => `<div class="prow"><label class="small">Joueur ${i + 1}<input class="field pname" maxlength="18" value="${i === 0 && myName ? myName : `Joueur ${i + 1}`}" placeholder="Nom du joueur ${i + 1}"></label><label class="small">Avatar</label><div class="avatar-row local-avatar-row">${avatarRowHtml(AVATARS[i % AVATARS.length])}</div></div>`).join('');
+               names.innerHTML = Array.from({ length: n }, (_, i) => {
+                  const identity = profileAvatarIdentity();
+                  const avatarRow = challenge && i === 0
+                     ? `<div class="avatar-row local-avatar-row" data-profile-player="true">${avatarMarkup(identity.avatar, identity.customAvatar)}</div>`
+                     : `<div class="avatar-row local-avatar-row">${avatarRowHtml(AVATARS[i % AVATARS.length])}</div>`;
+                  return `<div class="prow"><label class="small">Joueur ${i + 1}<input class="field pname" maxlength="18" value="${i === 0 && myName ? myName.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])) : `Joueur ${i + 1}`}" placeholder="Nom du joueur ${i + 1}"></label><label class="small">Avatar</label>${avatarRow}</div>`;
+               }).join('');
             }
          }
          $('playerCount').onchange = drawNames;
          $('teamMode').onchange = drawNames;
-         $('playMode').addEventListener('change', drawNames);
+         $('teamScoreRule').onchange = () => {
+            if ($('teamScoreRule').value === 'eachCorrect') $('advanceRule').value = 'allAnswered';
+            drawNames();
+         };
+         $('challengePlayMode').onchange = () => {
+            $('setupModeLabel').textContent = $('challengePlayMode').value === 'online' ? 'Défi à deux · en ligne' : 'Défi à deux · même appareil';
+            renderOnlineProfileAvatar(); $('onlinePlayerName').value = defaultMultiName(); drawNames();
+         };
+         $('advanceRule').onchange = () => {
+            if ($('advanceRule').value === 'firstCorrect' && $('teamScoreRule').value === 'eachCorrect') $('teamScoreRule').value = 'firstCorrect';
+            drawNames();
+         };
          drawNames();
          $('soloBtn').onclick = () => { solo = true; $('playerCount').value = '1'; drawNames(); show('soloSetup'); $('soloThemeChosen').textContent = 'Aucune'; $('startSoloGame').disabled = true; showSoloTopics() };
          $('multiBtn').onclick = () => {
-            solo = false; selectedTopic = null;
+            solo = false; activeGameMode = 'multiplayer'; selectedTopic = null;
             $('playerCount').value = '2';
+            renderOnlineProfileAvatar(); $('onlinePlayerName').value = defaultMultiName();
+            $('setupModeLabel').textContent = 'Multijoueur en ligne';
+            $('themeChosen').textContent = 'Aucune';
+            show('setup'); randomTopicOffer(); drawNames();
+         };
+         $('challengeBtn').onclick = () => {
+            solo = false; activeGameMode = 'challenge'; selectedTopic = null;
+            $('playerCount').value = '2'; $('teamMode').value = 'free'; $('challengePlayMode').value = 'local';
+            $('setupModeLabel').textContent = 'Défi à deux · même appareil';
             $('themeChosen').textContent = 'Aucune';
             show('setup'); randomTopicOffer(); drawNames();
          };
          function setupPlayers() {
-            if ($('playMode').value === 'online') {
+            if (isOnlinePlay()) {
                const name = $('onlinePlayerName').value.trim();
-               players = [{ name: name || 'Hôte', avatar: selectedAvatarIn($('onlineAvatarRow')), score: 0, team: 0 }];
-               saveMultiIdentity(name, players[0].avatar);
+               players = [{ name: name || 'Hôte', ...profileAvatarIdentity(), score: 0, team: 0 }];
+               saveMultiIdentity(name);
             } else {
                const rows = [...document.querySelectorAll('#names .prow')];
-               players = rows.map((row, i) => ({
-                  name: (row.querySelector('.pname').value.trim() || `Joueur ${i + 1}`),
-                  avatar: selectedAvatarIn(row.querySelector('.local-avatar-row')),
-                  score: 0, team: $('teamMode').value === 'teams' ? i % 2 : i
-               }));
+               players = rows.map((row, i) => {
+                  const avatarRow = row.querySelector('.local-avatar-row');
+                  const identity = avatarRow.dataset.profilePlayer ? profileAvatarIdentity() : { avatar: selectedAvatarIn(avatarRow), customAvatar: '' };
+                  return { name: row.querySelector('.pname').value.trim() || `Joueur ${i + 1}`, ...identity, score: 0, team: i };
+               });
                if (rows[0]) saveMultiIdentity(rows[0].querySelector('.pname').value.trim(), players[0].avatar);
             }
          }
          function refreshOnlineRoster() {
             $('onlineRoster').style.display = 'block';
-            $('onlineRoster').textContent = 'Salon prêt — ' + players.length + ' joueur(s) : ' + players.map(p => (p.avatar || "🎲") + " " + p.name).join(', ');
+            $('onlineRoster').innerHTML = `Salon prêt — ${players.length} joueur(s) : ${players.map(p => `${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)}`).join(' · ')}`;
          }
          function startGame() {
-            setupPlayers(); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); turn = 0; round = 1; locked = false; show('game'); render();
+            setupPlayers(); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); turn = 0; round = 1; locked = false;
+            advanceRule = $('advanceRule').value; challengeResponses = []; challengeResolved = false; challengeHandoff = false;
+            show('game'); render();
          }
+         let advanceRule = 'firstCorrect', teamScoringRule = 'firstCorrect', challengeResponses = [], challengeResolved = false, challengeHandoff = false;
          let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
          function renderProfile(){playerProfile.render();$('quizProfileScore').textContent=Number(localStorage.getItem('drole_quizz_best_solo')||0);$('quizProfileStreak').textContent=Number(localStorage.getItem('drole_quizz_best_streak')||0);}
          $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
@@ -2301,22 +2358,98 @@
          $('startSoloGame').onclick = startSolo;
          $('soloNext').onclick = () => { if (soloRound >= soloDeck.length) { finishSolo(); return } soloRound++; renderSolo() };
          $('soloQuit').onclick = () => { show('home') };
-         function render() { const p = players[turn % players.length], q = deck[(round - 1) % deck.length]; $('roundLabel').textContent = `Question ${round} / ${deck.length}`; $('turnLabel').textContent = solo ? 'Mode solo' : `Au tour de ${p.avatar || "🎲"} ${p.name} · Passez l’appareil`; $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score}</b></span>`).join(''); $('question').textContent = q.q; $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join(''); $('feedback').innerHTML = ''; $('next').style.display = 'none'; locked = false; document.querySelectorAll('.choice').forEach(b => b.onclick = () => answer(Number(b.dataset.i))) }
-         function answer(i) { if (locked) return; locked = true; const q = deck[(round - 1) % deck.length], p = players[turn % players.length], ok = i === q.a; if (ok) p.score += 100; $('answers').querySelectorAll('button').forEach(b => { b.disabled = true; if (Number(b.dataset.i) === q.a) b.style.border = '2px solid #159b68' }); $('feedback').className = 'feedback ' + (ok ? 'good' : 'bad'); $('feedback').innerHTML = (ok ? 'Bonne réponse ! +100 points' : `Raté ! Bonne réponse : ${q.opts[q.a]}`) + (q.ex ? `<div class="ex">💡 ${q.ex}</div>` : ''); $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score}</b></span>`).join(''); $('next').style.display = 'block' }
-         $('next').onclick = () => { if (onlineGame) { advanceOnlineQuestion(); return } if (!onlineGame && onlineHost && $('game').classList.contains('active')) { advanceOnlineQuestion(); return } round++; if (round > deck.length) { const sorted = [...players].sort((a, b) => b.score - a.score); $('question').textContent = 'Partie terminée !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good'; $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.avatar || "🎲"} ${p.name} — ${p.score} points`).join('<br>'); $('next').textContent = 'Rejouer'; $('next').onclick = () => { round = 1; players.forEach(p => p.score = 0); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); $('next').textContent = 'Question suivante'; $('next').onclick = () => { }; render() }; return } turn = (turn + 1) % players.length; render() };
-         $('startLocal').onclick = () => { if (!selectedTopic) { alert('Choisis une thématique.'); return } if ($('playMode').value === 'online') { alert('Pour une partie en ligne, utilise les boutons Créer ou Rejoindre un salon.'); return } startGame() };
+         function render() {
+            const p = players[turn % players.length], q = deck[(round - 1) % deck.length];
+            $('roundLabel').textContent = `Question ${round} / ${deck.length}`;
+            $('turnLabel').innerHTML = `${avatarMarkup(p.avatar, p.customAvatar)} Au tour de ${escapeHtml(p.name)}${activeGameMode === 'challenge' ? '' : ' · Passez l’appareil'}`;
+            $('scores').innerHTML = players.map(player => `<span>${avatarMarkup(player.avatar, player.customAvatar)} ${escapeHtml(player.name)} : <b>${player.score}</b></span>`).join('');
+            $('question').textContent = q.q;
+            $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join('');
+            $('feedback').innerHTML = ''; $('next').style.display = 'none'; $('next').textContent = 'Question suivante'; locked = false;
+            $('answers').querySelectorAll('button').forEach(b => b.onclick = () => answer(Number(b.dataset.i)));
+         }
+         function answerChallenge(i) {
+            if (locked || challengeResolved) return;
+            locked = true;
+            const q = deck[round - 1], player = players[turn % players.length];
+            challengeResponses.push({ playerIndex: turn % players.length, choice: i });
+            const correct = i === q.a;
+            if (advanceRule === 'firstCorrect' && correct) {
+               player.score += 100;
+               finishChallengeQuestion(q, 'Bonne réponse ! +100 points');
+            } else if (challengeResponses.length === players.length) {
+               if (advanceRule === 'allAnswered') challengeResponses.filter(response => response.choice === q.a).forEach(response => players[response.playerIndex].score += 100);
+               finishChallengeQuestion(q, correct ? 'Bonne réponse !' : 'Aucune bonne réponse.');
+            } else {
+               challengeHandoff = true;
+               $('feedback').className = 'feedback';
+               $('feedback').textContent = advanceRule === 'allAnswered' ? 'Réponse enregistrée. Passez l’appareil au joueur suivant.' : 'Réponse incorrecte. Le joueur suivant peut tenter sa chance.';
+               $('next').textContent = 'Joueur suivant'; $('next').style.display = 'block';
+            }
+         }
+         function finishChallengeQuestion(q, message) {
+            challengeResolved = true; challengeHandoff = false; locked = true;
+            $('answers').querySelectorAll('button').forEach((button, index) => {
+               button.disabled = true;
+               if (index === q.a) button.style.border = '2px solid #159b68';
+               else if (challengeResponses.some(response => response.choice === index)) button.style.border = '2px solid #d95368';
+            });
+            $('scores').innerHTML = players.map(player => `<span>${avatarMarkup(player.avatar, player.customAvatar)} ${escapeHtml(player.name)} : <b>${player.score}</b></span>`).join('');
+            $('feedback').className = 'feedback ' + (challengeResponses.some(response => response.choice === q.a) ? 'good' : 'bad');
+            $('feedback').textContent = `${message} Bonne réponse : ${q.opts[q.a]}${q.ex ? ` · ${q.ex}` : ''}`;
+            $('next').textContent = round === deck.length ? 'Voir les résultats' : 'Question suivante'; $('next').style.display = 'block';
+         }
+         function answer(i) {
+            if (activeGameMode === 'challenge') { answerChallenge(i); return }
+            if (locked) return; locked = true; const q = deck[(round - 1) % deck.length], p = players[turn % players.length], ok = i === q.a;
+            if (ok) p.score += 100;
+            $('answers').querySelectorAll('button').forEach(b => { b.disabled = true; if (Number(b.dataset.i) === q.a) b.style.border = '2px solid #159b68' });
+            $('feedback').className = 'feedback ' + (ok ? 'good' : 'bad'); $('feedback').innerHTML = (ok ? 'Bonne réponse ! +100 points' : `Raté ! Bonne réponse : ${q.opts[q.a]}`) + (q.ex ? `<div class="ex">💡 ${q.ex}</div>` : '');
+            $('scores').innerHTML = players.map(player => `<span>${avatarMarkup(player.avatar, player.customAvatar)} ${escapeHtml(player.name)} : <b>${player.score}</b></span>`).join(''); $('next').style.display = 'block';
+         }
+         $('next').onclick = () => {
+            if (onlineGame) { advanceOnlineQuestion(); return }
+            if (onlineHost && $('game').classList.contains('active')) { advanceOnlineQuestion(); return }
+            if (activeGameMode === 'challenge' && challengeHandoff) {
+               turn = (turn + 1) % players.length; challengeHandoff = false; render(); return;
+            }
+            round++;
+            if (round > deck.length) {
+               if (activeGameMode === 'challenge') {
+                  const sorted = [...players].sort((a, b) => b.score - a.score);
+                  $('question').textContent = 'Défi terminé !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good';
+                  $('feedback').innerHTML = sorted.map((player, index) => `${index + 1}. ${avatarMarkup(player.avatar, player.customAvatar)} ${escapeHtml(player.name)} — ${player.score} points`).join('<br>');
+                  $('next').textContent = 'Retour au menu'; $('next').onclick = () => show('home'); return;
+               }
+               const sorted = [...players].sort((a, b) => b.score - a.score);
+               $('question').textContent = 'Partie terminée !'; $('answers').innerHTML = ''; $('feedback').className = 'feedback good'; $('feedback').innerHTML = sorted.map((player, index) => `${index + 1}. ${avatarMarkup(player.avatar, player.customAvatar)} ${escapeHtml(player.name)} — ${player.score} points`).join('<br>');
+               $('next').textContent = 'Rejouer'; $('next').onclick = () => { round = 1; players.forEach(player => player.score = 0); deck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); $('next').textContent = 'Question suivante'; $('next').onclick = () => { }; render() }; return;
+            }
+            if (activeGameMode === 'challenge') { turn = (round - 1) % players.length; challengeResponses = []; challengeResolved = false; challengeHandoff = false; }
+            else turn = (turn + 1) % players.length;
+            render();
+         };
+         $('startLocal').onclick = () => { if (!selectedTopic) { alert('Choisis une thématique.'); return } if (activeGameMode !== 'challenge') return; startGame() };
 
          // ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
          let onlineGame = false, onlinePlayerId = '', onlineAnswers = {}, onlineQuestionIndex = 0, onlineDeck = [];
+         let onlineAnswerOrder = [], onlineTeamMode = false, onlineTeamScores = [0, 0], onlineTeamNames = ['Équipe A', 'Équipe B'];
          function onlineRosterData() {
-            return players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar || "🎲", score: p.score || 0 }));
+            return players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar || AVATARS[0], customAvatar: p.customAvatar || '', score: p.score || 0, team: p.team || 0 }));
+         }
+         function renderOnlineScores() {
+            if (onlineTeamMode) {
+               $('scores').innerHTML = onlineTeamNames.map((name, team) => `<span>${escapeHtml(name)} : <b>${onlineTeamScores[team] || 0}</b></span>`).join('');
+               return;
+            }
+            $('scores').innerHTML = players.map(p => `<span>${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)} : <b>${p.score || 0}</b></span>`).join('');
          }
          function broadcastOnline(message) {
             connections.forEach(c => { if (c && c.open) { try { c.send(message) } catch (e) { } } });
          }
          function updateOnlineRosterUI(prefix = 'Salon prêt') {
             $('onlineRoster').style.display = 'block';
-            $('onlineRoster').textContent = prefix + ' — ' + players.length + ' joueur(s) : ' + players.map(p => (p.avatar || "🎲") + " " + p.name).join(', ');
+            $('onlineRoster').innerHTML = `${escapeHtml(prefix)} — ${players.length} joueur(s) : ${players.map(p => `${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)}`).join(' · ')}`;
          }
          function enterOnlineGame() {
             onlineGame = true; solo = false; round = 1; turn = 0; locked = false;
@@ -2325,10 +2458,11 @@
          function renderOnlineQuestion() {
             const q = onlineDeck[onlineQuestionIndex];
             if (!q) { finishOnlineGame(); return }
-            round = onlineQuestionIndex + 1; locked = false; onlineAnswers = {};
+            round = onlineQuestionIndex + 1; locked = false; onlineAnswers = {}; onlineAnswerOrder = [];
             $('roundLabel').textContent = `Question ${round} / ${onlineDeck.length}`;
-            $('turnLabel').textContent = `Partie en ligne · ${(players.find(p => p.id === onlinePlayerId) || {}).avatar || "🎲"} ${(players.find(p => p.id === onlinePlayerId) || {}).name || "Joueur"}`;
-            $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            const currentPlayer = players.find(p => p.id === onlinePlayerId) || { name: 'Joueur', avatar: AVATARS[0] };
+            $('turnLabel').innerHTML = `Partie en ligne · ${avatarMarkup(currentPlayer.avatar, currentPlayer.customAvatar)} ${escapeHtml(currentPlayer.name)}`;
+            renderOnlineScores();
             $('question').textContent = q.q;
             $('answers').innerHTML = q.opts.map((a, i) => `<button class="choice" data-i="${i}">${a}</button>`).join('');
             $('feedback').className = 'feedback'; $('feedback').textContent = '';
@@ -2341,6 +2475,7 @@
             $('answers').querySelectorAll('button').forEach(b => b.disabled = true);
             if (onlineHost) {
                onlineAnswers[onlinePlayerId] = i;
+               onlineAnswerOrder.push(onlinePlayerId);
                maybeFinishOnlineQuestion();
             } else {
                const c = connections[0];
@@ -2350,15 +2485,29 @@
          }
          function maybeFinishOnlineQuestion() {
             if (!onlineHost) return;
-            if (players.some(p => !Object.prototype.hasOwnProperty.call(onlineAnswers, p.id))) return;
             const q = onlineDeck[onlineQuestionIndex];
-            players.forEach(p => { if (onlineAnswers[p.id] === q.a) p.score = (p.score || 0) + 100 });
-            const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, correct: q.a, players: onlineRosterData(), ex: q.ex || '' };
+            const firstCorrect = onlineAnswerOrder.some(id => onlineAnswers[id] === q.a);
+            const everyoneAnswered = players.every(p => Object.prototype.hasOwnProperty.call(onlineAnswers, p.id));
+            if (advanceRule === 'firstCorrect' && !firstCorrect && !everyoneAnswered) return;
+            if (advanceRule === 'allAnswered' && !everyoneAnswered) return;
+            finishOnlineQuestion(q);
+         }
+         function finishOnlineQuestion(q) {
+            const correctPlayers = onlineAnswerOrder.filter(id => onlineAnswers[id] === q.a).map(id => players.find(player => player.id === id)).filter(Boolean);
+            if (onlineTeamMode) {
+               if (teamScoringRule === 'firstCorrect') {
+                  if (correctPlayers.length) onlineTeamScores[correctPlayers[0].team]++;
+               } else correctPlayers.forEach(player => onlineTeamScores[player.team]++);
+            } else correctPlayers.forEach(player => { player.score = (player.score || 0) + 100 });
+            const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, answerOrder: onlineAnswerOrder, correct: q.a, players: onlineRosterData(), teamScores: onlineTeamScores, teamNames: onlineTeamNames, teamMode: onlineTeamMode, teamScoringRule, ex: q.ex || '' };
             broadcastOnline(result); showOnlineResult(result);
          }
          function showOnlineResult(m) {
             const q = onlineDeck[onlineQuestionIndex]; if (!q) return;
-            players = (m.players || players).map(p => ({ ...p, team: 0 }));
+            players = (m.players || players).map(p => ({ ...p }));
+            onlineTeamMode = !!m.teamMode;
+            onlineTeamScores = m.teamScores || onlineTeamScores;
+            onlineTeamNames = m.teamNames || onlineTeamNames;
             const myChoice = m.answers?.[onlinePlayerId];
             const correct = myChoice === m.correct;
             $('answers').querySelectorAll('button').forEach((b, i) => {
@@ -2366,9 +2515,14 @@
                if (i === m.correct) b.style.border = '2px solid #159b68';
                else if (i === myChoice) b.style.border = '2px solid #d95368';
             });
-            $('scores').innerHTML = players.map(p => `<span>${p.avatar || "🎲"} ${p.name} : <b>${p.score || 0}</b></span>`).join('');
+            renderOnlineScores();
             $('feedback').className = 'feedback ' + (correct ? 'good' : 'bad');
-            $('feedback').innerHTML = ((myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? 'Bonne réponse ! +100 points' : 'Raté !') + ' Bonne réponse : ' + q.opts[m.correct]) + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
+            const rightAnswers = (m.answerOrder || Object.keys(m.answers || {})).filter(id => m.answers?.[id] === m.correct);
+            const awardedTeams = m.teamScoringRule === 'firstCorrect' ? rightAnswers.slice(0, 1) : rightAnswers;
+            const teamPoints = awardedTeams.reduce((totals, id) => { const player = players.find(item => item.id === id); if (player) totals[player.team] = (totals[player.team] || 0) + 1; return totals; }, {});
+            const teamSummary = Object.entries(teamPoints).map(([team, points]) => `${escapeHtml(onlineTeamNames[Number(team)])} +${points}`).join(' · ');
+            const answerStatus = m.teamMode ? (teamSummary || 'Aucun point d’équipe') : (myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? 'Bonne réponse ! +100 points' : 'Raté !');
+            $('feedback').innerHTML = `${answerStatus} Bonne réponse : ${q.opts[m.correct]}` + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
             if (onlineHost) { $('next').style.display = 'block'; $('next').textContent = onlineQuestionIndex === onlineDeck.length - 1 ? 'Voir les résultats' : 'Question suivante'; }
             else { $('next').style.display = 'none'; $('turnLabel').textContent = 'En attente de la question suivante…' }
          }
@@ -2381,24 +2535,30 @@
          }
          function finishOnlineGame() {
             onlineGame = false;
-            const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
             $('roundLabel').textContent = 'Partie terminée';
             $('turnLabel').textContent = 'Classement final';
             $('question').textContent = 'Bravo à tous !';
             $('answers').innerHTML = '';
             $('feedback').className = 'feedback good';
-            $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${p.avatar || "🎲"} ${p.name} — ${p.score || 0} points`).join('<br>');
+            if (onlineTeamMode) {
+               const ranking = onlineTeamNames.map((name, team) => ({ name, score: onlineTeamScores[team] || 0 })).sort((a, b) => b.score - a.score);
+               $('feedback').innerHTML = ranking.map((team, index) => `${index + 1}. ${escapeHtml(team.name)} — ${team.score} point(s)`).join('<br>');
+            } else {
+               const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
+               $('feedback').innerHTML = sorted.map((p, i) => `${i + 1}. ${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)} — ${p.score || 0} points`).join('<br>');
+            }
             $('next').style.display = 'block'; $('next').textContent = 'Retour au menu';
-            if (onlineHost) broadcastOnline({ type: 'gameFinished', players: onlineRosterData() });
+            if (onlineHost) broadcastOnline({ type: 'gameFinished', players: onlineRosterData(), teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames });
             $('next').onclick = () => { if (peer) { try { peer.destroy() } catch (e) { } } peer = null; connections = []; onlineHost = false; onlineGame = false; show('home') };
          }
          function handleOnlineData(c, m) {
             if (!m || typeof m !== 'object') return;
             if (m.type === 'join' && onlineHost && !onlineGame) {
-               if (players.length >= 6) { c.send({ type: 'rejected', reason: 'Ce salon est complet (6 joueurs maximum).' }); return }
+               const maxPlayers = activeGameMode === 'challenge' ? 2 : 6;
+               if (players.length >= maxPlayers) { c.send({ type: 'rejected', reason: `Ce salon est complet (${maxPlayers} joueurs maximum).` }); return }
                const name = String(m.name || 'Joueur').trim().slice(0, 18) || 'Joueur';
                if (!players.some(p => p.id === c.peer)) {
-                  players.push({ id: c.peer, name, avatar: String(m.avatar || "🎲").slice(0, 4), score: 0, team: 0 });
+                  players.push({ id: c.peer, name, avatar: String(m.avatar || AVATARS[0]), customAvatar: String(m.customAvatar || ''), score: 0, team: players.length % 2 });
                   connections.push(c);
                }
                const roster = onlineRosterData();
@@ -2410,7 +2570,7 @@
             }
             if (m.type === 'answer' && onlineHost && onlineGame && m.index === onlineQuestionIndex) {
                if (players.some(p => p.id === c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers, c.peer)) {
-                  onlineAnswers[c.peer] = Number(m.choice); maybeFinishOnlineQuestion();
+                  onlineAnswers[c.peer] = Number(m.choice); onlineAnswerOrder.push(c.peer); maybeFinishOnlineQuestion();
                }
                return;
             }
@@ -2420,18 +2580,20 @@
             }
             if (m.type === 'joined' && !onlineHost) {
                roomRole = 'guest'; onlineGame = false; onlinePlayerId = peer.id;
-               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               players = (m.players || []).map(p => ({ ...p }));
                $('netStatus').textContent = 'Tu as bien rejoint le salon.';
                $('joinRoomWrap').style.display = 'none'; $('createOnline').style.display = 'none'; $('startLocal').style.display = 'none';
                updateOnlineRosterUI('En attente du lancement par l’hôte');
                return;
             }
             if (m.type === 'roster' && !onlineHost) {
-               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               players = (m.players || []).map(p => ({ ...p }));
                updateOnlineRosterUI('En attente du lancement par l’hôte'); return;
             }
             if (m.type === 'gameStart' && !onlineHost) {
-               players = (m.players || []).map(p => ({ ...p, team: 0 }));
+               players = (m.players || []).map(p => ({ ...p }));
+               advanceRule = m.advanceRule || 'firstCorrect'; teamScoringRule = m.teamScoringRule || 'firstCorrect';
+               onlineTeamMode = !!m.teamMode; onlineTeamScores = m.teamScores || [0, 0]; onlineTeamNames = m.teamNames || onlineTeamNames;
                onlineDeck = m.deck || []; onlineQuestionIndex = 0; onlineGame = true;
                $('netStatus').textContent = 'La partie commence !'; enterOnlineGame(); return;
             }
@@ -2442,7 +2604,8 @@
                onlineQuestionIndex = m.index; renderOnlineQuestion(); return;
             }
             if (m.type === 'gameFinished' && !onlineHost) {
-               players = (m.players || players).map(p => ({ ...p, team: 0 })); finishOnlineGame(); return;
+               players = (m.players || players).map(p => ({ ...p })); onlineTeamMode = !!m.teamMode;
+               onlineTeamScores = m.teamScores || onlineTeamScores; onlineTeamNames = m.teamNames || onlineTeamNames; finishOnlineGame(); return;
             }
          }
          $('createOnline').onclick = () => {
@@ -2451,7 +2614,11 @@
             const name = $('onlinePlayerName').value.trim();
             if (!name) { $('netStatus').textContent = 'Choisis ton pseudo avant de créer le salon.'; $('onlinePlayerName').focus(); return }
             if (peer) { try { peer.destroy() } catch (e) { } }
-            players = [{ id: '', name, avatar: selectedAvatarIn($('onlineAvatarRow')), score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
+            onlineTeamMode = $('teamMode').value === 'teams';
+            onlineTeamNames = [$('teamA').value.trim() || 'Équipe A', $('teamB').value.trim() || 'Équipe B'];
+            onlineTeamScores = [0, 0];
+            players = [{ id: '', name, ...profileAvatarIdentity(), score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
+            saveMultiIdentity(name);
             $('netStatus').textContent = 'Création du salon…'; $('createOnline').style.display = 'none'; $('joinRoomWrap').style.display = 'none'; $('startLocal').style.display = 'none';
             $('onlineRoster').style.display = 'block'; $('onlineRoster').textContent = 'Création du salon…';
             peer = new Peer('drolequizz-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
@@ -2484,7 +2651,7 @@
             peer.on('open', () => {
                onlinePlayerId = peer.id;
                const c = peer.connect('drolequizz-' + code, { reliable: true }); connections = [c];
-               c.on('open', () => { const av = selectedAvatarIn($('onlineAvatarRow')); c.send({ type: 'join', name, avatar: av }); saveMultiIdentity(name, av) });
+               c.on('open', () => { const identity = profileAvatarIdentity(); c.send({ type: 'join', name, ...identity }); saveMultiIdentity(name) });
                c.on('data', m => { handleOnlineData(c, m); if (m.type === 'joined') { acknowledged = true; clearTimeout(timeout) } });
                c.on('error', () => { clearTimeout(timeout); $('netStatus').textContent = 'Impossible de rejoindre ce salon. Vérifie le code.' });
             });
@@ -2492,8 +2659,12 @@
          };
          $('hostStart').onclick = () => {
             if (!onlineHost || players.length < 2) { $('netStatus').textContent = 'Il faut au moins 2 joueurs dans le salon pour démarrer.'; return }
-            onlineDeck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); onlineQuestionIndex = 0; players.forEach(p => p.score = 0);
-            const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData() };
+            advanceRule = $('advanceRule').value; teamScoringRule = $('teamScoreRule').value;
+            onlineTeamMode = $('teamMode').value === 'teams';
+            onlineTeamNames = [$('teamA').value.trim() || 'Équipe A', $('teamB').value.trim() || 'Équipe B']; onlineTeamScores = [0, 0];
+            onlineDeck = buildDeck(Number($('questionCount').value) || 20, selectedTopic); onlineQuestionIndex = 0;
+            players.forEach((player, index) => { player.score = 0; player.team = onlineTeamMode ? index % 2 : 0 });
+            const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData(), advanceRule, teamScoringRule, teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames };
             broadcastOnline(msg); $('netStatus').textContent = 'La partie est lancée !'; enterOnlineGame();
          };
          $('quit').onclick = () => { if (peer) peer.destroy(); peer = null; connections = []; players = []; onlineHost = false; onlineGame = false; roomRole = 'local'; show('home') };
