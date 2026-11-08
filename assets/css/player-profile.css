@@ -1,0 +1,16 @@
+.profile-hero{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,#e8f5ff,#fce8f5)}
+.profile-avatar-large{width:100px;height:100px;flex:0 0 100px;border-radius:28px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 7px 0 #d9e5f3}
+.profile-avatar-large img{width:100%;height:100%;object-fit:cover}
+.avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,120px),1fr));gap:clamp(8px,2vw,14px);margin:12px 0 20px}
+.avatar-choice{width:100%;min-width:0;aspect-ratio:1;border:2px solid #e5eaf4;border-radius:17px;background:#fff;padding:6px;box-shadow:0 4px 0 #e5eaf4}
+.avatar-choice img{display:block;width:100%;height:100%;border-radius:11px;object-fit:cover}
+.avatar-choice.active{border-color:#4aa9ed;background:#e4f6ff;box-shadow:0 4px 0 #9edcf7}
+.menu-card .emoji img{width:38px;height:38px;border-radius:12px;object-fit:cover;vertical-align:middle}
+.profile-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.profile-stats>div{background:#f4f7ff;border-radius:17px;padding:14px;text-align:center}
+.profile-stats b{display:block;font-size:25px;color:#397ce6}
+.profile-stats small{font-size:12px;color:var(--muted)}
+.profile-badges{display:flex;flex-wrap:wrap;gap:8px}
+.profile-badge{background:#fff3cf;border:1px solid #f1d98d;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:800}
+.avatar-upload-status{min-height:1.5em}
+@media(max-width:520px){.profile-hero{gap:12px}.profile-avatar-large{width:76px;height:76px;flex-basis:76px;border-radius:22px}}

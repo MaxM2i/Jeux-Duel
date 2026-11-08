@@ -6,6 +6,7 @@
    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
    <meta name="theme-color" content="#21134b">
    <title>Drôle de Quizz</title>
+   <link rel="stylesheet" href="assets/css/player-profile.css">
    <style>
       :root {
          --ink: #241c3d;
@@ -519,7 +520,31 @@
          <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
                   solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card"
                id="multiBtn"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs, en
-                  ligne ou sur le même appareil.</small></button></div>
+                  ligne ou sur le même appareil.</small></button><button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records solo.</small></button></div>
+      </section>
+      <section class="screen" id="profileScreen">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Espace joueur</span></div>
+         <div class="panel profile-hero">
+            <div class="profile-avatar-large" id="profileAvatarPreview"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></div>
+            <div><div class="kicker">MON PROFIL DRÔLE DE QUIZZ</div><h2 id="profileDisplayName">Super joueur</h2><p class="small">Personnalise ton avatar et retrouve tes records.</p></div>
+         </div>
+         <div class="panel">
+            <h2>Choisis ton avatar</h2>
+            <button class="btn soft full" id="chooseAvatar" type="button">Ajouter mon avatar perso</button>
+            <input id="avatarFile" type="file" accept="image/*" hidden>
+            <p class="small avatar-upload-status" id="avatarStatus" role="status"></p>
+            <div class="avatar-grid" id="avatarGrid"></div>
+            <label class="small" for="profileName">Ton pseudo</label>
+            <input class="field" id="profileName" maxlength="18" placeholder="Ex. Champion du quiz">
+            <button class="btn full" id="saveProfile" type="button">Enregistrer mon profil</button>
+         </div>
+         <div class="panel">
+            <h2>Mes records</h2>
+            <div class="profile-stats">
+               <div><b id="quizProfileScore">0</b><small>Meilleur score solo</small></div>
+               <div><b id="quizProfileStreak">0</b><small>Meilleure série</small></div>
+            </div>
+         </div>
       </section>
       <section class="screen" id="soloSetup">
          <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours
@@ -614,12 +639,14 @@
          </div>
       </section>
    </div>
+   <script src="assets/js/player-profile.js"></script>
    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
    <script>
       (() => {
          const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
-         const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
+         const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
+         const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
          const BURGER_QUIZ = [
             { cat: 'KETCHUP', q: "Pourquoi les flamants roses sont-ils roses ?", opts: ["À cause des crevettes qu'ils bouffent en masse", "C'est un maquillage naturel de compétition", "Ils naissent roses, comme les bonbons", "Le stress permanent de la migration"], a: 0, ex: "Les flamants naissent gris : les pigments (caroténoïdes) des crevettes et algues qu'ils mangent colorent peu à peu leurs plumes." },
             { cat: 'MOUTARDE', q: "Combien de temps un escargot peut-il dormir d'affilée ?", opts: ["Une nuit bien méritée", "Jusqu'à 3 ans : champion du monde de la sieste", "6 mois maximum, comme l'ours", "Il ne dort jamais vraiment"], a: 1, ex: "En cas de sécheresse, certains escargots s'enferment dans leur coquille et entrent en estivation, un sommeil qui peut durer jusqu'à 3 ans." },
@@ -2168,6 +2195,8 @@
             setupPlayers(); deck = buildDeck(20, selectedTopic); turn = 0; round = 1; locked = false; show('game'); render();
          }
          let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
+         function renderProfile(){playerProfile.render();$('quizProfileScore').textContent=Number(localStorage.getItem('drole_quizz_best_solo')||0);$('quizProfileStreak').textContent=Number(localStorage.getItem('drole_quizz_best_streak')||0);}
+         $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
          function startSolo() {
             solo = true; players = [{ name: 'Moi', score: 0, team: 0 }]; soloDeck = buildSoloDeck(15, selectedTopic); soloRound = 1; soloScore = 0; soloStreak = 0; soloLocked = false;
             const topic = TOPICS.find(t => t.id === selectedTopic); $('soloThemeLabel').textContent = topic ? `${topic.emoji} ${topic.name}` : 'Quiz';
@@ -2191,6 +2220,8 @@
             $('soloNext').textContent = soloRound === soloDeck.length ? 'Voir mon résultat' : 'Question suivante';
          }
          function finishSolo() {
+            localStorage.setItem('drole_quizz_best_solo',Math.max(soloScore,Number(localStorage.getItem('drole_quizz_best_solo')||0)));
+            localStorage.setItem('drole_quizz_best_streak',Math.max(soloStreak,Number(localStorage.getItem('drole_quizz_best_streak')||0)));
             $('soloProgressFill').style.width = '100%'; $('soloQuestion').textContent = 'Bravo, défi terminé !';
             $('soloAnswers').innerHTML = ''; $('soloFeedback').className = 'solo-feedback good';
             $('soloFeedback').innerHTML = `Tu as obtenu <strong>${soloScore} points</strong> sur ${soloDeck.length * 100}.<br>Thématique : ${TOPICS.find(t => t.id === selectedTopic).name}.`;
