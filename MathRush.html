@@ -1282,7 +1282,7 @@
                   solo</strong><small>Apprends et débloque les niveaux un à un.</small></button>
             <button class="menu-card duel-card" id="goDuel"><span class="emoji">⚔️</span><strong>Défi à
                   deux</strong><small>Affronte un ami en direct sur 10 manches.</small></button>
-            <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>De 3 à 8 joueurs sur le même appareil.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
+            <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Multijoueur en ligne</strong><small>Crée un salon pour 3 à 8 joueurs.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
             <button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton avatar, tes statistiques, tes records et tes récompenses.</small></button>
          </div>
          <div class="panel section-gap">
@@ -1417,11 +1417,8 @@
          </div>
       </section>
       <section class="screen" id="localMath">
-         <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur local</span></div>
-         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Créez votre partie</h2><p>Ajoutez les participants et passez l’appareil à chaque tour.</p>
-            <label class="small-note">Nombre de joueurs</label><select class="field" id="mathPlayerCount"><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
-            <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><div id="mathNames"></div>
-            <button class="btn btn-main full" id="mathStartLocal">Commencer</button></div>
+         <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur en ligne</span></div>
+         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
          <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><input class="field" id="mathLocalAnswer" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="mathSubmitLocal">Valider</button><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
       </section>
    </div>
@@ -3357,67 +3354,96 @@
          $('addFriend').onclick = addCurrentOpponent;
          $('homeProgress').textContent = `Section ${section} · Niveau ${level}`; $('totalPoints').textContent = points; renderPath(); renderFriends(); persist();
 
-         // Multijoueur local MathRush : parties au tour par tour, 3 à 8 participants.
+         // Multijoueur en ligne MathRush : salon hôte avec 3 à 8 participants.
          const localMathScreen = $('localMath');
          if (localMathScreen) {
             const mathPlayers = [];
-            const localAvatarFiles=window.PlayerProfile.getAvatarOptions();
-            let mathTurn = 0, mathRound = 1, mathLocalQuestion = null, mathLocalLocked = false;
-            function drawMathNames() {
-               const n = Number($('mathPlayerCount').value);
-               const profile=playerProfile.getProfile();
-               $('mathNames').innerHTML = Array.from({length:n}, (_,i) =>
-                 `<label class="small-note">Joueur ${i+1}<input class="field math-player-name" maxlength="18" placeholder="Joueur ${i+1}" value="${escapeHtml(i===0?profile.name:`Joueur ${i+1}`)}"></label>`
-               ).join('');
+            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false;
+            function setMathStatus(message){$('mathRoomStatus').textContent=message;}
+            function mathIdentity(){const profile=playerProfile.getProfile();return{name:profile.name||'Joueur',avatar:profile.avatar,customAvatar:profile.customAvatar||''};}
+            function renderMathRoster(){
+               $('mathRoomRoster').style.display='block';
+               $('mathRoomRoster').innerHTML=`Salon ${mathPlayers.length}/8 : ${mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}${$('mathTeamMode').value==='teams'?` · Équipe ${player.team+1}`:''}`).join(' · ')}`;
+               $('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;
             }
-            $('mathPlayerCount').onchange = drawMathNames; drawMathNames();
-            $('goLocal').onclick = () => { show('localMath'); $('mathLocalPlay').style.display='none'; drawMathNames(); };
-            $('localBack').onclick = () => show('home');
-            function makeLocalMathQuestion() {
+            function broadcastMath(message){mathConnections.forEach(connection=>{if(connection.open)connection.send(message);});}
+            function makeMathQuestion(){
                const a = rand(2, 20), b = rand(2, 12), ops = ['+','−','×'], op = ops[rand(0,2)];
                const answer = op==='+' ? a+b : op==='−' ? a-b : a*b;
                return {text:`${a} ${op} ${b} = ?`, answer};
             }
-            function renderLocalMath() {
-               const p = mathPlayers[mathTurn % mathPlayers.length];
-               $('mathTurn').innerHTML = `Manche ${mathRound} · Au tour de <img class="local-math-avatar" src="${profileAvatarUrl(p)}" alt=""> ${escapeHtml(p.name)}`;
-               $('mathLocalQuestion').textContent = mathLocalQuestion.text;
-               $('mathLocalAnswer').value=''; $('mathLocalAnswer').disabled=false;
-               $('mathSubmitLocal').disabled=false; $('mathNextLocal').style.display='none';
-               $('mathLocalFeedback').className='feedback'; $('mathLocalFeedback').textContent='';
-               $('mathLocalScores').innerHTML = mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
-               mathLocalLocked=false;
+            function renderMathQuestion(){
+               const player=mathPlayers[mathTurn];if(!player)return;
+               $('mathTurn').innerHTML=`Manche ${mathRound}/10 · Au tour de <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`;
+               $('mathLocalQuestion').textContent = mathLocalQuestion.text;$('mathLocalAnswer').value='';
+               $('mathLocalAnswer').value='';$('mathLocalAnswer').disabled=mathOnlineId!==player.id||mathLocalLocked;
+               $('mathSubmitLocal').disabled=mathOnlineId!==player.id||mathLocalLocked;$('mathNextLocal').style.display='none';
+               $('mathLocalScores').innerHTML=mathPlayers.map(x=>`${$('mathTeamMode').value==='teams'?`Équipe ${x.team+1} · `:''}<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
             }
-            $('mathStartLocal').onclick = () => {
-               friendGames++;persist();
-               const profile=playerProfile.getProfile();
-               const names=[...document.querySelectorAll('.math-player-name')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);
-               mathPlayers.splice(0, mathPlayers.length, ...names.map((name,i)=>({name,score:0,team:$('mathTeamMode').value==='teams'?i%2:i,avatar:i===0?profile.avatar:localAvatarFiles[(i-1)%localAvatarFiles.length],customAvatar:i===0?profile.customAvatar||'':''})));
-               mathTurn=0; mathRound=1; mathLocalQuestion=makeLocalMathQuestion();
-               $('mathLocalPlay').style.display='block'; renderLocalMath();
-            };
-            $('mathSubmitLocal').onclick = () => {
-               if(mathLocalLocked) return; mathLocalLocked=true;
-               const p=mathPlayers[mathTurn%mathPlayers.length], val=Number($('mathLocalAnswer').value);
-               const ok=$('mathLocalAnswer').value.trim()!=='' && val===mathLocalQuestion.answer;
-               if(ok) p.score+=100;
-               $('mathLocalAnswer').disabled=true; $('mathSubmitLocal').disabled=true;
-               $('mathLocalFeedback').className='feedback show '+(ok?'good':'bad');
-               $('mathLocalFeedback').textContent=ok?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${mathLocalQuestion.answer}.`;
+            function applyMathAnswer(index,answer){
+               if(!mathHost||!mathGameStarted||index!==mathRound*100+mathTurn)return;
+               const player=mathPlayers[mathTurn],correct=Number(answer)===mathLocalQuestion.answer;
+               if(correct)player.score+=100;mathLocalLocked=true;
+               const result={type:'mathAnswerResult',index,correct,answer:mathLocalQuestion.answer,players:mathPlayers};
+               $('mathLocalFeedback').className='feedback show '+(correct?'good':'bad');$('mathLocalFeedback').textContent=correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${mathLocalQuestion.answer}.`;
+               $('mathLocalAnswer').disabled=true;$('mathSubmitLocal').disabled=true;
                $('mathLocalScores').innerHTML=mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
-               $('mathNextLocal').style.display='block';
+               $('mathNextLocal').style.display='block';$('mathNextLocal').textContent='Joueur suivant';broadcastMath(result);
+            }
+            function handleMathData(connection,message){
+               if(!message||typeof message!=='object')return;
+               if(message.type==='mathJoin'&&mathHost&&mathGameStarted){connection.send({type:'mathRejected',reason:'La partie a déjà commencé.'});return;}
+               if(message.type==='mathJoin'&&mathHost&&!mathGameStarted){
+                  if(mathPlayers.length>=8){connection.send({type:'mathRejected',reason:'Le salon est complet (8 joueurs maximum).'});return;}
+                  if(!mathPlayers.some(player=>player.id===connection.peer)){
+                     const team=$('mathTeamMode').value==='teams'?mathPlayers.length%2:mathPlayers.length;
+                     mathPlayers.push({id:connection.peer,name:String(message.name||'Joueur').slice(0,18),avatar:message.avatar,customAvatar:message.customAvatar||'',score:0,team});mathConnections.push(connection);
+                  }
+                  connection.send({type:'mathJoined',players:mathPlayers});broadcastMath({type:'mathRoster',players:mathPlayers});renderMathRoster();
+                  setMathStatus(mathPlayers.length<3?'Il faut au moins 3 joueurs pour démarrer.':'Le salon est prêt.');return;
+               }
+               if(message.type==='mathRoster'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();return;}
+               if(message.type==='mathJoined'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();setMathStatus('En attente du démarrage par l’hôte.');return;}
+               if(message.type==='mathRejected'){setMathStatus(message.reason||'Connexion refusée.');return;}
+               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){if(connection.peer===mathPlayers[mathTurn]?.id)applyMathAnswer(message.index,message.value);return;}
+               if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathLocalQuestion=message.question;$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
+               if(message.type==='mathQuestion'&&!mathHost){mathRound=message.round;mathTurn=message.turn;mathLocalQuestion=message.question;mathLocalLocked=false;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();return;}
+               if(message.type==='mathAnswerResult'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathLocalLocked=true;$('mathLocalAnswer').disabled=true;$('mathSubmitLocal').disabled=true;$('mathLocalFeedback').className='feedback show '+(message.correct?'good':'bad');$('mathLocalFeedback').textContent=message.correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${message.answer}.`;$('mathLocalScores').innerHTML=mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} : <b>${player.score}</b> pts`).join(' · ');return;}
+               if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);finishMathGame();return;}
+            }
+            function finishMathGame(){
+               mathGameStarted=false;const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);$('mathLocalQuestion').textContent='Partie terminée !';$('mathLocalFeedback').className='feedback show good';
+               $('mathLocalFeedback').innerHTML=ranked.map((player,index)=>`${index+1}. <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} — ${player.score} pts`).join('<br>');$('mathNextLocal').style.display='none';
+            }
+            $('goLocal').onclick=()=>{show('localMath');$('mathLocalPlay').style.display='none';$('mathRoomRoster').style.display='none';$('mathHostStart').style.display='none';$('mathJoinCode').value='';const profile=playerProfile.getProfile();$('mathOnlineName').value=profile.name;setMathStatus('Un salon démarre à partir de 3 joueurs.');};
+            $('localBack').onclick=()=>{if(mathPeer)mathPeer.destroy();mathPeer=null;mathConnections=[];mathHost=false;mathGameStarted=false;show('home');};
+            $('mathCreateRoom').onclick=()=>{
+               if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}
+               if(mathPeer)mathPeer.destroy();mathPlayers.length=0;mathConnections=[];mathHost=true;mathGameStarted=false;
+               const identity=mathIdentity();mathPlayers.push({...identity,id:'',score:0,team:0});setMathStatus('Création du salon…');$('mathCreateRoom').disabled=true;
+               mathPeer=new Peer('mathrush-multi-'+Math.random().toString(36).slice(2,8));
+               mathPeer.on('open',id=>{mathOnlineId=id;mathPlayers[0].id=id;setMathStatus(`Salon créé. Partage ce code : ${id.replace('mathrush-multi-','').toUpperCase()}`);renderMathRoster();});
+               mathPeer.on('connection',connection=>{connection.on('data',message=>handleMathData(connection,message));connection.on('close',()=>{mathConnections=mathConnections.filter(item=>item!==connection);mathPlayers.splice(0,mathPlayers.length,...mathPlayers.filter(player=>player.id!==connection.peer));if(!mathGameStarted)renderMathRoster();});});
+               mathPeer.on('error',error=>setMathStatus('Erreur de salon : '+(error.type||'connexion')));
+            };
+            $('mathJoinRoom').onclick=()=>{
+               const code=$('mathJoinCode').value.trim().toLowerCase();if(!code){setMathStatus('Saisis le code du salon.');return;}if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}
+               if(mathPeer)mathPeer.destroy();mathHost=false;mathGameStarted=false;const identity=mathIdentity();setMathStatus('Connexion au salon…');mathPeer=new Peer();
+               mathPeer.on('open',id=>{mathOnlineId=id;const connection=mathPeer.connect('mathrush-multi-'+code,{reliable:true});mathConnections=[connection];connection.on('open',()=>connection.send({type:'mathJoin',...identity}));connection.on('data',message=>handleMathData(connection,message));connection.on('error',()=>setMathStatus('Impossible de rejoindre ce salon. Vérifie le code.'));});
+               mathPeer.on('error',error=>setMathStatus('Connexion impossible : '+(error.type||'erreur réseau')));
+            };
+            $('mathHostStart').onclick=()=>{
+               if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}
+               mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion});setMathStatus('La partie est lancée.');
+            };
+            $('mathSubmitLocal').onclick=()=>{
+               if(mathLocalLocked||!mathGameStarted)return;const value=$('mathLocalAnswer').value;if(value.trim()==='')return;
+               const index=mathRound*100+mathTurn;if(mathPlayers[mathTurn].id===mathOnlineId)applyMathAnswer(index,value);else if(mathConnections[0]?.open){mathLocalLocked=true;$('mathSubmitLocal').disabled=true;$('mathLocalAnswer').disabled=true;mathConnections[0].send({type:'mathAnswer',index,value});}
             };
             $('mathNextLocal').onclick=()=>{
-               mathTurn++; if(mathTurn%mathPlayers.length===0) mathRound++;
-               if(mathRound>10) {
-                 const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);
-                 $('mathLocalQuestion').textContent='Partie terminée !';
-                 $('mathLocalFeedback').className='feedback show good';
-                 $('mathLocalFeedback').innerHTML=ranked.map((p,i)=>`${i+1}. <img class="local-math-avatar" src="${profileAvatarUrl(p)}" alt=""> ${escapeHtml(p.name)} — ${p.score} pts`).join('<br>');
-                 $('mathNextLocal').textContent='Rejouer'; $('mathNextLocal').onclick=()=>{mathRound=1;mathTurn=0;mathPlayers.forEach(p=>p.score=0);mathLocalQuestion=makeLocalMathQuestion();$('mathNextLocal').textContent='Joueur suivant';renderLocalMath();};
-                 return;
-               }
-               mathLocalQuestion=makeLocalMathQuestion(); renderLocalMath();
+               if(!mathHost||!mathGameStarted)return;mathTurn++;if(mathTurn>=mathPlayers.length){mathTurn=0;mathRound++;}
+               if(mathRound>10){broadcastMath({type:'mathFinish',players:mathPlayers});finishMathGame();return;}
+               mathLocalQuestion=makeMathQuestion();mathLocalLocked=false;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});
             };
          }
       })();
