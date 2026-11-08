@@ -559,7 +559,7 @@
          </div>
          <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
                   solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card" id="challengeBtn"><span class="emoji">⚔️</span><strong>Défi à deux</strong><small>Affrontez-vous sur le même appareil.</small></button><button class="menu-card"
-               id="multiBtn"><span class="emoji">🌐</span><strong>Multijoueur en ligne</strong><small>Crée un salon et joue avec jusqu’à 5 amis.</small></button><button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records solo.</small></button></div>
+               id="multiBtn"><span class="emoji">🌐</span><strong>Multijoueur en ligne</strong><small>Crée un salon et joue avec jusqu’à 7 amis.</small></button><button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records solo.</small></button></div>
       </section>
       <section class="screen" id="profileScreen">
          <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Espace joueur</span></div>
@@ -626,12 +626,12 @@
                   générale.</p>
             </div>
             <div id="playerCountWrap"><label class="small">Nombre de joueurs</label><select class="field" id="playerCount">
-               <option>1</option>
-               <option>2</option>
                <option>3</option>
                <option>4</option>
                <option>5</option>
                <option>6</option>
+               <option>7</option>
+               <option>8</option>
             </select></div>
             <div id="teamConfigWrap"><label class="small">Organisation</label><select class="field" id="teamMode">
                <option value="free">Chacun pour soi</option>
@@ -2432,7 +2432,7 @@
          };
          $('startLocal').onclick = () => { if (!selectedTopic) { alert('Choisis une thématique.'); return } if (activeGameMode !== 'challenge') return; startGame() };
 
-         // ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 6 joueurs) =====
+         // ===== Multijoueur en ligne synchronisé (hôte autoritaire, jusqu'à 8 joueurs) =====
          let onlineGame = false, onlinePlayerId = '', onlineAnswers = {}, onlineQuestionIndex = 0, onlineDeck = [];
          let onlineAnswerOrder = [], onlineTeamMode = false, onlineTeamScores = [0, 0], onlineTeamNames = ['Équipe A', 'Équipe B'];
          function onlineRosterData() {
@@ -2555,7 +2555,7 @@
          function handleOnlineData(c, m) {
             if (!m || typeof m !== 'object') return;
             if (m.type === 'join' && onlineHost && !onlineGame) {
-               const maxPlayers = activeGameMode === 'challenge' ? 2 : 6;
+               const maxPlayers = activeGameMode === 'challenge' ? 2 : 8;
                if (players.length >= maxPlayers) { c.send({ type: 'rejected', reason: `Ce salon est complet (${maxPlayers} joueurs maximum).` }); return }
                const name = String(m.name || 'Joueur').trim().slice(0, 18) || 'Joueur';
                if (!players.some(p => p.id === c.peer)) {
@@ -2659,7 +2659,8 @@
             peer.on('error', err => { clearTimeout(timeout); $('netStatus').textContent = 'Connexion impossible : ' + (err.type || 'erreur réseau') });
          };
          $('hostStart').onclick = () => {
-            if (!onlineHost || players.length < 2) { $('netStatus').textContent = 'Il faut au moins 2 joueurs dans le salon pour démarrer.'; return }
+            const minPlayers = activeGameMode === 'challenge' ? 2 : 3;
+            if (!onlineHost || players.length < minPlayers) { $('netStatus').textContent = `Il faut au moins ${minPlayers} joueurs dans le salon pour démarrer.`; return }
             advanceRule = $('advanceRule').value; teamScoringRule = $('teamScoreRule').value;
             onlineTeamMode = $('teamMode').value === 'teams';
             onlineTeamNames = [$('teamA').value.trim() || 'Équipe A', $('teamB').value.trim() || 'Équipe B']; onlineTeamScores = [0, 0];

@@ -1248,6 +1248,9 @@
       }
       .journey-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px;border-radius:26px;background:linear-gradient(120deg,#f078c4,#f7a0d7);color:white;box-shadow:0 8px 0 #c95ca5;margin-bottom:14px}.journey-banner h2{margin:8px 0;font-size:clamp(22px,5vw,30px)}.journey-banner p{margin:0;font-size:13px}.journey-mascot{font-size:48px;min-width:70px}.journey-top{display:flex;justify-content:space-around;color:#d64c9f;font-weight:800}.journey-path{display:flex;justify-content:space-around;align-items:center;position:relative;margin:24px 0}.journey-path:before{content:"";position:absolute;height:8px;background:#f5c4e2;left:10%;right:10%;z-index:0}.path-node{z-index:1;border-radius:50%;width:48px;height:48px;background:#eee;color:#999;display:grid;place-items:center;font-size:22px;font-weight:900;border:4px solid white;box-shadow:0 4px 0 #ddd}.path-node.open{background:#f078c4;color:white}.path-node.done{background:#29b8ed;color:white}.quest-row,.review-item{padding:14px 0;border-bottom:1px solid var(--line)}.quest-progress{height:12px;border-radius:20px;background:#e7e7e7;margin:9px 0;overflow:hidden}.quest-progress i{display:block;height:100%;background:#d64c9f;border-radius:20px}.quest-row small,.review-item small{color:var(--muted)}.quest-preview{display:flex;justify-content:space-between;padding:8px 0}.strategy-tip{background:#fff5d9;border:1px solid #f4d58b;color:#75551a;border-radius:16px;padding:13px;margin:12px 0;font-size:14px}.pair-grid,.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.pair-card,.gogo-card{min-height:78px;border:2px solid #e4e4e4;border-radius:18px;background:white;box-shadow:0 5px 0 #e5e5e5;font-size:21px;font-weight:900;color:#444}.pair-card.selected,.gogo-card.selected{border-color:#ef79c3;background:#fff0f8}.pair-card.matched,.gogo-card.matched{border-color:#9ee66d;background:#e4ffd0;color:#6ba92f;box-shadow:0 5px 0 #b7e995}.duogogo-stats{display:flex;justify-content:space-around;padding:14px;background:#f8e4f1;border-radius:18px;font-size:20px;color:#c64d9b}
 
+      .duel-score img{width:32px;height:32px;object-fit:cover;border-radius:9px;vertical-align:middle;margin-right:5px}
+      .local-math-avatar{width:30px;height:30px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:5px}
+
       .gogo-head{display:flex;align-items:center;gap:18px;margin:16px 0 22px}.gogo-head>strong{font-size:23px;color:#f2b900;min-width:54px;text-align:right}.gogo-progress{height:14px;background:#e6e6e6;border-radius:30px;flex:1;position:relative;display:flex;justify-content:space-between;align-items:center}.gogo-progress i{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffc400;border-radius:30px;transition:width .2s}.gogo-progress b{z-index:1;color:#ddd;font-size:30px;line-height:1;text-shadow:0 1px white}.gogo-progress b.earned{color:#ffc400;text-shadow:0 1px #e1a900}.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}.gogo-card{min-height:116px;border:3px solid #e5e5e5;border-radius:24px;background:#fff;box-shadow:0 7px 0 #e5e5e5;font-size:clamp(22px,6vw,34px);font-weight:900;color:#4d4d4d;padding:10px}.gogo-card.selected{border-color:#83d5f5;background:#e3f7ff;box-shadow:0 7px 0 #c7eaf8}.gogo-card.matched{border-color:#9ee66d;background:#e4ffd0;color:#6ba92f;box-shadow:0 7px 0 #b7e995;transform:scale(1.02);transition:transform .2s,background .2s}.gogo-card:disabled{opacity:.35}
 
 
@@ -1279,7 +1282,7 @@
                   solo</strong><small>Apprends et débloque les niveaux un à un.</small></button>
             <button class="menu-card duel-card" id="goDuel"><span class="emoji">⚔️</span><strong>Défi à
                   deux</strong><small>Affronte un ami en direct sur 10 manches.</small></button>
-            <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>Jusqu’à 6 joueurs sur le même appareil.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
+            <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Jouer à plusieurs</strong><small>De 3 à 8 joueurs sur le même appareil.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
             <button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton avatar, tes statistiques, tes records et tes récompenses.</small></button>
          </div>
          <div class="panel section-gap">
@@ -1356,7 +1359,18 @@
          <div class="panel">
             <div class="kicker">Défi à deux</div>
             <h2>Choisis le mode et la difficulté</h2>
+            <label class="small-note" for="duelPlayMode">Mode de jeu</label>
+            <select class="field" id="duelPlayMode"><option value="online" selected>En ligne</option><option value="local">Même appareil</option></select>
+            <label class="small-note" for="duelAdvanceRule">Fin des réponses</label>
+            <select class="field" id="duelAdvanceRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
             <p>Affrontez-vous sur 10 manches de calcul mental. Le créateur choisit le niveau pour les deux joueurs.</p>
+            <div id="localDuelSetup" style="display:none">
+               <label class="small-note" for="localDuelOpponent">Pseudo du deuxième joueur</label>
+               <input class="field" id="localDuelOpponent" maxlength="18" value="Joueur 2">
+               <label class="small-note" for="localDuelRule">Fin des réponses</label>
+               <select class="field" id="localDuelRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
+               <button class="btn btn-main full" id="startLocalDuel" type="button">Lancer le défi</button>
+            </div>
             <div class="mode-grid">
                <button class="mode-card" id="modeCalc" data-mode="calc"><span class="emoji">🧮</span><strong>Calculs
                      rapides</strong><small>10 manches de calcul mental à vitesse grand V.</small></button>
@@ -1370,6 +1384,7 @@
                <option value="4">Très difficile</option>
                <option value="5">Expert</option>
             </select>
+            <div id="onlineDuelSetup">
             <button class="btn btn-main full" id="createRoom">Créer un salon</button>
             <div class="small-note">Ou rejoins un ami avec son code</div><input class="field" id="joinCode"
                placeholder="Code du salon" autocomplete="off"><button class="btn btn-soft full" id="joinRoom">Rejoindre
@@ -1379,6 +1394,7 @@
                <h3>Mes amis</h3>
                <div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div>
             </div>
+            </div>
          </div>
       </section>
 
@@ -1387,8 +1403,7 @@
                id="duelRoundLabel">Manche 0 / 10</span></div>
          <div class="panel">
             <div class="kicker">Duel en direct</div>
-            <div class="duel-score"><span>Toi : <b id="myScore">0</b></span><span>Adversaire : <b
-                     id="opScore">0</b></span></div>
+            <div class="duel-score"><span><img id="duelMyAvatar" src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt=""><b id="duelMyName">Toi</b> : <b id="myScore">0</b></span><span><img id="duelOpponentAvatar" src="assets/avatar/3d-rendering-cartoon-man-beach.jpg" alt=""><b id="duelOpponentName">Adversaire</b> : <b id="opScore">0</b></span></div>
             <div class="countdown" id="duelCountdown">3</div>
             <div id="duelQuestion"></div>
             <div class="feedback" id="duelFeedback"></div>
@@ -1398,12 +1413,13 @@
                   id="rematch">Revanche</button><button class="btn btn-soft" id="addFriend">Ajouter en
                   ami</button><button class="btn btn-soft" id="abandon">Abandonner</button><button class="btn btn-dark"
                   id="duelMenu">Menu</button></div>
+            <button class="btn btn-main full" id="localDuelNext" type="button" style="display:none">Joueur suivant</button>
          </div>
       </section>
       <section class="screen" id="localMath">
          <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur local</span></div>
-         <div class="panel"><div class="kicker">Jusqu’à 6 joueurs</div><h2>Créez votre partie</h2><p>Ajoutez les participants et passez l’appareil à chaque tour.</p>
-            <label class="small-note">Nombre de joueurs</label><select class="field" id="mathPlayerCount"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Créez votre partie</h2><p>Ajoutez les participants et passez l’appareil à chaque tour.</p>
+            <label class="small-note">Nombre de joueurs</label><select class="field" id="mathPlayerCount"><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
             <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><div id="mathNames"></div>
             <button class="btn btn-main full" id="mathStartLocal">Commencer</button></div>
          <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><input class="field" id="mathLocalAnswer" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="mathSubmitLocal">Valider</button><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
@@ -1568,6 +1584,11 @@
             for (let n = 1; n <= 15; n++) { const b = document.createElement('button'), isDone = done.includes(`${section}-${n}`), open = n <= level; b.className = 'level-node ' + (isDone ? 'done' : open ? 'open' : ''); b.disabled = !open; b.textContent = (isDone ? '✓ ' : '') + n; b.onclick = () => { level = n; persist(); startSolo(); }; $('levelList').appendChild(b); }
          }
          const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
+         function profileAvatarUrl(profile){return profile.avatar==='custom'&&profile.customAvatar?profile.customAvatar:`assets/avatar/${encodeURIComponent(String(profile.avatar||'08d694a0343943d7d0b58c1a9c17b525.jpg').replace(/^assets\/avatar\//,''))}`;}
+         function renderDuelIdentity(opponent={name:'Adversaire',avatar:'3d-rendering-cartoon-man-beach.jpg'}){
+            const profile=playerProfile.getProfile();$('duelMyName').textContent=profile.name;$('duelMyAvatar').src=profileAvatarUrl(profile);
+            $('duelOpponentName').textContent=opponent.name||'Adversaire';$('duelOpponentAvatar').src=profileAvatarUrl(opponent);
+         }
          function renderProfile(){
             playerProfile.render();
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
@@ -1581,7 +1602,7 @@
             $('profileBadges').innerHTML=badges.length?badges.map(x=>`<span class="profile-badge">${x}</span>`).join(''):'<p class="small-note">Tes premiers trophées apparaîtront au fil de tes parties.</p>';
          }
          $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
-         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');resetGogo();};$('goSolo').onclick = startSolo; $('goDuel').onclick = () => show('duelSetup'); $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
+         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');resetGogo();};$('goSolo').onclick = startSolo; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
          $('soloValidate').onclick = () => locked ? nextSolo() : validateSolo();
          $('soloSkip').onclick = () => { if (!locked) { if (exIndex < 14) { exIndex++; renderSolo(); } else nextSolo(); } };
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
@@ -1677,7 +1698,7 @@
                ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
             }
          };
-         let peer = null, conn = null, role = null, duelDiff = 2, round = 0, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false;
+         let peer = null, conn = null, role = null, duelDiff = 2, round = 0, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false, duelAdvanceRule = 'firstCorrect', duelHostAnswered = null, duelGuestAnswered = null;
          const netStatus = t => $('networkStatus').textContent = t;
          const FRIENDS_KEY = 'mathrush_friends_v1';
          function getFriends() { try { return JSON.parse(localStorage.getItem(FRIENDS_KEY) || '[]'); } catch (e) { return []; } }
@@ -3116,6 +3137,21 @@
             return deck;
          }
          let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
+         let localDuelMode=false,localDuelRound=0,localDuelTurn=0,localDuelPlayers=[],localDuelAnswers=[],localDuelRule='firstCorrect',localDuelHandoff=false;
+         function updateDuelSetupMode(){
+            const online=$('duelPlayMode').value==='online';
+            $('onlineDuelSetup').style.display=online?'block':'none';$('localDuelSetup').style.display=online?'none':'block';
+            const profile=playerProfile.getProfile();$('localDuelOpponent').value=$('localDuelOpponent').value||'Joueur 2';
+            renderDuelIdentity({name:'Adversaire',avatar:'3d-rendering-cartoon-man-beach.jpg'});
+         }
+         $('duelPlayMode').onchange=updateDuelSetupMode;
+         $('startLocalDuel').onclick=()=>{
+            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
+            localDuelRule=$('localDuelRule').value;localDuelAnswers=[];localDuelHandoff=false;role=null;conn=null;
+            const profile=playerProfile.getProfile();
+            localDuelPlayers=[{name:profile.name||'Joueur 1',avatar:profile.avatar,customAvatar:profile.customAvatar||''},{name:$('localDuelOpponent').value.trim()||'Joueur 2',avatar:'3d-rendering-cartoon-man-beach.jpg',customAvatar:''}];
+            renderDuelIdentity(localDuelPlayers[1]);$('duelResult').style.display='none';$('duelActions').style.display='none';renderLocalDuelAttempt();show('duel');
+         };
          document.querySelectorAll('.mode-card').forEach(b => b.onclick = () => {
             duelMode = 'calc';
             document.querySelectorAll('.mode-card').forEach(x => x.classList.toggle('selected', x === b));
@@ -3128,7 +3164,7 @@
          }
          function updateDuelScore() { $('myScore').textContent = duelMy; $('opScore').textContent = duelOpp; }
          function renderDuelQuestion(q) {
-            duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
+            duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
             $('duelQuestion').innerHTML = q.burger
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
@@ -3136,6 +3172,40 @@
             $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(q.burger ? Number(b.dataset.i) : Number(b.textContent), b));
             updateDuelScore();
          }
+         function renderLocalDuelAttempt(){
+            round=localDuelRound;duelMy=localDuelPlayers[0].score||0;duelOpp=localDuelPlayers[1].score||0;
+            renderDuelQuestion(duelQuestion());
+            $('duelRoundLabel').textContent=`Manche ${localDuelRound} / 10`;
+            $('duelCountdown').textContent='';$('duelActions').style.display='none';$('localDuelNext').style.display='none';
+            const player=localDuelPlayers[localDuelTurn];$('duelMyName').textContent=player.name;
+            $('duelMyAvatar').src=profileAvatarUrl(player);$('duelOpponentName').textContent=localDuelPlayers[1-localDuelTurn].name;
+            $('duelOpponentAvatar').src=profileAvatarUrl(localDuelPlayers[1-localDuelTurn]);
+         }
+         function finishLocalDuelQuestion(){
+            $('duelOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.textContent)===duelQ.ans)button.style.border='2px solid #159b68';});
+            $('duelFeedback').className='feedback show '+(localDuelAnswers.some(answer=>answer.correct)?'good':'bad');
+            $('duelFeedback').textContent=`${localDuelAnswers.some(answer=>answer.correct)?'Bonne réponse !':'Aucune bonne réponse.'} Résultat : ${duelQ.ans}.`;
+            $('localDuelNext').textContent=localDuelRound===10?'Voir les résultats':'Question suivante';$('localDuelNext').style.display='block';localDuelHandoff=false;
+         }
+         function answerLocalDuel(value){
+            if(answeredThisRound||roundEnded)return;
+            answeredThisRound=true;const correct=value===duelQ.ans;
+            localDuelAnswers.push({player:localDuelTurn,correct});
+            if(localDuelRule==='firstCorrect'&&correct){localDuelPlayers[localDuelTurn].score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
+            if(localDuelAnswers.length===2){
+               if(localDuelRule==='allAnswered')localDuelAnswers.filter(answer=>answer.correct).forEach(answer=>localDuelPlayers[answer.player].score+=100);
+               duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;
+            }
+            $('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+            $('duelFeedback').className='feedback show '+(correct?'good':'near');
+            $('duelFeedback').textContent=localDuelRule==='allAnswered'?'Réponse enregistrée. Passez l’appareil au joueur suivant.':correct?'Bonne réponse !':'Raté. Le joueur suivant peut tenter sa chance.';
+            localDuelHandoff=true;$('localDuelNext').textContent='Joueur suivant';$('localDuelNext').style.display='block';
+         }
+         $('localDuelNext').onclick=()=>{
+            if(localDuelHandoff){localDuelHandoff=false;localDuelTurn=1-localDuelTurn;renderLocalDuelAttempt();return;}
+            if(localDuelRound>=10){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
+            localDuelRound++;localDuelTurn=0;localDuelAnswers=[];renderLocalDuelAttempt();
+         };
          function startCountdown() {
             show('duel'); $('duelResult').style.display = 'none'; $('duelActions').style.display = 'none'; $('duelOptions').innerHTML = ''; $('duelQuestion').innerHTML = '';
             let n = 3; $('duelCountdown').textContent = n;
@@ -3147,8 +3217,15 @@
             round++; duelQ = duelMode === 'burger' ? burgerQuestion() : duelQuestion(); conn.send({ type: 'question', round, q: duelQ, mode: duelMode }); renderDuelQuestion(duelQ);
          }
          function answerDuel(value, btn) {
+            if(localDuelMode){answerLocalDuel(value);return;}
             if (roundEnded || answeredThisRound || !conn || !conn.open) return;
             const right = duelQ.burger ? value === duelQ.ansIdx : value === duelQ.ans;
+            if(duelAdvanceRule==='allAnswered'&&!duelQ.burger){
+               answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+               if(role==='host')recordDuelAnswer('host',right);
+               else {conn.send({type:'answer',right,allAnswered:true});$('duelFeedback').className='feedback';$('duelFeedback').textContent='Réponse enregistrée. En attente de ton adversaire…';}
+               return;
+            }
             if (right) {
                answeredThisRound = true;
                $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
@@ -3168,13 +3245,18 @@
                $('duelFeedback').textContent = 'Pas tout à fait ! Réessaie, tu peux encore trouver la bonne réponse.';
             }
          }
+         function recordDuelAnswer(side,right){
+            if(side==='host')duelHostAnswered=right;else duelGuestAnswered=right;
+            if(duelHostAnswered!==null&&duelGuestAnswered!==null)closeRound('both');
+         }
          function closeRound(winner) {
             if (roundEnded) return; roundEnded = true;
-            if (winner === 'host') duelMy += 100; else if (winner === 'guest') duelOpp += 100;
+            if(winner==='host')duelMy+=100;else if(winner==='guest')duelOpp+=100;else if(winner==='both'){if(duelHostAnswered)duelMy+=100;if(duelGuestAnswered)duelOpp+=100;}
             const goodAnswer = duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.ans;
             $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
             $('duelFeedback').className = 'feedback show ' + (winner === 'draw' ? 'near' : 'good');
-            $('duelFeedback').innerHTML = (winner === 'host' ? 'Tu as trouvé en premier !' : winner === 'guest' ? 'Ton adversaire a trouvé en premier !' : duelQ.burger ? 'Manche terminée, personne n\'a trouvé !' : 'Manche terminée') + `<br>Bonne réponse : <b>${escapeHtml(String(goodAnswer))}</b>`;
+            const resultMessage=winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':winner==='both'?`Réponses reçues. ${duelHostAnswered?'Tu marques 100 points.':'Tu ne marques pas de point.'} ${duelGuestAnswered?'Ton adversaire marque 100 points.':'Ton adversaire ne marque pas de point.'}`:duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée';
+            $('duelFeedback').innerHTML = resultMessage + `<br>Bonne réponse : <b>${escapeHtml(String(goodAnswer))}</b>`;
             updateDuelScore();
             conn.send({ type: 'roundEnd', winner, hostScore: role === 'host' ? duelMy : duelOpp, guestScore: role === 'guest' ? duelMy : duelOpp, answer: goodAnswer });
             if (role === 'host') setTimeout(hostNext, 2500);
@@ -3194,10 +3276,11 @@
             $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = ''; updateDuelScore(); startCountdown();
          }
          function handleData(m) {
-            if (m.type === 'ready' && role === 'host') { netStatus('Adversaire connecté ! Départ dans 3 secondes.'); startCountdown(); }
-            if (m.type === 'settings' && role === 'guest') { duelDiff = m.difficulty; duelMode = m.mode || 'calc'; round = 0; duelMy = 0; duelOpp = 0; netStatus(duelMode === 'burger' ? 'Burger Quiz ! Paramètres reçus, départ dans 3 secondes.' : 'Paramètres reçus. Départ dans 3 secondes.'); updateDuelScore(); startCountdown(); }
+            if (m.type === 'ready' && role === 'host') { renderDuelIdentity({name:m.name,avatar:m.avatar,customAvatar:m.customAvatar});netStatus('Adversaire connecté ! Départ dans 3 secondes.'); startCountdown(); }
+            if (m.type === 'settings' && role === 'guest') { duelDiff = m.difficulty; duelMode = m.mode || 'calc'; duelAdvanceRule=m.advanceRule||'firstCorrect';renderDuelIdentity({name:m.hostName,avatar:m.hostAvatar,customAvatar:m.hostCustomAvatar});round = 0; duelMy = 0; duelOpp = 0; netStatus(duelMode === 'burger' ? 'Burger Quiz ! Paramètres reçus, départ dans 3 secondes.' : 'Paramètres reçus. Départ dans 3 secondes.'); updateDuelScore(); startCountdown(); }
             if (m.type === 'question' && role === 'guest') { round = m.round; if (m.mode) duelMode = m.mode; renderDuelQuestion(m.q); }
             if (m.type === 'answer' && role === 'host' && !roundEnded) {
+               if(duelAdvanceRule==='allAnswered'&&m.allAnswered){recordDuelAnswer('guest',!!m.right);return;}
                if (m.right) closeRound('guest');
                else if (duelQ && duelQ.burger) { guestWrong = true; if (hostWrong) closeRound('draw'); }
             }
@@ -3238,13 +3321,14 @@
          function wire(c) {
             conn = c; c.on('open', () => {
                netStatus('Connexion établie ! Préparation du duel…');
-               if (role === 'host') { conn.send({ type: 'settings', difficulty: duelDiff, mode: duelMode }); startCountdown(); }
-               else conn.send({ type: 'ready' });
+               const profile=playerProfile.getProfile();
+               if (role === 'host') { conn.send({ type: 'settings', difficulty: duelDiff, mode: duelMode, advanceRule:duelAdvanceRule, hostName:profile.name, hostAvatar:profile.avatar, hostCustomAvatar:profile.customAvatar||'' }); startCountdown(); }
+               else conn.send({ type: 'ready', name:profile.name, avatar:profile.avatar, customAvatar:profile.customAvatar||'' });
             }); c.on('data', handleData); c.on('close', () => { netStatus('La connexion avec ton adversaire a été interrompue.'); if ($('duel').classList.contains('active') && !opponentLeft) { $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'La connexion avec ton adversaire a été interrompue.'; } }); c.on('error', () => netStatus('Erreur de connexion au salon.'));
          }
          $('createRoom').onclick = () => {
             if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
-            duelDiff = Number($('difficulty').value); round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
+            duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
             if (duelMode === 'burger') burgerDeck = buildBurgerDeck();
             peer = new Peer('mathrush-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
             peer.on('open', id => netStatus(`Salon créé ! Partage ce code : ${id.replace('mathrush-', '').toUpperCase()}\nEn attente de ton adversaire…`));
@@ -3273,15 +3357,17 @@
          $('addFriend').onclick = addCurrentOpponent;
          $('homeProgress').textContent = `Section ${section} · Niveau ${level}`; $('totalPoints').textContent = points; renderPath(); renderFriends(); persist();
 
-         // Multijoueur local MathRush : parties au tour par tour, 2 à 6 participants.
+         // Multijoueur local MathRush : parties au tour par tour, 3 à 8 participants.
          const localMathScreen = $('localMath');
          if (localMathScreen) {
             const mathPlayers = [];
+            const localAvatarFiles=window.PlayerProfile.getAvatarOptions();
             let mathTurn = 0, mathRound = 1, mathLocalQuestion = null, mathLocalLocked = false;
             function drawMathNames() {
                const n = Number($('mathPlayerCount').value);
+               const profile=playerProfile.getProfile();
                $('mathNames').innerHTML = Array.from({length:n}, (_,i) =>
-                 `<label class="small-note">Joueur ${i+1}<input class="field math-player-name" maxlength="18" placeholder="Joueur ${i+1}" value="${i===0?'Joueur 1':`Joueur ${i+1}`}"></label>`
+                 `<label class="small-note">Joueur ${i+1}<input class="field math-player-name" maxlength="18" placeholder="Joueur ${i+1}" value="${escapeHtml(i===0?profile.name:`Joueur ${i+1}`)}"></label>`
                ).join('');
             }
             $('mathPlayerCount').onchange = drawMathNames; drawMathNames();
@@ -3294,18 +3380,19 @@
             }
             function renderLocalMath() {
                const p = mathPlayers[mathTurn % mathPlayers.length];
-               $('mathTurn').textContent = `Manche ${mathRound} · Au tour de ${p.name}`;
+               $('mathTurn').innerHTML = `Manche ${mathRound} · Au tour de <img class="local-math-avatar" src="${profileAvatarUrl(p)}" alt=""> ${escapeHtml(p.name)}`;
                $('mathLocalQuestion').textContent = mathLocalQuestion.text;
                $('mathLocalAnswer').value=''; $('mathLocalAnswer').disabled=false;
                $('mathSubmitLocal').disabled=false; $('mathNextLocal').style.display='none';
                $('mathLocalFeedback').className='feedback'; $('mathLocalFeedback').textContent='';
-               $('mathLocalScores').innerHTML = mathPlayers.map(x=>`${x.name} : <b>${x.score}</b> pts`).join(' · ');
+               $('mathLocalScores').innerHTML = mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
                mathLocalLocked=false;
             }
             $('mathStartLocal').onclick = () => {
                friendGames++;persist();
+               const profile=playerProfile.getProfile();
                const names=[...document.querySelectorAll('.math-player-name')].map((x,i)=>x.value.trim()||`Joueur ${i+1}`);
-               mathPlayers.splice(0, mathPlayers.length, ...names.map((name,i)=>({name,score:0,team:$('mathTeamMode').value==='teams'?i%2: i})));
+               mathPlayers.splice(0, mathPlayers.length, ...names.map((name,i)=>({name,score:0,team:$('mathTeamMode').value==='teams'?i%2:i,avatar:i===0?profile.avatar:localAvatarFiles[(i-1)%localAvatarFiles.length],customAvatar:i===0?profile.customAvatar||'':''})));
                mathTurn=0; mathRound=1; mathLocalQuestion=makeLocalMathQuestion();
                $('mathLocalPlay').style.display='block'; renderLocalMath();
             };
@@ -3317,7 +3404,7 @@
                $('mathLocalAnswer').disabled=true; $('mathSubmitLocal').disabled=true;
                $('mathLocalFeedback').className='feedback show '+(ok?'good':'bad');
                $('mathLocalFeedback').textContent=ok?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${mathLocalQuestion.answer}.`;
-               $('mathLocalScores').innerHTML=mathPlayers.map(x=>`${x.name} : <b>${x.score}</b> pts`).join(' · ');
+               $('mathLocalScores').innerHTML=mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
                $('mathNextLocal').style.display='block';
             };
             $('mathNextLocal').onclick=()=>{
@@ -3326,7 +3413,7 @@
                  const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);
                  $('mathLocalQuestion').textContent='Partie terminée !';
                  $('mathLocalFeedback').className='feedback show good';
-                 $('mathLocalFeedback').innerHTML=ranked.map((p,i)=>`${i+1}. ${p.name} — ${p.score} pts`).join('<br>');
+                 $('mathLocalFeedback').innerHTML=ranked.map((p,i)=>`${i+1}. <img class="local-math-avatar" src="${profileAvatarUrl(p)}" alt=""> ${escapeHtml(p.name)} — ${p.score} pts`).join('<br>');
                  $('mathNextLocal').textContent='Rejouer'; $('mathNextLocal').onclick=()=>{mathRound=1;mathTurn=0;mathPlayers.forEach(p=>p.score=0);mathLocalQuestion=makeLocalMathQuestion();$('mathNextLocal').textContent='Joueur suivant';renderLocalMath();};
                  return;
                }
