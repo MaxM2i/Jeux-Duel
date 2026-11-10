@@ -1221,7 +1221,7 @@
       }
 
       .math-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .math-mode-grid .mode-card{min-width:0;grid-template-columns:32px minmax(0,1fr);column-gap:7px;padding:12px 9px;min-height:86px}
+      .math-mode-grid .mode-card{min-width:0;grid-template-columns:32px minmax(0,1fr);column-gap:20px;padding:12px 9px;min-height:86px}
       .math-mode-grid .mode-mark{grid-row:span 2;font-size:21px;font-weight:950;color:var(--blue);text-align:center}
       .math-mode-grid .mode-card strong{font-size:14px;overflow-wrap:anywhere}
       .math-mode-grid .mode-card small{font-size:11px;overflow-wrap:anywhere}
@@ -1385,7 +1385,7 @@
                <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
                <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
                <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
-               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">(x,y)</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">x,y</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
                <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
                <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
             </div>
@@ -1444,7 +1444,7 @@
                <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
                <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
                <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
-               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">(x,y)</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">x,y</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
                <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
                <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
             </div>
@@ -1513,7 +1513,7 @@
                return { type, target, ans: good, opts };
             }
          }
-         const SOLO_MATH_MODES=[{id:'quick',label:'Calculs rapides',mark:'+'},{id:'complex',label:'Calculs complexes',mark:'×+'},{id:'rounding',label:'Calculs arrondis',mark:'≈'},{id:'coordinates',label:'Placer les coordonnées',mark:'(x,y)'},{id:'percentages',label:'Pourcentages',mark:'%'},{id:'mixed',label:'Tout mélangé',mark:'?'}];
+         const SOLO_MATH_MODES=[{id:'quick',label:'Calculs rapides',mark:'+'},{id:'complex',label:'Calculs complexes',mark:'×+'},{id:'rounding',label:'Calculs arrondis',mark:'≈'},{id:'coordinates',label:'Placer les coordonnées',mark:'x,y'},{id:'percentages',label:'Pourcentages',mark:'%'},{id:'mixed',label:'Tout mélangé',mark:'?'}];
          function makeSoloModeExercise(selectedMode){
             const mode=selectedMode==='mixed'?['quick','complex','rounding','coordinates','percentages'][rand(0,4)]:selectedMode;
             if(mode==='quick'){
