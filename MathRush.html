@@ -1220,6 +1220,12 @@
          grid-row: span 2
       }
 
+      .math-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .math-mode-grid .mode-card{min-width:0;grid-template-columns:32px minmax(0,1fr);column-gap:7px;padding:12px 9px;min-height:86px}
+      .math-mode-grid .mode-mark{grid-row:span 2;font-size:21px;font-weight:950;color:var(--blue);text-align:center}
+      .math-mode-grid .mode-card strong{font-size:14px;overflow-wrap:anywhere}
+      .math-mode-grid .mode-card small{font-size:11px;overflow-wrap:anywhere}
+
       .mode-card strong {
          font-size: 17px;
          letter-spacing: -.3px
@@ -1245,11 +1251,18 @@
          .mode-grid {
             grid-template-columns: 1fr
          }
+         .math-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       }
       .journey-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px;border-radius:26px;background:linear-gradient(120deg,#f078c4,#f7a0d7);color:white;box-shadow:0 8px 0 #c95ca5;margin-bottom:14px}.journey-banner h2{margin:8px 0;font-size:clamp(22px,5vw,30px)}.journey-banner p{margin:0;font-size:13px}.journey-mascot{font-size:48px;min-width:70px}.journey-top{display:flex;justify-content:space-around;color:#d64c9f;font-weight:800}.journey-path{display:flex;justify-content:space-around;align-items:center;position:relative;margin:24px 0}.journey-path:before{content:"";position:absolute;height:8px;background:#f5c4e2;left:10%;right:10%;z-index:0}.path-node{z-index:1;border-radius:50%;width:48px;height:48px;background:#eee;color:#999;display:grid;place-items:center;font-size:22px;font-weight:900;border:4px solid white;box-shadow:0 4px 0 #ddd}.path-node.open{background:#f078c4;color:white}.path-node.done{background:#29b8ed;color:white}.quest-row,.review-item{padding:14px 0;border-bottom:1px solid var(--line)}.quest-progress{height:12px;border-radius:20px;background:#e7e7e7;margin:9px 0;overflow:hidden}.quest-progress i{display:block;height:100%;background:#d64c9f;border-radius:20px}.quest-row small,.review-item small{color:var(--muted)}.quest-preview{display:flex;justify-content:space-between;padding:8px 0}.strategy-tip{background:#fff5d9;border:1px solid #f4d58b;color:#75551a;border-radius:16px;padding:13px;margin:12px 0;font-size:14px}.pair-grid,.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.pair-card,.gogo-card{min-height:78px;border:2px solid #e4e4e4;border-radius:18px;background:white;box-shadow:0 5px 0 #e5e5e5;font-size:21px;font-weight:900;color:#444}.pair-card.selected,.gogo-card.selected{border-color:#ef79c3;background:#fff0f8}.pair-card.matched,.gogo-card.matched{border-color:#9ee66d;background:#e4ffd0;color:#6ba92f;box-shadow:0 5px 0 #b7e995}.duogogo-stats{display:flex;justify-content:space-around;padding:14px;background:#f8e4f1;border-radius:18px;font-size:20px;color:#c64d9b}
 
       .duel-score img{width:32px;height:32px;object-fit:cover;border-radius:9px;vertical-align:middle;margin-right:5px}
       .local-math-avatar{width:30px;height:30px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:5px}
+      .coordinate-plane{position:relative;width:min(100%,260px);aspect-ratio:1;margin:14px auto 20px;border-left:2px solid #45536d;border-bottom:2px solid #45536d;background-image:linear-gradient(to right,#dce3ee 1px,transparent 1px),linear-gradient(to bottom,#dce3ee 1px,transparent 1px);background-size:10% 10%;background-color:#fff}
+      .coordinate-plane:before{content:"0";position:absolute;left:-15px;bottom:-8px;font-size:11px;color:#66738a}
+      .coordinate-point{position:absolute;transform:translate(-50%,50%);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e96ba5;color:#fff;font-size:12px;font-weight:900;box-shadow:0 2px 6px #243d7040}
+      .profile-mode-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .profile-mode-stats>div{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;background:#f4f7ff;font-size:13px}
+      .profile-mode-stats b{font-variant-numeric:tabular-nums}
 
       .gogo-head{display:flex;align-items:center;gap:18px;margin:16px 0 22px}.gogo-head>strong{font-size:23px;color:#f2b900;min-width:54px;text-align:right}.gogo-progress{height:14px;background:#e6e6e6;border-radius:30px;flex:1;position:relative;display:flex;justify-content:space-between;align-items:center}.gogo-progress i{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffc400;border-radius:30px;transition:width .2s}.gogo-progress b{z-index:1;color:#ddd;font-size:30px;line-height:1;text-shadow:0 1px white}.gogo-progress b.earned{color:#ffc400;text-shadow:0 1px #e1a900}.gogo-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}.gogo-card{min-height:116px;border:3px solid #e5e5e5;border-radius:24px;background:#fff;box-shadow:0 7px 0 #e5e5e5;font-size:clamp(22px,6vw,34px);font-weight:900;color:#4d4d4d;padding:10px}.gogo-card.selected{border-color:#83d5f5;background:#e3f7ff;box-shadow:0 7px 0 #c7eaf8}.gogo-card.matched{border-color:#9ee66d;background:#e4ffd0;color:#6ba92f;box-shadow:0 7px 0 #b7e995;transform:scale(1.02);transition:transform .2s,background .2s}.gogo-card:disabled{opacity:.35}
 
@@ -1296,7 +1309,7 @@
       <section class="screen" id="pathScreen">
          <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Parcours</span>
          </div>
-         <div class="journey-banner"><div><span class="kicker">CE2 · Parcours d’aventure</span><h2>Opérations et astuces de calcul</h2><p>Avance étape par étape, gagne des étoiles et maîtrise les raccourcis.</p></div><div class="journey-mascot">🧑‍🚀🧊</div></div><div class="panel journey-map"><div class="journey-top"><span>⭐ <b id="journeyStars">0</b></span><span>🔥 <b id="journeyStreak">0</b></span><span>Niveau <b id="journeyLevel">1</b></span></div><div class="journey-path"><div class="path-node done">🏁</div><div class="path-node open">★</div><div class="path-node">★</div><div class="path-node">◷</div><div class="path-node">🎯</div></div><h2>Choisis ton étape</h2><p class="small-note">Les niveaux se débloquent au fur et à mesure.</p><div class="level-list" id="levelList"></div></div><div class="panel quest-mini"><div class="kicker">Tes quêtes</div><h3>Un petit défi chaque jour</h3><div id="pathQuestPreview"></div><button class="btn btn-soft full" id="pathQuests">Voir toutes les quêtes</button><button class="btn btn-soft full" id="openReview">Revoir mes erreurs</button></div>
+         <div class="journey-banner"><div><span class="kicker">CE2 · Parcours d’aventure</span><h2>Opérations et astuces de calcul</h2><p>Avance étape par étape, gagne des étoiles et maîtrise les raccourcis.</p></div><div class="journey-mascot">🧑‍🚀🧊</div></div><div class="panel journey-map"><div class="journey-top"><span>⭐ <b id="journeyStars">0</b></span><span>🔥 <b id="journeyStreak">0</b></span><span>Niveau <b id="journeyLevel">1</b></span></div><div class="journey-path"><div class="path-node done">🏁</div><div class="path-node open">★</div><div class="path-node">★</div><div class="path-node">◷</div><div class="path-node">🎯</div></div><h2>Choisis ton type d’exercice</h2><div class="mode-grid math-mode-grid" id="soloMathModes"></div><h2>Choisis ton étape</h2><p class="small-note">Les niveaux se débloquent au fur et à mesure.</p><div class="level-list" id="levelList"></div></div><div class="panel quest-mini"><div class="kicker">Tes quêtes</div><h3>Un petit défi chaque jour</h3><div id="pathQuestPreview"></div><button class="btn btn-soft full" id="pathQuests">Voir toutes les quêtes</button><button class="btn btn-soft full" id="openReview">Revoir mes erreurs</button></div>
       </section>
 
       <section class="screen" id="solo">
@@ -1352,6 +1365,10 @@
          <div class="panel section-gap">
             <h3>Mes trophées</h3><div id="profileBadges" class="profile-badges"></div>
          </div>
+         <div class="panel section-gap">
+            <h3>Mes statistiques par type</h3>
+            <div class="profile-mode-stats" id="profileModeStats"></div>
+         </div>
       </section>
       <section class="screen" id="duelSetup">
          <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Multijoueur</span>
@@ -1364,16 +1381,20 @@
             <label class="small-note" for="duelAdvanceRule">Fin des réponses</label>
             <select class="field" id="duelAdvanceRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
             <p>Affrontez-vous sur 10 manches de calcul mental. Le créateur choisit le niveau pour les deux joueurs.</p>
+            <div class="mode-grid math-mode-grid" id="duelMathModes">
+               <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
+               <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
+               <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">(x,y)</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
+               <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
+            </div>
             <div id="localDuelSetup" style="display:none">
                <label class="small-note" for="localDuelOpponent">Pseudo du deuxième joueur</label>
                <input class="field" id="localDuelOpponent" maxlength="18" value="Joueur 2">
                <label class="small-note" for="localDuelRule">Fin des réponses</label>
                <select class="field" id="localDuelRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
                <button class="btn btn-main full" id="startLocalDuel" type="button">Lancer le défi</button>
-            </div>
-            <div class="mode-grid">
-               <button class="mode-card" id="modeCalc" data-mode="calc"><span class="emoji">🧮</span><strong>Calculs
-                     rapides</strong><small>10 manches de calcul mental à vitesse grand V.</small></button>
             </div>
             <label class="small-note" style="display:block;text-align:left;margin:10px 0 0">Difficulté</label>
             <select class="field" id="difficulty">
@@ -1418,8 +1439,17 @@
       </section>
       <section class="screen" id="localMath">
          <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur en ligne</span></div>
-         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
-         <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><input class="field" id="mathLocalAnswer" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="mathSubmitLocal">Valider</button><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
+         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><h3>Type d’exercices</h3>
+            <div class="mode-grid math-mode-grid" id="mathRoomModes">
+               <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
+               <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
+               <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">(x,y)</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
+               <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
+            </div>
+            <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
+         <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><div id="mathLocalVisual"></div><div id="mathLocalOptions" class="choices"></div><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
       </section>
    </div>
    <script src="assets/js/player-profile.js"></script>
@@ -1431,9 +1461,10 @@
          function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
-         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0;
+         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{};
+         let soloMathMode=saved.soloMathMode||'mixed';
          let exIndex = 0, streak = 0, best = 0, correctCount = 0, exercise = null, choice = null, locked = false, startTime = 0;
-         function persist() { localStorage.setItem('mathrush_app_save', JSON.stringify({ section, level, points, done, errors, soloLessons, highScoreLessons, friendGames })); $('totalPoints').textContent = points; $('homeProgress').textContent = `Section ${section} · Niveau ${level}`; }
+         function persist() { localStorage.setItem('mathrush_app_save', JSON.stringify({ section, level, points, done, errors, soloLessons, highScoreLessons, friendGames, soloMathMode, soloModeStats })); $('totalPoints').textContent = points; $('homeProgress').textContent = `Section ${section} · Niveau ${level}`; }
          function difficultyRank() { return Math.min(6, Math.floor((level - 1) / 4) + Math.floor((section - 1) / 6)); }
          function makeMath() {
             const d = difficultyRank(); let a, b, op, ans;
@@ -1482,32 +1513,31 @@
                return { type, target, ans: good, opts };
             }
          }
+         const SOLO_MATH_MODES=[{id:'quick',label:'Calculs rapides',mark:'+'},{id:'complex',label:'Calculs complexes',mark:'×+'},{id:'rounding',label:'Calculs arrondis',mark:'≈'},{id:'coordinates',label:'Placer les coordonnées',mark:'(x,y)'},{id:'percentages',label:'Pourcentages',mark:'%'},{id:'mixed',label:'Tout mélangé',mark:'?'}];
+         function makeSoloModeExercise(selectedMode){
+            const mode=selectedMode==='mixed'?['quick','complex','rounding','coordinates','percentages'][rand(0,4)]:selectedMode;
+            if(mode==='quick'){
+               const question=makeMath(),answer=question.ans,opts=shuffle([...new Set([answer,answer+2,Math.max(0,answer-2),answer+5])]);
+               return{...question,type:'choice',mode,prompt:`${question.a} ${question.op} ${question.b} = ?`,ans:answer,opts};
+            }
+            if(mode==='complex'){
+               const a=rand(3,18),b=rand(2,12),c=rand(2,30),answer=a*b+c;
+               return{type:'choice',mode,prompt:`${a} × ${b} + ${c} = ?`,ans:answer,opts:shuffle([answer,answer+a,answer-a,answer+a*2])};
+            }
+            if(mode==='rounding'){
+               const unit=Math.random()<.5?10:100,base=unit===10?rand(1,99)*10:rand(1,99)*100,number=base+rand(1,unit-1),answer=Math.round(number/unit)*unit;
+               return{type:'round',mode,number,unit,ans:answer,opts:shuffle([...new Set([answer,Math.max(0,answer-unit),answer+unit,answer+unit*2])]),tip:`Arrondis à la ${unit===10?'dizaine':'centaine'} la plus proche.`};
+            }
+            if(mode==='coordinates'){
+               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],answer=`(${x} ; ${y})`;
+               const visual=`<div class="coordinate-plane" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point" style="left:${x*10}%;bottom:${y*10}%">${label}</span></div>`;
+               return{type:'coordinates',mode,prompt:`Quelles sont les coordonnées du point ${label} ?`,visual,ans:answer,opts:shuffle([answer,`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`])};
+            }
+            const exercise=makeVisualExercise('percent');exercise.mode='percentages';return exercise;
+         }
          function mathStrategy(a,b,op){if(op==='×'&&b===5)return `Astuce ×5 : calcule ${a} × 10, puis divise par 2.`;if(op==='×'&&b===9)return `Astuce ×9 : calcule ${a} × 10, puis enlève ${a}.`;if(op==='×'&&b===10)return `Astuce ×10 : ajoute un zéro à ${a}.`;if(op==='+'&&b%10===0)return `Astuce : ajoute les dizaines en premier (${a} + ${b}).`;if(op==='−'&&b%10===0)return `Astuce : enlève les dizaines en premier.`;return 'Astuce : compte par bonds et repère les multiples pour calculer plus vite.';}
          function buildExercise() {
-            const q = makeMath(), types = ['slider', 'choice', 'fill', 'pattern', 'line', 'choice', 'fill', 'slider', 'pattern', 'choice', 'line', 'fill', 'percent', 'model', 'factors', 'equation', 'choice', 'slider', 'model', 'factors', 'equation', 'percent', 'pattern', 'fill', 'choice'], beginnerTypes=['choice','fill','pattern','round','pairmatch','choice','fill','round','line','pairmatch','choice','fill','pattern','choice','pairmatch'], type = difficultyRank()<=2 ? beginnerTypes[exIndex] : ([4,9,14].includes(exIndex) ? 'pairmatch' : ([2,7,12].includes(exIndex) ? 'round' : types[exIndex]));
-            if(type==='round'){
-               const toHundred=difficultyRank()>=3 && Math.random()<.45;
-               const base=toHundred?rand(1,9)*100:rand(1,9)*10;
-               const offset=toHundred?rand(11,89):rand(1,9);
-               const n=base+(Math.random()<.5?offset:-offset);
-               const unit=toHundred?100:10, ans=Math.round(n/unit)*unit;
-               const opts=shuffle([...new Set([ans,ans-unit,ans+unit,ans+(n>=ans?unit*2:-unit*2)].filter(v=>v>=0))]);
-               return {type,number:n,unit,ans,opts,tip:toHundred?'Pour arrondir à la centaine, regarde le chiffre des dizaines : 0 à 4 on descend, 5 à 9 on monte.':'Pour arrondir à la dizaine, regarde le chiffre des unités : 0 à 4 on descend, 5 à 9 on monte.'};
-            }
-            if(type==='pairmatch'){return {type, ans:1, pairs:[[2,6],[3,4],[4,5],[5,8]].map(([a,b])=>({label:`${a} × ${b}`,value:a*b}))};}
-            if (type === 'slider' || type === 'line') {
-               const step = difficultyRank() <= 1 ? 5 : difficultyRank() <= 2 ? 10 : difficultyRank() <= 4 ? 20 : 50;
-               // L'échelle commence au premier repère (réponse moins deux pas) et se termine au dernier,
-               // avec exactement 5 repères répartis uniformément entre les deux bornes.
-               const min = Math.max(0, Math.floor((q.ans - 2 * step) / step) * step);
-               const max = Math.max(min + 4 * step, Math.ceil((q.ans + 2 * step) / step) * step);
-               const ticks = [0, 1, 2, 3, 4].map(i => min + (max - min) * i / 4);
-               return { ...q, type, min, max, ticks };
-            }
-            if (type === 'choice') { let opts = new Set([q.ans]); while (opts.size < 4) { let n = q.ans + rand(-Math.max(6, Math.round(q.ans * .3)), Math.max(6, Math.round(q.ans * .3))); if (n >= 0) opts.add(n); } return { ...q, type, opts: shuffle([...opts]) }; }
-            if (type === 'fill') return { ...q, type };
-            if (['percent', 'model', 'factors', 'equation'].includes(type)) return makeVisualExercise(type);
-            const start = difficultyRank() <= 2 ? 2 : 3, step = difficultyRank() <= 2 ? 2 : rand(3, 9); return { type: 'pattern', seq: [start, start + step, start + 2 * step, start + 3 * step], ans: start + 4 * step };
+            return makeSoloModeExercise(soloMathMode);
          }
          function startSolo() { show('solo'); exIndex = 0; streak = 0; best = 0; correctCount = 0; renderSolo(); }
          function renderSolo() {
@@ -1521,8 +1551,8 @@
                q.innerHTML = `<div class="question"><small>${exercise.type === 'line' ? 'Place le résultat sur la droite graduée' : 'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="1" value="${rand(exercise.min, exercise.max)}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
                $('soloRange').oninput = e => { choice = Number(e.target.value); $('soloValidate').disabled = false; };
             } else if (exercise.type === 'choice') {
-               q.innerHTML = `<div class="question"><small>Choisis la bonne réponse</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
-               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
+               q.innerHTML = `<div class="question"><small>${exercise.mode==='complex'?'Résous le calcul en respectant les priorités':'Choisis la bonne réponse'}</small>${exercise.prompt||`${exercise.a} ${exercise.op} ${exercise.b} = ?`}</div><div class="choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
             } else if (exercise.type === 'fill') {
                q.innerHTML = `<div class="question"><small>Complète le calcul</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><input class="answer-input" id="fillValue" type="number" inputmode="numeric" placeholder="?">`;
                $('fillValue').oninput = e => { choice = e.target.value === '' ? null : Number(e.target.value); $('soloValidate').disabled = choice === null; };
@@ -1534,6 +1564,9 @@
                const unitLabel=exercise.unit===100?'la centaine':'la dizaine';
                q.innerHTML=`<div class="question"><small>Arrondis ${unitLabel}</small><div class="round-number">${exercise.number}</div><p>Quel est le nombre arrondi à ${exercise.unit===100?'la centaine':'la dizaine'} la plus proche ?</p></div><div class="strategy-tip">${exercise.tip}</div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'coordinates') {
+               q.innerHTML=`<div class="visual-prompt"><small>Lis le repère</small>${exercise.visual}<div class="equation-slots">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(value=>`<button class="choice" data-v="${value}">${value}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(button=>button.onclick=()=>selectSolo(button.dataset.v,button));
             } else if (exercise.type === 'percent') {
                const bars = Array.from({ length: 10 }, (_, i) => `<i class="${i < exercise.pct / 10 ? 'on' : ''}"></i>`).join('');
                q.innerHTML = `<div class="visual-prompt"><small>Calcule le pourcentage</small><div class="visual-equation">${exercise.pct}% <em>×</em> ${exercise.base} <em>=</em> ?</div><div class="percent-model">${bars}</div></div><div class="choices visual-choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
@@ -1559,8 +1592,9 @@
             if (typeof target === 'number') {
                const parsed = Number(String(choice).replace(/[\s\u00a0]/g, '').replace(',', '.'));
                diff = isNaN(parsed) ? 1 : Math.abs(parsed - target);
-            } else diff = choice === target ? 0 : 1;
+            } else diff = String(choice) === String(target) ? 0 : 1;
             const slider = ['slider', 'line'].includes(exercise.type), exact = diff === 0, near = slider && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, (Date.now() - startTime) / 1000 - 4) * 2));
+            const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0});modeStats.played++;if(exact)modeStats.correct++;});
             let gain = 0; if (exact) { gain = 100 + speed + Math.min(40, streak * 5); streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); streak = 0; } else streak = 0;
             points += gain; best = Math.max(best, streak); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
             const fb = $('soloFeedback'); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
@@ -1578,6 +1612,8 @@
          }
          function renderPath() {
             $('journeyStars').textContent=points;$('journeyLevel').textContent=level;$('journeyStreak').textContent=streak;$('levelList').innerHTML = '';
+            $('soloMathModes').innerHTML=SOLO_MATH_MODES.map(mode=>`<button class="mode-card math-mode-card ${mode.id===soloMathMode?'selected':''}" type="button" data-solo-math-mode="${mode.id}"><span class="mode-mark">${mode.mark}</span><strong>${mode.label}</strong><small>${mode.id==='mixed'?'Un type différent à chaque exercice':mode.id==='quick'?'Additions et multiplications':mode.id==='complex'?'Opérations en plusieurs étapes':mode.id==='rounding'?'Dizaines et centaines':mode.id==='coordinates'?'Lis les points sur un repère':'Calcule une part'}</small></button>`).join('');
+            $('soloMathModes').querySelectorAll('[data-solo-math-mode]').forEach(button=>button.onclick=()=>{soloMathMode=button.dataset.soloMathMode;persist();renderPath();});
             for (let n = 1; n <= 15; n++) { const b = document.createElement('button'), isDone = done.includes(`${section}-${n}`), open = n <= level; b.className = 'level-node ' + (isDone ? 'done' : open ? 'open' : ''); b.disabled = !open; b.textContent = (isDone ? '✓ ' : '') + n; b.onclick = () => { level = n; persist(); startSolo(); }; $('levelList').appendChild(b); }
          }
          const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
@@ -1590,6 +1626,7 @@
             playerProfile.render();
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
             $('profileErrors').textContent=errors.length;$('profileStreak').textContent=best;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
+            $('profileModeStats').innerHTML=SOLO_MATH_MODES.map(mode=>{const stat=soloModeStats[mode.id]||{played:0,correct:0},accuracy=stat.played?Math.round(stat.correct/stat.played*100):0;return`<div><span>${mode.label}</span><b>${stat.correct}/${stat.played} · ${accuracy}%</b></div>`;}).join('');
             const badges=[];
             if(soloLessons>=1)badges.push('🎓 Première leçon');
             if(highScoreLessons>=1)badges.push('🎯 Précision');
@@ -1599,7 +1636,7 @@
             $('profileBadges').innerHTML=badges.length?badges.map(x=>`<span class="profile-badge">${x}</span>`).join(''):'<p class="small-note">Tes premiers trophées apparaîtront au fil de tes parties.</p>';
          }
          $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
-         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');resetGogo();};$('goSolo').onclick = startSolo; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
+         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');resetGogo();};$('goSolo').onclick = () => { renderPath(); show('pathScreen'); }; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
          $('soloValidate').onclick = () => locked ? nextSolo() : validateSolo();
          $('soloSkip').onclick = () => { if (!locked) { if (exIndex < 14) { exIndex++; renderSolo(); } else nextSolo(); } };
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
@@ -1695,7 +1732,7 @@
                ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
             }
          };
-         let peer = null, conn = null, role = null, duelDiff = 2, round = 0, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false, duelAdvanceRule = 'firstCorrect', duelHostAnswered = null, duelGuestAnswered = null;
+         let peer = null, conn = null, role = null, duelDiff = 2, round = 0, roundTarget = 10, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false, duelAdvanceRule = 'firstCorrect', duelMathMode = 'quick', duelHostAnswered = null, duelGuestAnswered = null;
          const netStatus = t => $('networkStatus').textContent = t;
          const FRIENDS_KEY = 'mathrush_friends_v1';
          function getFriends() { try { return JSON.parse(localStorage.getItem(FRIENDS_KEY) || '[]'); } catch (e) { return []; } }
@@ -1718,9 +1755,33 @@
             if (conn.open && myId) conn.send({ type: 'friendAdded', fromId: myId, fromName: 'Ton adversaire' });
             alert('Ami enregistré ! Ton adversaire a été averti et peut t’ajouter en retour.');
          }
+         function makeDuelChoiceQuestion(type,prompt,answer,distractors,visual=''){
+            const options=shuffle([...new Set([answer,...distractors])]).slice(0,4).map(String);
+            return{choiceBased:true,type,prompt,visual,opts:options,answerIndex:options.indexOf(String(answer)),ans:String(answer)};
+         }
          function duelQuestion() {
-            const d = duelDiff, base = [2, 3, 5, 8, 12, 18][d], a = rand(1 + d, 4 + d) * base, b = rand(1 + d, 3 + d) * base, op = d <= 1 ? '+' : (Math.random() < .5 ? '+' : '×'), ans = op === '+' ? a + b : a * b, delta = Math.max(2, Math.round(ans * (.15 + d * .06)));
-            return { a, b, op, ans, opts: shuffle([...new Set([ans, Math.max(0, ans - delta), ans + delta, ans + 2 * delta])]).slice(0, 4) };
+            const modes=['quick','complex','rounding','coordinates','percentages'];
+            const type=duelMathMode==='mixed'?modes[rand(0,modes.length-1)]:duelMathMode;
+            if(type==='quick'){
+               const d=duelDiff,base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
+               return makeDuelChoiceQuestion(type,`${a} ${op} ${b} = ?`,answer,[Math.max(0,answer-delta),answer+delta,answer+2*delta]);
+            }
+            if(type==='complex'){
+               const a=rand(3,18),b=rand(2,12),c=rand(2,30),answer=a*b+c;
+               return makeDuelChoiceQuestion(type,`${a} × ${b} + ${c} = ?`,answer,[answer+a,answer-a,answer+a*2]);
+            }
+            if(type==='rounding'){
+               const unit=Math.random()<.5?10:100,number=unit===10?rand(101,989):rand(1010,9890),answer=Math.round(number/unit)*unit;
+               return makeDuelChoiceQuestion(type,`Arrondis ${number} à la ${unit===10?'dizaine':'centaine'} la plus proche.`,answer,[answer-unit,answer+unit,answer+2*unit]);
+            }
+            if(type==='coordinates'){
+               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],visual=`<div class="coordinate-plane" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point" style="left:${x*10}%;bottom:${y*10}%">${label}</span></div>`;
+               const answer=`(${x} ; ${y})`;
+               return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
+            }
+            const percent=[5,10,20,25,50,75][rand(0,5)],base=[40,60,80,100,120,200][rand(0,5)],answer=percent*base/100;
+            const delta=Math.max(1,base/10);
+            return makeDuelChoiceQuestion(type,`Combien font ${percent} % de ${base} ?`,answer,[answer+delta,Math.max(0,answer-delta),answer+delta*2]);
          }
          
          let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
@@ -1733,15 +1794,15 @@
          }
          $('duelPlayMode').onchange=updateDuelSetupMode;
          $('startLocalDuel').onclick=()=>{
-            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
+            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMathMode=$('duelMathMode').value;roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
             localDuelRule=$('localDuelRule').value;localDuelAnswers=[];localDuelHandoff=false;role=null;conn=null;
             const profile=playerProfile.getProfile();
             localDuelPlayers=[{name:profile.name||'Joueur 1',avatar:profile.avatar,customAvatar:profile.customAvatar||''},{name:$('localDuelOpponent').value.trim()||'Joueur 2',avatar:'3d-rendering-cartoon-man-beach.jpg',customAvatar:''}];
             renderDuelIdentity(localDuelPlayers[1]);$('duelResult').style.display='none';$('duelActions').style.display='none';renderLocalDuelAttempt();show('duel');
          };
-         document.querySelectorAll('.mode-card').forEach(b => b.onclick = () => {
-            duelMode = 'calc';
-            document.querySelectorAll('.mode-card').forEach(x => x.classList.toggle('selected', x === b));
+         document.querySelectorAll('#duelMathModes .mode-card').forEach(button => button.onclick = () => {
+            duelMathMode=button.dataset.mathMode;
+            document.querySelectorAll('#duelMathModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));
          });
          function burgerQuestion() {
             const item = burgerDeck[(round - 1) % burgerDeck.length];
@@ -1754,29 +1815,30 @@
             duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
             $('duelQuestion').innerHTML = q.burger
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
+               : q.choiceBased ? `<div class="question"><small>${({quick:'Calculs rapides',complex:'Calculs complexes',rounding:'Calculs arrondis',coordinates:'Placer les coordonnées',percentages:'Pourcentages'})[q.type]||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
-            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : `<button class="choice" data-i="${i}">${n}</button>`).join('');
-            $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(q.burger ? Number(b.dataset.i) : Number(b.textContent), b));
+            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
+            $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
             updateDuelScore();
          }
          function renderLocalDuelAttempt(){
             round=localDuelRound;duelMy=localDuelPlayers[0].score||0;duelOpp=localDuelPlayers[1].score||0;
             renderDuelQuestion(duelQuestion());
-            $('duelRoundLabel').textContent=`Manche ${localDuelRound} / 10`;
+            $('duelRoundLabel').textContent=`Manche ${localDuelRound} / ${roundTarget}`;
             $('duelCountdown').textContent='';$('duelActions').style.display='none';$('localDuelNext').style.display='none';
             const player=localDuelPlayers[localDuelTurn];$('duelMyName').textContent=player.name;
             $('duelMyAvatar').src=profileAvatarUrl(player);$('duelOpponentName').textContent=localDuelPlayers[1-localDuelTurn].name;
             $('duelOpponentAvatar').src=profileAvatarUrl(localDuelPlayers[1-localDuelTurn]);
          }
          function finishLocalDuelQuestion(){
-            $('duelOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.textContent)===duelQ.ans)button.style.border='2px solid #159b68';});
+            $('duelOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.i)===duelQ.answerIndex)button.style.border='2px solid #159b68';});
             $('duelFeedback').className='feedback show '+(localDuelAnswers.some(answer=>answer.correct)?'good':'bad');
             $('duelFeedback').textContent=`${localDuelAnswers.some(answer=>answer.correct)?'Bonne réponse !':'Aucune bonne réponse.'} Résultat : ${duelQ.ans}.`;
             $('localDuelNext').textContent=localDuelRound===10?'Voir les résultats':'Question suivante';$('localDuelNext').style.display='block';localDuelHandoff=false;
          }
          function answerLocalDuel(value){
             if(answeredThisRound||roundEnded)return;
-            answeredThisRound=true;const correct=value===duelQ.ans;
+            answeredThisRound=true;const correct=value===duelQ.answerIndex;
             localDuelAnswers.push({player:localDuelTurn,correct});
             if(localDuelRule==='firstCorrect'&&correct){localDuelPlayers[localDuelTurn].score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
             if(localDuelAnswers.length===2){
@@ -1790,7 +1852,7 @@
          }
          $('localDuelNext').onclick=()=>{
             if(localDuelHandoff){localDuelHandoff=false;localDuelTurn=1-localDuelTurn;renderLocalDuelAttempt();return;}
-            if(localDuelRound>=10){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
+            if(localDuelRound>=roundTarget){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
             localDuelRound++;localDuelTurn=0;localDuelAnswers=[];renderLocalDuelAttempt();
          };
          function startCountdown() {
@@ -1800,13 +1862,13 @@
             setTimeout(t, 1000);
          }
          function hostNext() {
-            if (round >= 10) { endDuel(); return; }
+            if (round >= roundTarget) { endDuel(); return; }
             round++; duelQ = duelMode === 'burger' ? burgerQuestion() : duelQuestion(); conn.send({ type: 'question', round, q: duelQ, mode: duelMode }); renderDuelQuestion(duelQ);
          }
          function answerDuel(value, btn) {
             if(localDuelMode){answerLocalDuel(value);return;}
             if (roundEnded || answeredThisRound || !conn || !conn.open) return;
-            const right = duelQ.burger ? value === duelQ.ansIdx : value === duelQ.ans;
+            const right = duelQ.burger ? value === duelQ.ansIdx : duelQ.choiceBased ? value === duelQ.answerIndex : value === duelQ.ans;
             if(duelAdvanceRule==='allAnswered'&&!duelQ.burger){
                answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
                if(role==='host')recordDuelAnswer('host',right);
@@ -1839,7 +1901,7 @@
          function closeRound(winner) {
             if (roundEnded) return; roundEnded = true;
             if(winner==='host')duelMy+=100;else if(winner==='guest')duelOpp+=100;else if(winner==='both'){if(duelHostAnswered)duelMy+=100;if(duelGuestAnswered)duelOpp+=100;}
-            const goodAnswer = duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.ans;
+            const goodAnswer = duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.choiceBased ? duelQ.opts[duelQ.answerIndex] : duelQ.ans;
             $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
             $('duelFeedback').className = 'feedback show ' + (winner === 'draw' ? 'near' : 'good');
             const resultMessage=winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':winner==='both'?`Réponses reçues. ${duelHostAnswered?'Tu marques 100 points.':'Tu ne marques pas de point.'} ${duelGuestAnswered?'Ton adversaire marque 100 points.':'Ton adversaire ne marque pas de point.'}`:duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée';
@@ -1864,7 +1926,7 @@
          }
          function handleData(m) {
             if (m.type === 'ready' && role === 'host') { renderDuelIdentity({name:m.name,avatar:m.avatar,customAvatar:m.customAvatar});netStatus('Adversaire connecté ! Départ dans 3 secondes.'); startCountdown(); }
-            if (m.type === 'settings' && role === 'guest') { duelDiff = m.difficulty; duelMode = m.mode || 'calc'; duelAdvanceRule=m.advanceRule||'firstCorrect';renderDuelIdentity({name:m.hostName,avatar:m.hostAvatar,customAvatar:m.hostCustomAvatar});round = 0; duelMy = 0; duelOpp = 0; netStatus(duelMode === 'burger' ? 'Burger Quiz ! Paramètres reçus, départ dans 3 secondes.' : 'Paramètres reçus. Départ dans 3 secondes.'); updateDuelScore(); startCountdown(); }
+            if (m.type === 'settings' && role === 'guest') { duelDiff = m.difficulty; duelMode = m.mode || 'calc'; duelMathMode=m.mathMode||'quick';roundTarget=m.roundTarget||10;duelAdvanceRule=m.advanceRule||'firstCorrect';renderDuelIdentity({name:m.hostName,avatar:m.hostAvatar,customAvatar:m.hostCustomAvatar});round = 0; duelMy = 0; duelOpp = 0; netStatus('Paramètres reçus. Départ dans 3 secondes.'); updateDuelScore(); startCountdown(); }
             if (m.type === 'question' && role === 'guest') { round = m.round; if (m.mode) duelMode = m.mode; renderDuelQuestion(m.q); }
             if (m.type === 'answer' && role === 'host' && !roundEnded) {
                if(duelAdvanceRule==='allAnswered'&&m.allAnswered){recordDuelAnswer('guest',!!m.right);return;}
@@ -1909,13 +1971,13 @@
             conn = c; c.on('open', () => {
                netStatus('Connexion établie ! Préparation du duel…');
                const profile=playerProfile.getProfile();
-               if (role === 'host') { conn.send({ type: 'settings', difficulty: duelDiff, mode: duelMode, advanceRule:duelAdvanceRule, hostName:profile.name, hostAvatar:profile.avatar, hostCustomAvatar:profile.customAvatar||'' }); startCountdown(); }
+               if (role === 'host') { conn.send({ type: 'settings', difficulty: duelDiff, mode: duelMode, mathMode:duelMathMode, roundTarget, advanceRule:duelAdvanceRule, hostName:profile.name, hostAvatar:profile.avatar, hostCustomAvatar:profile.customAvatar||'' }); startCountdown(); }
                else conn.send({ type: 'ready', name:profile.name, avatar:profile.avatar, customAvatar:profile.customAvatar||'' });
             }); c.on('data', handleData); c.on('close', () => { netStatus('La connexion avec ton adversaire a été interrompue.'); if ($('duel').classList.contains('active') && !opponentLeft) { $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'La connexion avec ton adversaire a été interrompue.'; } }); c.on('error', () => netStatus('Erreur de connexion au salon.'));
          }
          $('createRoom').onclick = () => {
             if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
-            duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
+            duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value;duelMathMode=$('duelMathMode').value;roundTarget=10; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
             if (duelMode === 'burger') burgerDeck = buildBurgerDeck();
             peer = new Peer('mathrush-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
             peer.on('open', id => netStatus(`Salon créé ! Partage ce code : ${id.replace('mathrush-', '').toUpperCase()}\nEn attente de ton adversaire…`));
@@ -1948,7 +2010,8 @@
          const localMathScreen = $('localMath');
          if (localMathScreen) {
             const mathPlayers = [];
-            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false;
+            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick';
+            document.querySelectorAll('#mathRoomModes .mode-card').forEach(button=>button.onclick=()=>{mathQuestionMode=button.dataset.mathMode;document.querySelectorAll('#mathRoomModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));});
             function setMathStatus(message){$('mathRoomStatus').textContent=message;}
             function mathIdentity(){const profile=playerProfile.getProfile();return{name:profile.name||'Joueur',avatar:profile.avatar,customAvatar:profile.customAvatar||''};}
             function renderMathRoster(){
@@ -1957,26 +2020,28 @@
                $('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;
             }
             function broadcastMath(message){mathConnections.forEach(connection=>{if(connection.open)connection.send(message);});}
-            function makeMathQuestion(){
-               const a = rand(2, 20), b = rand(2, 12), ops = ['+','−','×'], op = ops[rand(0,2)];
-               const answer = op==='+' ? a+b : op==='−' ? a-b : a*b;
-               return {text:`${a} ${op} ${b} = ?`, answer};
-            }
+            function makeMathQuestion(){duelMathMode=mathQuestionMode;return duelQuestion();}
             function renderMathQuestion(){
                const player=mathPlayers[mathTurn];if(!player)return;
                $('mathTurn').innerHTML=`Manche ${mathRound}/10 · Au tour de <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`;
-               $('mathLocalQuestion').textContent = mathLocalQuestion.text;$('mathLocalAnswer').value='';
-               $('mathLocalAnswer').value='';$('mathLocalAnswer').disabled=mathOnlineId!==player.id||mathLocalLocked;
-               $('mathSubmitLocal').disabled=mathOnlineId!==player.id||mathLocalLocked;$('mathNextLocal').style.display='none';
+               $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
+               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=mathOnlineId!==player.id||mathLocalLocked;button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});$('mathNextLocal').style.display='none';
                $('mathLocalScores').innerHTML=mathPlayers.map(x=>`${$('mathTeamMode').value==='teams'?`Équipe ${x.team+1} · `:''}<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
             }
-            function applyMathAnswer(index,answer){
+            function submitMathAnswer(answerIndex){
+               if(mathLocalLocked||!mathGameStarted)return;const index=mathRound*100+mathTurn,player=mathPlayers[mathTurn];mathLocalLocked=true;
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+               if(player.id===mathOnlineId)applyMathAnswer(index,answerIndex);
+               else if(mathConnections[0]?.open)mathConnections[0].send({type:'mathAnswer',index,answerIndex});
+            }
+            function applyMathAnswer(index,answerIndex){
                if(!mathHost||!mathGameStarted||index!==mathRound*100+mathTurn)return;
-               const player=mathPlayers[mathTurn],correct=Number(answer)===mathLocalQuestion.answer;
+               const player=mathPlayers[mathTurn],correct=Number(answerIndex)===mathLocalQuestion.answerIndex;
                if(correct)player.score+=100;mathLocalLocked=true;
-               const result={type:'mathAnswerResult',index,correct,answer:mathLocalQuestion.answer,players:mathPlayers};
-               $('mathLocalFeedback').className='feedback show '+(correct?'good':'bad');$('mathLocalFeedback').textContent=correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${mathLocalQuestion.answer}.`;
-               $('mathLocalAnswer').disabled=true;$('mathSubmitLocal').disabled=true;
+               const result={type:'mathAnswerResult',index,correct,answer:mathLocalQuestion.opts[mathLocalQuestion.answerIndex],answerIndex:mathLocalQuestion.answerIndex,players:mathPlayers};
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{if(Number(button.dataset.answer)===mathLocalQuestion.answerIndex)button.style.border='2px solid #159b68';});
+               $('mathLocalFeedback').className='feedback show '+(correct?'good':'bad');$('mathLocalFeedback').textContent=correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${result.answer}.`;
                $('mathLocalScores').innerHTML=mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
                $('mathNextLocal').style.display='block';$('mathNextLocal').textContent='Joueur suivant';broadcastMath(result);
             }
@@ -1995,10 +2060,10 @@
                if(message.type==='mathRoster'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();return;}
                if(message.type==='mathJoined'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();setMathStatus('En attente du démarrage par l’hôte.');return;}
                if(message.type==='mathRejected'){setMathStatus(message.reason||'Connexion refusée.');return;}
-               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){if(connection.peer===mathPlayers[mathTurn]?.id)applyMathAnswer(message.index,message.value);return;}
+               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){if(connection.peer===mathPlayers[mathTurn]?.id)applyMathAnswer(message.index,message.answerIndex);return;}
                if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathLocalQuestion=message.question;$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
                if(message.type==='mathQuestion'&&!mathHost){mathRound=message.round;mathTurn=message.turn;mathLocalQuestion=message.question;mathLocalLocked=false;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();return;}
-               if(message.type==='mathAnswerResult'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathLocalLocked=true;$('mathLocalAnswer').disabled=true;$('mathSubmitLocal').disabled=true;$('mathLocalFeedback').className='feedback show '+(message.correct?'good':'bad');$('mathLocalFeedback').textContent=message.correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${message.answer}.`;$('mathLocalScores').innerHTML=mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} : <b>${player.score}</b> pts`).join(' · ');return;}
+               if(message.type==='mathAnswerResult'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathLocalLocked=true;$('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.answer)===message.answerIndex)button.style.border='2px solid #159b68';});$('mathLocalFeedback').className='feedback show '+(message.correct?'good':'bad');$('mathLocalFeedback').textContent=message.correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${message.answer}.`;$('mathLocalScores').innerHTML=mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} : <b>${player.score}</b> pts`).join(' · ');return;}
                if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);finishMathGame();return;}
             }
             function finishMathGame(){
@@ -2024,11 +2089,7 @@
             };
             $('mathHostStart').onclick=()=>{
                if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}
-               mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion});setMathStatus('La partie est lancée.');
-            };
-            $('mathSubmitLocal').onclick=()=>{
-               if(mathLocalLocked||!mathGameStarted)return;const value=$('mathLocalAnswer').value;if(value.trim()==='')return;
-               const index=mathRound*100+mathTurn;if(mathPlayers[mathTurn].id===mathOnlineId)applyMathAnswer(index,value);else if(mathConnections[0]?.open){mathLocalLocked=true;$('mathSubmitLocal').disabled=true;$('mathLocalAnswer').disabled=true;mathConnections[0].send({type:'mathAnswer',index,value});}
+               duelMathMode=mathQuestionMode;mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion});setMathStatus('La partie est lancée.');
             };
             $('mathNextLocal').onclick=()=>{
                if(!mathHost||!mathGameStarted)return;mathTurn++;if(mathTurn>=mathPlayers.length){mathTurn=0;mathRound++;}
