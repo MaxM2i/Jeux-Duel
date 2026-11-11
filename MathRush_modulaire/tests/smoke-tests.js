@@ -56,4 +56,8 @@ assert.ok(appSource.includes('function formatGogoTime'), 'format de temps Duo à
 assert.ok(appSource.includes('finishGogo(true,completedAt)'), 'temps de fin réel du dernier duo non conservé');
 assert.ok(appSource.includes('Nouveau record : tu gagnes'), 'comparaison du record Duo à gogo absente');
 assert.ok(appSource.includes('gogo-unlocked'), 'affichage du niveau débloqué absent');
+assert.ok(htmlSource.includes('id=\"gogoResultPanel\"'), 'panneau de résultat indépendant Duo à gogo absent');
+assert.ok(appSource.includes('Number(a.dataset.matchValue)===Number(c.dataset.matchValue)'), 'validation des paires par égalité mathématique absente');
+assert.ok(appSource.includes("$('gogoGamePanel').hidden=true"), 'masquage du plateau après la partie absent');
+assert.ok(appSource.includes("$('duoGogo').classList.add('gogo-playing')"), 'mise au point du plateau au lancement absente');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');

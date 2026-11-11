@@ -272,7 +272,7 @@
             clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();
             const target=24+Math.min(16,(gogoLevel-1)*2),seconds=Math.max(45,90-(gogoLevel-1)*4);gogoRemaining=seconds;gogoTarget=target;$('gogoTime').textContent=String(seconds);$('gogoScore').textContent='0';$('gogoTarget').textContent=String(target);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
-            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoResultActions').style.display='none';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;
+            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('duoGogo').classList.remove('gogo-playing');
          }
          function makeGogoPairs(count){
             const pairs=[],seen=new Set(),rank=Math.min(6,Math.floor((gogoLevel-1)/2));
@@ -298,7 +298,7 @@
             [1,2,3].forEach(n=>{if(gogoPairs>=Math.ceil(gogoTarget*n/3))$('gogoStar'+n).classList.add('earned');else $('gogoStar'+n).classList.remove('earned');});
          }
          function makeGogoCard(c){
-            const b=document.createElement('button');b.className='gogo-card';b.dataset.pair=String(c.pair);b.dataset.kind=c.kind;if(c.kind==='calc'&&c.visual){b.innerHTML=`<span>${escapeHtml(c.text)}</span>${c.visual}`;}else b.textContent=c.text;b.onclick=()=>selectGogoCard(b);return b;
+            const b=document.createElement('button');b.className='gogo-card';b.dataset.pair=String(c.pair);b.dataset.kind=c.kind;b.dataset.matchValue=String(c.matchValue??'');if(c.kind==='calc'&&c.visual){b.innerHTML=`<span>${escapeHtml(c.text)}</span>${c.visual}`;}else b.textContent=c.text;b.onclick=()=>selectGogoCard(b);return b;
          }
          function makeGogoSlot(card){
             const slot=document.createElement('div');slot.className='gogo-slot';
@@ -306,7 +306,7 @@
             return slot;
          }
          function gogoCardFor(pair,kind){
-            return {pair:String(pair.id),kind,text:kind==='calc'?pair.label:String(pair.result),visual:kind==='calc'?pair.visual||'':''};
+            return {pair:String(pair.id),kind,matchValue:String(pair.result),text:kind==='calc'?pair.label:String(pair.result),visual:kind==='calc'?pair.visual||'':''};
          }
          function drawGogoBoard(){
             const board=$('gogoBoard');board.innerHTML='';
@@ -367,7 +367,8 @@
             b.classList.add('selected');gogoSelected.push(b);
             if(gogoSelected.length!==2)return;
             gogoBusy=true;const [a,c]=gogoSelected;
-            if(a.dataset.pair===c.dataset.pair&&a.dataset.kind!==c.dataset.kind){
+            const isCalcResult=a.dataset.kind!==c.dataset.kind&&Number.isFinite(Number(a.dataset.matchValue))&&Number.isFinite(Number(c.dataset.matchValue))&&Number(a.dataset.matchValue)===Number(c.dataset.matchValue);
+            if(isCalcResult){
                a.classList.add('matched');c.classList.add('matched');
                a.disabled=true;c.disabled=true;
                $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='✓ Paire trouvée ! Tu peux continuer.';
@@ -387,12 +388,12 @@
             }
          }
          function startGogo(){
-            resetGogo();$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';gogoStartedAt=Date.now();
+            resetGogo();$('duoGogo').classList.add('gogo-playing');$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';gogoStartedAt=Date.now();
             gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();
             gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
          }
          function finishGogo(completed,finishedAt=Date.now()){
-            if($('gogoResultActions').style.display==='grid')return;
+            if(!$('gogoResultPanel').hidden)return;
             clearInterval(gogoTimer);gogoTimer=null;gogoBusy=true;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
             const elapsed=Math.max(0,Math.round((finishedAt-gogoStartedAt)/100)/10);
             const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
@@ -413,10 +414,12 @@
             const resultDetails=completed?`Tu as trouvé les ${gogoPairs}/${gogoTarget} paires. ${'⭐'.repeat(stars)}`:`Tu as trouvé ${gogoPairs}/${gogoTarget} paires. Encore un petit effort !`;
             const unlockMessage=completed?`<p class="gogo-unlocked">🔓 Niveau ${unlockedLevel} débloqué !</p>`:'';
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
-            $('gogoBoard').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p></div>`;
+            $('gogoGamePanel').hidden=true;
+            $('gogoResultPanel').hidden=false;
+            $('gogoResultContent').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p></div>`;
             $('gogoImprove').style.display='block';$('gogoImprove').textContent=completed?'Rejouer pour améliorer mon temps':'Réessayer ce niveau';
             $('gogoNext').style.display=completed?'block':'none';$('gogoNext').textContent=`Niveau ${unlockedLevel} : plus difficile`;
-            $('gogoResultActions').style.display='grid';renderGogoLevels();renderQuests();
+            renderGogoLevels();renderQuests();
          }
          $('gogoStart').onclick=startGogo;
          $('gogoImprove').onclick=()=>startGogo();
