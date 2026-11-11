@@ -1,0 +1,688 @@
+
+      (() => {
+         const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
+         const screens = ['home', 'pathScreen', 'solo', 'duelSetup', 'duel', 'localMath', 'questsScreen', 'reviewScreen', 'duoGogo', 'profileScreen'];
+         function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
+         document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
+         let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
+         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0;
+         let soloMathMode=saved.soloMathMode||'mixed';
+         let modeProgress = saved.modeProgress && typeof saved.modeProgress === 'object' ? saved.modeProgress : {};
+         function ensureModeTrack(mode) {
+            if (!modeProgress[mode]) {
+               modeProgress[mode] = mode === 'mixed'
+                  ? { section: saved.section || 1, level: saved.level || 1, done: Array.isArray(saved.done) ? [...saved.done] : [] }
+                  : { section: 1, level: 1, done: [] };
+            }
+            const track = modeProgress[mode];
+            track.section = Math.max(1, Math.min(15, Number(track.section) || 1));
+            track.level = Math.max(1, Math.min(15, Number(track.level) || 1));
+            track.done = Array.isArray(track.done) ? track.done : [];
+            return track;
+         }
+         function loadModeTrack() {
+            const track = ensureModeTrack(soloMathMode);
+            section = track.section; level = track.level; done = track.done;
+         }
+         loadModeTrack();
+         let exIndex = 0, streak = 0, best = 0, correctCount = 0, exercise = null, choice = null, locked = false, startTime = 0;
+         function persist() {
+            modeProgress[soloMathMode] = { section, level, done: [...done] };
+            localStorage.setItem('mathrush_app_save', JSON.stringify({
+               section, level, points, done, errors, soloLessons, highScoreLessons,
+               friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak
+            }));
+            $('totalPoints').textContent = points;
+            $('homeProgress').textContent = `Section ${section} · Niveau ${level} · ${MathRushConfig.MODES.find(mode => mode.id === soloMathMode)?.label || 'Parcours'}`;
+         }
+         function difficultyRank() { return MathRushProgression.difficultyFor(section, level); }
+         function makeMath() {
+            const d = difficultyRank(); let a, b, op, ans;
+            // Progression douce : additions/soustractions sans retenue au début,
+            // puis tables familières (2, 3, 4, 5 et 10). Aucun décimal.
+            if (d <= 2) {
+               op = Math.random() < .58 ? '+' : '×';
+               if (op === '+') { a = rand(1, 10); b = rand(1, Math.min(10, 20-a)); ans = a+b; }
+               else { a = [2,3,4,5,10][rand(0,4)]; b = rand(2,5); ans=a*b; }
+            } else if (d <= 4) {
+               op = ['+','−','×'][rand(0,2)];
+               if(op==='+'){a=[10,20,30,40,50][rand(0,4)];b=[5,10,20,30][rand(0,3)];ans=a+b;}
+               else if(op==='−'){a=[20,30,40,50,60,80,100][rand(0,6)];b=[5,10,20,30][rand(0,3)];if(b>a)b=10;ans=a-b;}
+               else {a=[2,3,4,5,10][rand(0,4)];b=rand(2,10);ans=a*b;}
+            } else {
+               op=['+','−','×'][rand(0,2)];
+               if(op==='+'){a=rand(2,12)*10;b=rand(1,8)*10;ans=a+b;}
+               else if(op==='−'){a=rand(3,15)*10;b=rand(1,a/10-1)*10;ans=a-b;}
+               else {a=[2,3,4,5,10][rand(0,4)];b=rand(2,12);ans=a*b;}
+            }
+            return {a,b,op,ans};
+         }
+
+         function makeVisualExercise(type) {
+            if (type === 'percent') {
+               const pct = [5, 10, 20, 25, 50][rand(0, 4)], base = [20, 40, 60, 80, 100, 200][rand(0, 5)], ans = base * pct / 100;
+               const opts = shuffle([...new Set([ans, ans + Math.max(1, base / 20), Math.max(0, ans - Math.max(1, base / 20)), ans * 2])]).slice(0, 4);
+               return { type, pct, base, ans, opts };
+            }
+            if (type === 'model') {
+               const start = rand(2, 8), step = [1,2,5][rand(0,2)], fmt = n => String(n);
+               const vals = [0, 1, 2].map(i => start + i * step), ans = start + 3 * step;
+               const wrong = [ans + step, ans - step, ans + 2 * step];
+               return { type, vals, ans, opts: shuffle([ans, ...wrong]).map(fmt), displayVals: vals.map(fmt), displayAns: fmt(ans) };
+            }
+            if (type === 'factors') {
+               const factors = [2, 3, 5, 7], a = factors[rand(0, 3)], b = factors[rand(0, 3)], c = factors[rand(0, 3)], missing = [a, b, c][rand(0, 2)];
+               const known = [a, b, c].filter((v, i) => i !== [a, b, c].indexOf(missing));
+               return { type, a, b, c, missing, known, ans: missing, opts: shuffle([...new Set([missing, missing + 1, missing + 2, Math.max(2, missing - 1)])]) };
+            }
+            if (type === 'equation') {
+               const target = [12, 15, 18, 20, 24, 30, 36][rand(0, 6)], pairs = [];
+               for (let a = 2; a <= 9; a++)if (target % a === 0) pairs.push([a, target / a]);
+               const pair = pairs[rand(0, pairs.length - 1)], good = `${pair[0]} × ${pair[1]}`;
+               const opts = shuffle([good, `${target} ÷ 2`, `${Math.max(1, pair[0] - 1)} × ${pair[1]}`, `${pair[0]} + ${pair[1]}`]);
+               return { type, target, ans: good, opts };
+            }
+         }
+         const SOLO_MATH_MODES = MathRushConfig.MODES;
+         function makeMath() { return MathRushExercises.makeMath(difficultyRank()); }
+         function makeVisualExercise(type) { return MathRushExercises.makeVisualExercise(type, rand, shuffle); }
+         function makeSoloModeExercise(selectedMode) {
+            return MathRushExercises.createSoloExercise(selectedMode, difficultyRank(), rand, shuffle);
+         }
+         function mathStrategy(a,b,op){if(op==='×'&&b===5)return `Astuce ×5 : calcule ${a} × 10, puis divise par 2.`;if(op==='×'&&b===9)return `Astuce ×9 : calcule ${a} × 10, puis enlève ${a}.`;if(op==='×'&&b===10)return `Astuce ×10 : ajoute un zéro à ${a}.`;if(op==='+'&&b%10===0)return `Astuce : ajoute les dizaines en premier (${a} + ${b}).`;if(op==='−'&&b%10===0)return `Astuce : enlève les dizaines en premier.`;return 'Astuce : compte par bonds et repère les multiples pour calculer plus vite.';}
+         function buildExercise() {
+            return makeSoloModeExercise(soloMathMode);
+         }
+         function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = 0; best = 0; correctCount = 0; renderSolo(); }
+         function renderSolo() {
+            locked = false; choice = null; exercise = buildExercise(); startTime = Date.now();
+            $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / 15`; $('soloProgress').style.width = (exIndex / 15 * 100) + '%';
+            $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + streak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true;
+            const q = $('soloQuestion');
+            const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.a!==undefined){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
+            if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
+            if (['slider', 'line'].includes(exercise.type)) {
+               q.innerHTML = `<div class="question"><small>${exercise.type === 'line' ? 'Place le résultat sur la droite graduée' : 'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="1" value="${rand(exercise.min, exercise.max)}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
+               $('soloRange').oninput = e => { choice = Number(e.target.value); $('soloValidate').disabled = false; };
+            } else if (exercise.type === 'choice') {
+               q.innerHTML = `<div class="question"><small>${exercise.mode==='complex'?'Résous le calcul en respectant les priorités':'Choisis la bonne réponse'}</small>${exercise.prompt||`${exercise.a} ${exercise.op} ${exercise.b} = ?`}</div><div class="choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
+            } else if (exercise.type === 'fill') {
+               q.innerHTML = `<div class="question"><small>Complète le calcul</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><input class="answer-input" id="fillValue" type="number" inputmode="numeric" placeholder="?">`;
+               $('fillValue').oninput = e => { choice = e.target.value === '' ? null : Number(e.target.value); $('soloValidate').disabled = choice === null; };
+            } else if (exercise.type === 'pattern') {
+               const options = shuffle([exercise.ans, exercise.ans + 2, exercise.ans + 5, Math.max(0, exercise.ans - 3)]);
+               q.innerHTML = `<div class="question"><small>Quel nombre vient ensuite ?</small>${exercise.seq.join(' · ')} · ?</div><div class="choices">${options.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
+            } else if (exercise.type === 'round') {
+               const unitLabel=exercise.unit===100?'la centaine':'la dizaine';
+               q.innerHTML=`<div class="question"><small>Arrondis ${unitLabel}</small><div class="round-number">${exercise.number}</div><p>Quel est le nombre arrondi à ${exercise.unit===100?'la centaine':'la dizaine'} la plus proche ?</p></div><div class="strategy-tip">${exercise.tip}</div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'coordinates') {
+               q.innerHTML=`<div class="visual-prompt"><small>Lis le repère</small>${exercise.visual}<div class="equation-slots">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(value=>`<button class="choice" data-v="${value}">${value}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(button=>button.onclick=()=>selectSolo(button.dataset.v,button));
+            } else if (exercise.type === 'percent') {
+               const bars = Array.from({ length: 10 }, (_, i) => `<i class="${i < exercise.pct / 10 ? 'on' : ''}"></i>`).join('');
+               q.innerHTML = `<div class="visual-prompt"><small>Calcule le pourcentage</small><div class="visual-equation">${exercise.pct}% <em>×</em> ${exercise.base} <em>=</em> ?</div><div class="percent-model">${bars}</div></div><div class="choices visual-choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
+            } else if (exercise.type === 'model') {
+               q.innerHTML = `<div class="visual-prompt"><small>Suis le modèle</small><div class="model-grid"><div>${exercise.displayVals[0]} <em>+ ${Number((exercise.vals[1] - exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div>${exercise.displayVals[1]}</div><div>${exercise.displayVals[1]} <em>+ ${Number((exercise.vals[1] - exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div>${exercise.displayVals[2]}</div><div>${exercise.displayVals[2]} <em>+ ${Number((exercise.vals[1] - exercise.vals[0]).toFixed(2)).toLocaleString('fr-FR')}</em></div><div class="missing-cell">?</div></div></div><div class="choices visual-choices">${exercise.opts.map((n, i) => `<button class="choice" data-v="${n}" data-index="${i}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
+            } else if (exercise.type === 'factors') {
+               q.innerHTML = `<div class="visual-prompt"><small>Complète avec les facteurs manquants</small><div class="factor-tree"><div class="factor-total">${exercise.a * exercise.b * exercise.c}</div><div class="factor-branches"><span>?</span><span>${exercise.known[0]} × ${exercise.known[1]}</span></div></div></div><div class="choices visual-choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
+            } else if (exercise.type === 'equation') {
+               q.innerHTML = `<div class="visual-prompt"><small>Complète l'équation</small><div class="visual-equation">${exercise.target} <em>=</em> <strong>?</strong></div><div class="equation-slots">Choisis une expression qui donne ${exercise.target}</div></div><div class="choices visual-choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
+            }
+         }
+         let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
+         function selectSolo(v, b) { if (locked) return; choice = v; document.querySelectorAll('#soloQuestion .choice').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('soloValidate').disabled = false; }
+         function validateSolo() {
+            if (locked || choice === null) return; locked = true;
+            const target = exercise.ans;
+            // Les options du modèle sont des nombres formatés à la française (« 5,7 ») : on convertit avant de comparer.
+            let diff;
+            if (typeof target === 'number') {
+               const parsed = Number(String(choice).replace(/[\s\u00a0]/g, '').replace(',', '.'));
+               diff = isNaN(parsed) ? 1 : Math.abs(parsed - target);
+            } else diff = String(choice) === String(target) ? 0 : 1;
+            const slider = ['slider', 'line'].includes(exercise.type), exact = diff === 0, near = slider && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, (Date.now() - startTime) / 1000 - 4) * 2));
+            const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0});modeStats.played++;if(exact)modeStats.correct++;});
+            let gain = 0; if (exact) { gain = 100 + speed + Math.min(40, streak * 5); streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); streak = 0; } else streak = 0;
+            points += gain; best = Math.max(best, streak); lifetimeBestStreak = Math.max(lifetimeBestStreak, best); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
+            const fb = $('soloFeedback'); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
+            if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
+            $('soloValidate').disabled = false; $('soloValidate').textContent = exIndex === 14 ? 'Terminer le niveau' : 'Continuer';
+         }
+         function nextSolo() {
+            if (!locked) return;
+            if (exIndex < 14) { exIndex++; renderSolo(); return; }
+            const key = `${section}-${level}`; if (!done.includes(key)) done.push(key); soloLessons++;if(correctCount>=14)highScoreLessons++;
+            if (level < 15) level++; else if (section < 15) { section++; level = 1; }
+            persist(); renderPath(); $('soloQuestion').innerHTML = `<div class="summary"><div class="big">🏆</div><h2>Niveau terminé !</h2><p>Tu as terminé les 15 exercices.</p><p><b>${points} points</b> · ${correctCount} bonnes réponses</p><button class="btn btn-main full" id="nextLevel">Continuer le parcours</button><button class="btn btn-soft full" id="reviewFromEnd">Revoir mes erreurs</button></div>`;
+            $('soloFeedback').className = 'feedback'; $('soloValidate').style.display = 'none'; $('soloSkip').style.display = 'none';
+            $('nextLevel').onclick = () => { $('soloValidate').style.display = ''; $('soloSkip').style.display = ''; startSolo(); };$('reviewFromEnd').onclick=()=>{renderReview();show('reviewScreen');};
+         }
+         function renderPath() {
+            loadModeTrack();
+            $('journeyStars').textContent = points;
+            $('journeyLevel').textContent = level;
+            $('journeyStreak').textContent = streak;
+            $('levelList').innerHTML = '';
+            $('soloMathModes').innerHTML = SOLO_MATH_MODES.map(mode =>
+               `<button class="mode-card math-mode-card ${mode.id===soloMathMode?'selected':''}" type="button" data-solo-math-mode="${mode.id}">
+                  <span class="mode-mark">${mode.mark}</span><strong>${mode.label}</strong><small>${mode.description}</small>
+               </button>`
+            ).join('');
+            $('soloMathModes').querySelectorAll('[data-solo-math-mode]').forEach(button => button.onclick = () => {
+               soloMathMode = button.dataset.soloMathMode;
+               loadModeTrack();
+               persist();
+               renderPath();
+            });
+
+            const milestones = MathRushProgression.getMilestones(soloMathMode, ensureModeTrack(soloMathMode));
+            $('modeJourneySteps').innerHTML = milestones.map(step => `
+               <article class="mode-step ${step.done ? 'is-done' : step.current ? 'is-current' : ''}">
+                  <span class="mode-step-icon">${step.done ? '✓' : step.number}</span>
+                  <div><strong>${step.title}</strong><small>${step.description}</small></div>
+                  <span class="mode-step-range">${step.range}</span>
+               </article>`).join('');
+
+            for (let n = 1; n <= 15; n++) {
+               const button = document.createElement('button');
+               const isDone = done.includes(`${section}-${n}`);
+               const open = n <= level;
+               button.className = 'level-node ' + (isDone ? 'done' : open ? 'open' : '');
+               button.disabled = !open;
+               button.textContent = (isDone ? '✓ ' : '') + n;
+               button.setAttribute('aria-label', `Étape ${n}${isDone ? ', terminée' : open ? ', accessible' : ', verrouillée'}`);
+               button.onclick = () => { level = n; persist(); startSolo(); };
+               $('levelList').appendChild(button);
+            }
+         }
+         const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
+         function profileAvatarUrl(profile){return profile.avatar==='custom'&&profile.customAvatar?profile.customAvatar:`assets/avatar/${encodeURIComponent(String(profile.avatar||'08d694a0343943d7d0b58c1a9c17b525.jpg').replace(/^assets\/avatar\//,''))}`;}
+         function renderDuelIdentity(opponent={name:'Adversaire',avatar:'3d-rendering-cartoon-man-beach.jpg'}){
+            const profile=playerProfile.getProfile();$('duelMyName').textContent=profile.name;$('duelMyAvatar').src=profileAvatarUrl(profile);
+            $('duelOpponentName').textContent=opponent.name||'Adversaire';$('duelOpponentAvatar').src=profileAvatarUrl(opponent);
+         }
+         function renderProfile(){
+            playerProfile.render();
+            $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
+            $('profileErrors').textContent=errors.length;$('profileStreak').textContent=lifetimeBestStreak;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
+            $('profileModeStats').innerHTML=SOLO_MATH_MODES.map(mode=>{const stat=soloModeStats[mode.id]||{played:0,correct:0},accuracy=stat.played?Math.round(stat.correct/stat.played*100):0;return`<div><span>${mode.label}</span><b>${stat.correct}/${stat.played} · ${accuracy}%</b></div>`;}).join('');
+            const trophyMetrics = {
+               points, soloLessons, highScoreLessons, gogoBest: Number(localStorage.getItem('mathrush_gogo_best') || 0),
+               section, level, errors: errors.length, bestStreak: lifetimeBestStreak, modeStats: soloModeStats
+            };
+            const badges = MathRushAchievements.getUnlocked(trophyMetrics);
+            $('profileBadges').innerHTML = badges.length
+               ? badges.map(trophy => `<span class="profile-badge" title="${trophy.description}">${trophy.icon} ${trophy.title}</span>`).join('')
+               : '<p class="small-note">Tes premiers trophées apparaîtront au fil de tes parties.</p>';
+         }
+         $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
+         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');resetGogo();};$('goSolo').onclick = () => { renderPath(); show('pathScreen'); }; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
+         $('soloValidate').onclick = () => locked ? nextSolo() : validateSolo();
+         $('soloSkip').onclick = () => { if (!locked) { if (exIndex < 14) { exIndex++; renderSolo(); } else nextSolo(); } };
+         function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
+         function renderReview(){$('reviewList').innerHTML=errors.length?errors.map((e,i)=>`<div class="review-item"><b>${i+1}. ${e.question}</b><p>Réponse : <strong>${e.answer}</strong></p><small>${e.tip}</small></div>`).join(''):'<div class="strategy-tip">Aucune erreur enregistrée. Continue comme ça !</div>';$('reviewPractice').disabled=!errors.length;}
+         $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
+         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[];
+         function resetGogo(){
+            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];
+            $('gogoTime').textContent='90';$('gogoScore').textContent='0';$('gogoTarget').textContent='24';$('gogoDifficulty').textContent='Débutant';
+            $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
+            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoAgain').style.display='none';$('gogoBoard').innerHTML='';
+         }
+         function makeGogoPairs(count){
+            const candidates=[];
+            // Départ volontairement très facile : petites tables, sans décimales.
+            [2,3,4,5,10].forEach(a=>{for(let b=2;b<=10;b++)candidates.push({a,b,result:a*b});});
+            const seen=new Set(),unique=[];
+            shuffle(candidates).forEach(x=>{if(!seen.has(x.result)){seen.add(x.result);unique.push(x);}});
+            return shuffle(unique).slice(0,count).map((x,i)=>({id:i,label:`${x.a} × ${x.b}`,result:x.result}));
+         }
+         function updateGogoProgress(){
+            const pct=Math.min(100,gogoPairs/gogoTarget*100);$('gogoProgressFill').style.width=pct+'%';
+            [1,2,3].forEach(n=>{if(gogoPairs>=Math.ceil(gogoTarget*n/3))$('gogoStar'+n).classList.add('earned');else $('gogoStar'+n).classList.remove('earned');});
+         }
+         function makeGogoCard(c){
+            const b=document.createElement('button');b.className='gogo-card';b.dataset.pair=String(c.pair);b.dataset.kind=c.kind;b.textContent=c.text;b.onclick=()=>selectGogoCard(b);return b;
+         }
+         function drawGogoBoard(initial=false){
+            const board=$('gogoBoard');board.innerHTML='';
+            const first=gogoQueue.splice(0,4);
+            const cards=shuffle(first.flatMap(pair=>[
+               {pair:pair.id,kind:'calc',text:pair.label},
+               {pair:pair.id,kind:'result',text:String(pair.result)}
+            ]));
+            cards.forEach(c=>board.appendChild(makeGogoCard(c)));
+         }
+         function addGogoPair(){
+            if(!gogoQueue.length)return;
+            const pair=gogoQueue.shift(),board=$('gogoBoard');
+            const next=[...Array.from(board.querySelectorAll('button')).map(b=>({pair:b.dataset.pair,kind:b.dataset.kind,text:b.textContent})),
+               {pair:String(pair.id),kind:'calc',text:pair.label},
+               {pair:String(pair.id),kind:'result',text:String(pair.result)}];
+            // Mélange toutes les cartes : les deux éléments d'une paire ne sont jamais placés côte à côte volontairement.
+            board.innerHTML='';shuffle(next).forEach(c=>board.appendChild(makeGogoCard(c)));
+         }
+         function selectGogoCard(b){
+            if(gogoBusy||b.disabled||b.classList.contains('selected')||gogoRemaining<=0)return;
+            b.classList.add('selected');gogoSelected.push(b);
+            if(gogoSelected.length!==2)return;
+            gogoBusy=true;const [a,c]=gogoSelected;
+            if(a.dataset.pair===c.dataset.pair&&a.dataset.kind!==c.dataset.kind){
+               a.classList.add('matched');c.classList.add('matched');
+               $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='✓ Paire trouvée !';
+               // Laisse le temps de voir la réussite avant le remplacement.
+               setTimeout(()=>{
+                  a.remove();c.remove();gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];
+                  if(gogoPairs>=gogoTarget){finishGogo(true);return;}
+                  setTimeout(()=>{if(gogoRemaining>0){addGogoPair();gogoBusy=false;}},450);
+               },850);
+            }else{
+               $('gogoFeedback').className='feedback show near';$('gogoFeedback').textContent='Pas cette fois. Réessaie !';
+               setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');gogoSelected=[];gogoBusy=false;},700);
+            }
+         }
+         function startGogo(){
+            resetGogo();const advanced=difficultyRank()>=4;gogoTarget=advanced?32:24;gogoRemaining=advanced?120:90;
+            $('gogoTime').textContent=gogoRemaining;$('gogoTarget').textContent=gogoTarget;$('gogoDifficulty').textContent=advanced?'Confirmé':'Débutant';$('gogoStart').style.display='none';
+            gogoQueue=makeGogoPairs(gogoTarget);drawGogoBoard(true);
+            gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
+         }
+         function finishGogo(completed){
+            if(!gogoTimer&&$('gogoAgain').style.display==='block')return;
+            clearInterval(gogoTimer);gogoTimer=null;gogoBusy=true;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
+            const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
+            const stars=gogoPairs>=Math.ceil(gogoTarget*2/3)?3:gogoPairs>=Math.ceil(gogoTarget/3)?2:gogoPairs>0?1:0;
+            ['gogoStar1','gogoStar2','gogoStar3'].forEach((id,i)=>$(id).classList.toggle('earned',i<stars));
+            $('gogoFeedback').className='feedback show '+(completed?'good':'near');
+            $('gogoFeedback').textContent=`${completed?'Défi terminé !':'Temps écoulé !'} Résultat : ${gogoPairs}/${gogoTarget} paires · ${'⭐'.repeat(stars)||'0 étoile'} · Record : ${best}.`;
+            $('gogoAgain').style.display='block';renderQuests();
+         }
+         $('gogoStart').onclick=startGogo;$('gogoAgain').onclick=resetGogo;
+         /* DUEL : le serveur logique est l'hôte. Le premier joueur qui donne la bonne réponse clôt la manche des deux côtés. */
+         /* Réseau : STUN pour la découverte directe + TURN (Open Relay Project, gratuit) en relais de secours.
+            Sans TURN, deux smartphones en 4G/5G derrière des NAT stricts ne parviennent souvent pas à se connecter. */
+         const PEER_OPTS = {
+            config: {
+               iceServers: [
+                  { urls: 'stun:stun.l.google.com:19302' },
+                  { urls: 'stun:stun1.l.google.com:19302' },
+                  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+               ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
+            }
+         };
+         let peer = null, conn = null, role = null, duelDiff = 2, round = 0, roundTarget = 10, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false, duelAdvanceRule = 'firstCorrect', duelMathMode = 'quick', duelHostAnswered = null, duelGuestAnswered = null;
+         const netStatus = t => $('networkStatus').textContent = t;
+         const FRIENDS_KEY = 'mathrush_friends_v1';
+         function getFriends() { try { return JSON.parse(localStorage.getItem(FRIENDS_KEY) || '[]'); } catch (e) { return []; } }
+         function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+         function renderFriends() {
+            const box = $('friendsList'); if (!box) return; const a = getFriends();
+            if (!a.length) { box.textContent = 'Aucun ami enregistré pour le moment.'; return; }
+            box.innerHTML = a.map((f, i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><span><b>${escapeHtml(f.name)}</b><br><small>${escapeHtml(f.code)}</small></span><span style="display:flex;gap:5px"><button class="iconbtn" data-friend-join="${i}">Jouer</button><button class="iconbtn" data-friend-del="${i}">×</button></span></div>`).join('');
+            box.querySelectorAll('[data-friend-join]').forEach(b => b.onclick = () => joinFriend(getFriends()[Number(b.dataset.friendJoin)].code));
+            box.querySelectorAll('[data-friend-del]').forEach(b => b.onclick = () => { const a = getFriends(); a.splice(Number(b.dataset.friendDel), 1); localStorage.setItem(FRIENDS_KEY, JSON.stringify(a)); renderFriends(); });
+         }
+         function addCurrentOpponent() {
+            if (!conn || !conn.peer) { alert('Code de salon indisponible.'); return; }
+            const opponentId = conn.peer;
+            const code = String(opponentId || '').replace(/^mathrush-/, '').toUpperCase();
+            const name = prompt('Nom de cet ami :', 'Mon ami'); if (name === null) return;
+            const a = getFriends().filter(f => f.code.toLowerCase() !== code.toLowerCase()); a.push({ name: name.trim() || 'Mon ami', code });
+            localStorage.setItem(FRIENDS_KEY, JSON.stringify(a)); renderFriends();
+            const myId = peer && peer.id ? peer.id : '';
+            if (conn.open && myId) conn.send({ type: 'friendAdded', fromId: myId, fromName: 'Ton adversaire' });
+            alert('Ami enregistré ! Ton adversaire a été averti et peut t’ajouter en retour.');
+         }
+         function makeDuelChoiceQuestion(type,prompt,answer,distractors,visual=''){
+            const options=shuffle([...new Set([answer,...distractors])]).slice(0,4).map(String);
+            return{choiceBased:true,type,prompt,visual,opts:options,answerIndex:options.indexOf(String(answer)),ans:String(answer)};
+         }
+         function duelQuestion() {
+            const modes=['quick','complex','rounding','coordinates','percentages'];
+            const type=duelMathMode==='mixed'?modes[rand(0,modes.length-1)]:duelMathMode;
+            if(type==='quick'){
+               const d=duelDiff,base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
+               return makeDuelChoiceQuestion(type,`${a} ${op} ${b} = ?`,answer,[Math.max(0,answer-delta),answer+delta,answer+2*delta]);
+            }
+            if(type==='complex'){
+               const a=rand(3,18),b=rand(2,12),c=rand(2,30),answer=a*b+c;
+               return makeDuelChoiceQuestion(type,`${a} × ${b} + ${c} = ?`,answer,[answer+a,answer-a,answer+a*2]);
+            }
+            if(type==='rounding'){
+               const unit=Math.random()<.5?10:100,number=unit===10?rand(101,989):rand(1010,9890),answer=Math.round(number/unit)*unit;
+               return makeDuelChoiceQuestion(type,`Arrondis ${number} à la ${unit===10?'dizaine':'centaine'} la plus proche.`,answer,[answer-unit,answer+unit,answer+2*unit]);
+            }
+            if(type==='coordinates'){
+               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],visual=`<div class="coordinate-plane" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point" style="left:${x*10}%;bottom:${y*10}%">${label}</span></div>`;
+               const answer=`(${x} ; ${y})`;
+               return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
+            }
+            const percent=[5,10,20,25,50,75][rand(0,5)],base=[40,60,80,100,120,200][rand(0,5)],answer=percent*base/100;
+            const delta=Math.max(1,base/10);
+            return makeDuelChoiceQuestion(type,`Combien font ${percent} % de ${base} ?`,answer,[answer+delta,Math.max(0,answer-delta),answer+delta*2]);
+         }
+         
+         let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
+         let localDuelMode=false,localDuelRound=0,localDuelTurn=0,localDuelPlayers=[],localDuelAnswers=[],localDuelRule='firstCorrect',localDuelHandoff=false;
+         function updateDuelSetupMode(){
+            const online=$('duelPlayMode').value==='online';
+            $('onlineDuelSetup').style.display=online?'block':'none';$('localDuelSetup').style.display=online?'none':'block';
+            const profile=playerProfile.getProfile();$('localDuelOpponent').value=$('localDuelOpponent').value||'Joueur 2';
+            renderDuelIdentity({name:'Adversaire',avatar:'3d-rendering-cartoon-man-beach.jpg'});
+         }
+         $('duelPlayMode').onchange=updateDuelSetupMode;
+         $('startLocalDuel').onclick=()=>{
+            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMathMode=$('duelMathMode').value;roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
+            localDuelRule=$('localDuelRule').value;localDuelAnswers=[];localDuelHandoff=false;role=null;conn=null;
+            const profile=playerProfile.getProfile();
+            localDuelPlayers=[{name:profile.name||'Joueur 1',avatar:profile.avatar,customAvatar:profile.customAvatar||''},{name:$('localDuelOpponent').value.trim()||'Joueur 2',avatar:'3d-rendering-cartoon-man-beach.jpg',customAvatar:''}];
+            renderDuelIdentity(localDuelPlayers[1]);$('duelResult').style.display='none';$('duelActions').style.display='none';renderLocalDuelAttempt();show('duel');
+         };
+         document.querySelectorAll('#duelMathModes .mode-card').forEach(button => button.onclick = () => {
+            duelMathMode=button.dataset.mathMode;
+            document.querySelectorAll('#duelMathModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));
+         });
+         function burgerQuestion() {
+            const item = burgerDeck[(round - 1) % burgerDeck.length];
+            // Mélange de l'ordre des réponses pour que la bonne ne soit jamais au même endroit.
+            const order = shuffle([...item.opts.keys()]);
+            return { burger: true, cat: item.cat || 'SEL OU POIVRE', text: item.q, opts: order.map(i => item.opts[i]), ansIdx: order.indexOf(item.a) };
+         }
+         function updateDuelScore() { $('myScore').textContent = duelMy; $('opScore').textContent = duelOpp; }
+         function renderDuelQuestion(q) {
+            duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
+            $('duelQuestion').innerHTML = q.burger
+               ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
+               : q.choiceBased ? `<div class="question"><small>${({quick:'Calculs rapides',complex:'Calculs complexes',rounding:'Calculs arrondis',coordinates:'Placer les coordonnées',percentages:'Pourcentages'})[q.type]||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
+               : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
+            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
+            $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
+            updateDuelScore();
+         }
+         function renderLocalDuelAttempt(){
+            round=localDuelRound;duelMy=localDuelPlayers[0].score||0;duelOpp=localDuelPlayers[1].score||0;
+            renderDuelQuestion(duelQuestion());
+            $('duelRoundLabel').textContent=`Manche ${localDuelRound} / ${roundTarget}`;
+            $('duelCountdown').textContent='';$('duelActions').style.display='none';$('localDuelNext').style.display='none';
+            const player=localDuelPlayers[localDuelTurn];$('duelMyName').textContent=player.name;
+            $('duelMyAvatar').src=profileAvatarUrl(player);$('duelOpponentName').textContent=localDuelPlayers[1-localDuelTurn].name;
+            $('duelOpponentAvatar').src=profileAvatarUrl(localDuelPlayers[1-localDuelTurn]);
+         }
+         function finishLocalDuelQuestion(){
+            $('duelOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.i)===duelQ.answerIndex)button.style.border='2px solid #159b68';});
+            $('duelFeedback').className='feedback show '+(localDuelAnswers.some(answer=>answer.correct)?'good':'bad');
+            $('duelFeedback').textContent=`${localDuelAnswers.some(answer=>answer.correct)?'Bonne réponse !':'Aucune bonne réponse.'} Résultat : ${duelQ.ans}.`;
+            $('localDuelNext').textContent=localDuelRound===10?'Voir les résultats':'Question suivante';$('localDuelNext').style.display='block';localDuelHandoff=false;
+         }
+         function answerLocalDuel(value){
+            if(answeredThisRound||roundEnded)return;
+            answeredThisRound=true;const correct=value===duelQ.answerIndex;
+            localDuelAnswers.push({player:localDuelTurn,correct});
+            if(localDuelRule==='firstCorrect'&&correct){localDuelPlayers[localDuelTurn].score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
+            if(localDuelAnswers.length===2){
+               if(localDuelRule==='allAnswered')localDuelAnswers.filter(answer=>answer.correct).forEach(answer=>localDuelPlayers[answer.player].score+=100);
+               duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;
+            }
+            $('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+            $('duelFeedback').className='feedback show '+(correct?'good':'near');
+            $('duelFeedback').textContent=localDuelRule==='allAnswered'?'Réponse enregistrée. Passez l’appareil au joueur suivant.':correct?'Bonne réponse !':'Raté. Le joueur suivant peut tenter sa chance.';
+            localDuelHandoff=true;$('localDuelNext').textContent='Joueur suivant';$('localDuelNext').style.display='block';
+         }
+         $('localDuelNext').onclick=()=>{
+            if(localDuelHandoff){localDuelHandoff=false;localDuelTurn=1-localDuelTurn;renderLocalDuelAttempt();return;}
+            if(localDuelRound>=roundTarget){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
+            localDuelRound++;localDuelTurn=0;localDuelAnswers=[];renderLocalDuelAttempt();
+         };
+         function startCountdown() {
+            show('duel'); $('duelResult').style.display = 'none'; $('duelActions').style.display = 'none'; $('duelOptions').innerHTML = ''; $('duelQuestion').innerHTML = '';
+            let n = 3; $('duelCountdown').textContent = n;
+            const t = () => { n--; if (n > 0) { $('duelCountdown').textContent = n; setTimeout(t, 1000); } else { $('duelCountdown').textContent = 'GO !'; setTimeout(() => { if (role === 'host') hostNext(); }, 500); } };
+            setTimeout(t, 1000);
+         }
+         function hostNext() {
+            if (round >= roundTarget) { endDuel(); return; }
+            round++; duelQ = duelMode === 'burger' ? burgerQuestion() : duelQuestion(); conn.send({ type: 'question', round, q: duelQ, mode: duelMode }); renderDuelQuestion(duelQ);
+         }
+         function answerDuel(value, btn) {
+            if(localDuelMode){answerLocalDuel(value);return;}
+            if (roundEnded || answeredThisRound || !conn || !conn.open) return;
+            const right = duelQ.burger ? value === duelQ.ansIdx : duelQ.choiceBased ? value === duelQ.answerIndex : value === duelQ.ans;
+            if(duelAdvanceRule==='allAnswered'&&!duelQ.burger){
+               answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+               if(role==='host')recordDuelAnswer('host',right);
+               else {conn.send({type:'answer',right,allAnswered:true});$('duelFeedback').className='feedback';$('duelFeedback').textContent='Réponse enregistrée. En attente de ton adversaire…';}
+               return;
+            }
+            if (right) {
+               answeredThisRound = true;
+               $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
+               if (role === 'host') closeRound('host');
+               else conn.send({ type: 'answer', right: true });
+            } else if (duelQ.burger) {
+               // Burger Quiz : une seule tentative par manche et par joueur.
+               $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
+               if (role === 'host') { hostWrong = true; if (guestWrong) closeRound('draw'); }
+               else {
+                  answeredThisRound = true; conn.send({ type: 'answer', right: false });
+                  $('duelFeedback').className = 'feedback show bad';
+                  $('duelFeedback').textContent = 'Raté ! Tu as consommé ta tentative pour cette manche…';
+               }
+            } else {
+               $('duelFeedback').className = 'feedback show bad';
+               $('duelFeedback').textContent = 'Pas tout à fait ! Réessaie, tu peux encore trouver la bonne réponse.';
+            }
+         }
+         function recordDuelAnswer(side,right){
+            if(side==='host')duelHostAnswered=right;else duelGuestAnswered=right;
+            if(duelHostAnswered!==null&&duelGuestAnswered!==null)closeRound('both');
+         }
+         function closeRound(winner) {
+            if (roundEnded) return; roundEnded = true;
+            if(winner==='host')duelMy+=100;else if(winner==='guest')duelOpp+=100;else if(winner==='both'){if(duelHostAnswered)duelMy+=100;if(duelGuestAnswered)duelOpp+=100;}
+            const goodAnswer = duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.choiceBased ? duelQ.opts[duelQ.answerIndex] : duelQ.ans;
+            $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
+            $('duelFeedback').className = 'feedback show ' + (winner === 'draw' ? 'near' : 'good');
+            const resultMessage=winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':winner==='both'?`Réponses reçues. ${duelHostAnswered?'Tu marques 100 points.':'Tu ne marques pas de point.'} ${duelGuestAnswered?'Ton adversaire marque 100 points.':'Ton adversaire ne marque pas de point.'}`:duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée';
+            $('duelFeedback').innerHTML = resultMessage + `<br>Bonne réponse : <b>${escapeHtml(String(goodAnswer))}</b>`;
+            updateDuelScore();
+            conn.send({ type: 'roundEnd', winner, hostScore: role === 'host' ? duelMy : duelOpp, guestScore: role === 'guest' ? duelMy : duelOpp, answer: goodAnswer });
+            if (role === 'host') setTimeout(hostNext, 2500);
+         }
+         function endDuel() {
+            duelLive = false; conn.send({ type: 'finish', hostScore: duelMy, guestScore: duelOpp });
+            showDuelSummary();
+         }
+         function showDuelSummary(message = '') {
+            $('duelCountdown').textContent = ''; $('duelQuestion').innerHTML = ''; $('duelOptions').innerHTML = ''; $('duelResult').style.display = 'block'; $('duelActions').style.display = 'flex';
+            const result = duelMy === duelOpp ? 'Égalité !' : duelMy > duelOpp ? 'Victoire !' : 'Cette fois, ton adversaire gagne';
+            $('duelResult').innerHTML = `<div class="big">${message ? '👋' : duelMy === duelOpp ? '🤝' : duelMy > duelOpp ? '🏆' : '💪'}</div><h2>${message ? escapeHtml(message) : result}</h2><p>Ton score : <b>${duelMy}</b></p><p>Score adverse : <b>${duelOpp}</b></p><p>${round} manches jouées</p>`;
+         }
+         function prepareRematch() {
+            round = 0; duelMy = 0; duelOpp = 0; opponentLeft = false; rematchPending = false; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false;
+            if (role === 'host' && duelMode === 'burger') burgerDeck = buildBurgerDeck();
+            $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = ''; updateDuelScore(); startCountdown();
+         }
+         function handleData(m) {
+            if (m.type === 'ready' && role === 'host') { renderDuelIdentity({name:m.name,avatar:m.avatar,customAvatar:m.customAvatar});netStatus('Adversaire connecté ! Départ dans 3 secondes.'); startCountdown(); }
+            if (m.type === 'settings' && role === 'guest') { duelDiff = m.difficulty; duelMode = m.mode || 'calc'; duelMathMode=m.mathMode||'quick';roundTarget=m.roundTarget||10;duelAdvanceRule=m.advanceRule||'firstCorrect';renderDuelIdentity({name:m.hostName,avatar:m.hostAvatar,customAvatar:m.hostCustomAvatar});round = 0; duelMy = 0; duelOpp = 0; netStatus('Paramètres reçus. Départ dans 3 secondes.'); updateDuelScore(); startCountdown(); }
+            if (m.type === 'question' && role === 'guest') { round = m.round; if (m.mode) duelMode = m.mode; renderDuelQuestion(m.q); }
+            if (m.type === 'answer' && role === 'host' && !roundEnded) {
+               if(duelAdvanceRule==='allAnswered'&&m.allAnswered){recordDuelAnswer('guest',!!m.right);return;}
+               if (m.right) closeRound('guest');
+               else if (duelQ && duelQ.burger) { guestWrong = true; if (hostWrong) closeRound('draw'); }
+            }
+            if (m.type === 'roundEnd' && role === 'guest') {
+               roundEnded = true; duelMy = m.guestScore; duelOpp = m.hostScore; updateDuelScore();
+               $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
+               $('duelFeedback').className = 'feedback show good'; $('duelFeedback').innerHTML = (m.winner === 'guest' ? 'Tu as trouvé en premier !' : m.winner === 'host' ? 'Ton adversaire a trouvé en premier !' : 'Manche terminée') + `<br>Bonne réponse : <b>${m.answer}</b>`;
+            }
+            if (m.type === 'finish' && role === 'guest') { duelMy = m.guestScore; duelOpp = m.hostScore; showDuelSummary(); }
+            if (m.type === 'friendAdded') {
+               const senderCode = String(m.fromId || '').replace(/^mathrush-/, '').toUpperCase();
+               if (senderCode) {
+                  const addBack = confirm('Ton adversaire vient de t’ajouter en ami ! Veux-tu l’ajouter en retour ?');
+                  if (addBack) {
+                     const nickname = prompt('Quel nom veux-tu lui donner ?', m.fromName || 'Mon ami');
+                     if (nickname !== null) {
+                        const list = getFriends().filter(f => f.code.toLowerCase() !== senderCode.toLowerCase());
+                        list.push({ name: nickname.trim() || 'Mon ami', code: senderCode });
+                        localStorage.setItem(FRIENDS_KEY, JSON.stringify(list)); renderFriends();
+                        alert('Ami ajouté en retour ! Vous pourrez vous retrouver depuis vos listes d’amis.');
+                     }
+                  } else {
+                     $('duelFeedback').className = 'feedback show near';
+                     $('duelFeedback').textContent = 'Ton adversaire t’a ajouté en ami. Tu pourras l’ajouter plus tard depuis cette notification.';
+                  }
+               }
+            }
+            if (m.type === 'rematchRequest') {
+               const ok = confirm('Ton adversaire souhaite faire une revanche. Acceptes-tu ?');
+               if (ok) { conn.send({ type: 'rematchAccept' }); prepareRematch(); }
+               else { conn.send({ type: 'rematchDecline' }); $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'Tu as refusé la revanche.'; }
+            }
+            if (m.type === 'rematchAccept' && rematchPending) prepareRematch();
+            if (m.type === 'rematchDecline') { rematchPending = false; $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'Ton adversaire a décliné la revanche.'; }
+            if (m.type === 'abandon') { opponentLeft = true; rematchPending = false; $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'Ton adversaire a quitté le duel.'; showDuelSummary('Ton adversaire a quitté le duel.'); }
+         }
+
+         function wire(c) {
+            conn = c; c.on('open', () => {
+               netStatus('Connexion établie ! Préparation du duel…');
+               const profile=playerProfile.getProfile();
+               if (role === 'host') { conn.send({ type: 'settings', difficulty: duelDiff, mode: duelMode, mathMode:duelMathMode, roundTarget, advanceRule:duelAdvanceRule, hostName:profile.name, hostAvatar:profile.avatar, hostCustomAvatar:profile.customAvatar||'' }); startCountdown(); }
+               else conn.send({ type: 'ready', name:profile.name, avatar:profile.avatar, customAvatar:profile.customAvatar||'' });
+            }); c.on('data', handleData); c.on('close', () => { netStatus('La connexion avec ton adversaire a été interrompue.'); if ($('duel').classList.contains('active') && !opponentLeft) { $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'La connexion avec ton adversaire a été interrompue.'; } }); c.on('error', () => netStatus('Erreur de connexion au salon.'));
+         }
+         $('createRoom').onclick = () => {
+            if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
+            duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value;duelMathMode=$('duelMathMode').value;roundTarget=10; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
+            if (duelMode === 'burger') burgerDeck = buildBurgerDeck();
+            peer = new Peer('mathrush-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
+            peer.on('open', id => netStatus(`Salon créé ! Partage ce code : ${id.replace('mathrush-', '').toUpperCase()}\nEn attente de ton adversaire…`));
+            peer.on('connection', wire); peer.on('error', e => netStatus('Erreur réseau : ' + e.type + '. Essaie de recréer un salon.'));
+         };
+         $('joinRoom').onclick = () => {
+            const code = $('joinCode').value.trim().toLowerCase(); if (!code) { netStatus('Entre le code du salon.'); return; }
+            if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
+            role = 'guest'; peer = new Peer(undefined, PEER_OPTS); peer.on('open', () => { netStatus('Tentative de connexion au salon… (quelques secondes selon le réseau)'); wire(peer.connect('mathrush-' + code)); }); peer.on('error', e => netStatus('Impossible de rejoindre : ' + e.type + '. Vérifie le code.'));
+         };
+         function leaveDuel() { if (conn && conn.open) { try { conn.send({ type: 'abandon' }); } catch (e) { } } const old = peer; peer = null; conn = null; show('home'); if (old) setTimeout(() => { try { old.destroy(); } catch (e) { } }, 350); }
+         $('quitDuel').onclick = leaveDuel; $('abandon').onclick = leaveDuel; $('duelMenu').onclick = leaveDuel;
+         function requestRematch() {
+            if (!conn || !conn.open) { $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'La connexion est fermée. Reviens au menu pour recréer un salon.'; return; }
+            if (rematchPending) return; rematchPending = true; conn.send({ type: 'rematchRequest' });
+            $('duelFeedback').className = 'feedback show near'; $('duelFeedback').textContent = 'Demande de revanche envoyée. En attente de ton adversaire…';
+         }
+         function joinFriend(code) {
+            if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
+            role = 'guest'; if (peer) { peer.destroy(); peer = null; } peer = new Peer(undefined, PEER_OPTS);
+            peer.on('open', () => wire(peer.connect('mathrush-' + String(code).trim().toLowerCase())));
+            peer.on('error', e => netStatus('Impossible de rejoindre : ' + e.type + '. Vérifie que ton ami est en ligne.'));
+            show('duelSetup'); netStatus('Connexion à ton ami…');
+         }
+         $('rematch').onclick = requestRematch;
+         $('addFriend').onclick = addCurrentOpponent;
+         $('homeProgress').textContent = `Section ${section} · Niveau ${level}`; $('totalPoints').textContent = points; renderPath(); renderFriends(); persist();
+
+         // Multijoueur en ligne MathRush : salon hôte avec 3 à 8 participants.
+         const localMathScreen = $('localMath');
+         if (localMathScreen) {
+            const mathPlayers = [];
+            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick';
+            document.querySelectorAll('#mathRoomModes .mode-card').forEach(button=>button.onclick=()=>{mathQuestionMode=button.dataset.mathMode;document.querySelectorAll('#mathRoomModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));});
+            function setMathStatus(message){$('mathRoomStatus').textContent=message;}
+            function mathIdentity(){const profile=playerProfile.getProfile();return{name:profile.name||'Joueur',avatar:profile.avatar,customAvatar:profile.customAvatar||''};}
+            function renderMathRoster(){
+               $('mathRoomRoster').style.display='block';
+               $('mathRoomRoster').innerHTML=`Salon ${mathPlayers.length}/8 : ${mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}${$('mathTeamMode').value==='teams'?` · Équipe ${player.team+1}`:''}`).join(' · ')}`;
+               $('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;
+            }
+            function broadcastMath(message){mathConnections.forEach(connection=>{if(connection.open)connection.send(message);});}
+            function makeMathQuestion(){duelMathMode=mathQuestionMode;return duelQuestion();}
+            function renderMathQuestion(){
+               const player=mathPlayers[mathTurn];if(!player)return;
+               $('mathTurn').innerHTML=`Manche ${mathRound}/10 · Au tour de <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`;
+               $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
+               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=mathOnlineId!==player.id||mathLocalLocked;button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});$('mathNextLocal').style.display='none';
+               $('mathLocalScores').innerHTML=mathPlayers.map(x=>`${$('mathTeamMode').value==='teams'?`Équipe ${x.team+1} · `:''}<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
+            }
+            function submitMathAnswer(answerIndex){
+               if(mathLocalLocked||!mathGameStarted)return;const index=mathRound*100+mathTurn,player=mathPlayers[mathTurn];mathLocalLocked=true;
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+               if(player.id===mathOnlineId)applyMathAnswer(index,answerIndex);
+               else if(mathConnections[0]?.open)mathConnections[0].send({type:'mathAnswer',index,answerIndex});
+            }
+            function applyMathAnswer(index,answerIndex){
+               if(!mathHost||!mathGameStarted||index!==mathRound*100+mathTurn)return;
+               const player=mathPlayers[mathTurn],correct=Number(answerIndex)===mathLocalQuestion.answerIndex;
+               if(correct)player.score+=100;mathLocalLocked=true;
+               const result={type:'mathAnswerResult',index,correct,answer:mathLocalQuestion.opts[mathLocalQuestion.answerIndex],answerIndex:mathLocalQuestion.answerIndex,players:mathPlayers};
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{if(Number(button.dataset.answer)===mathLocalQuestion.answerIndex)button.style.border='2px solid #159b68';});
+               $('mathLocalFeedback').className='feedback show '+(correct?'good':'bad');$('mathLocalFeedback').textContent=correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${result.answer}.`;
+               $('mathLocalScores').innerHTML=mathPlayers.map(x=>`<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');
+               $('mathNextLocal').style.display='block';$('mathNextLocal').textContent='Joueur suivant';broadcastMath(result);
+            }
+            function handleMathData(connection,message){
+               if(!message||typeof message!=='object')return;
+               if(message.type==='mathJoin'&&mathHost&&mathGameStarted){connection.send({type:'mathRejected',reason:'La partie a déjà commencé.'});return;}
+               if(message.type==='mathJoin'&&mathHost&&!mathGameStarted){
+                  if(mathPlayers.length>=8){connection.send({type:'mathRejected',reason:'Le salon est complet (8 joueurs maximum).'});return;}
+                  if(!mathPlayers.some(player=>player.id===connection.peer)){
+                     const team=$('mathTeamMode').value==='teams'?mathPlayers.length%2:mathPlayers.length;
+                     mathPlayers.push({id:connection.peer,name:String(message.name||'Joueur').slice(0,18),avatar:message.avatar,customAvatar:message.customAvatar||'',score:0,team});mathConnections.push(connection);
+                  }
+                  connection.send({type:'mathJoined',players:mathPlayers});broadcastMath({type:'mathRoster',players:mathPlayers});renderMathRoster();
+                  setMathStatus(mathPlayers.length<3?'Il faut au moins 3 joueurs pour démarrer.':'Le salon est prêt.');return;
+               }
+               if(message.type==='mathRoster'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();return;}
+               if(message.type==='mathJoined'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();setMathStatus('En attente du démarrage par l’hôte.');return;}
+               if(message.type==='mathRejected'){setMathStatus(message.reason||'Connexion refusée.');return;}
+               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){if(connection.peer===mathPlayers[mathTurn]?.id)applyMathAnswer(message.index,message.answerIndex);return;}
+               if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathLocalQuestion=message.question;$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
+               if(message.type==='mathQuestion'&&!mathHost){mathRound=message.round;mathTurn=message.turn;mathLocalQuestion=message.question;mathLocalLocked=false;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();return;}
+               if(message.type==='mathAnswerResult'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathLocalLocked=true;$('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.answer)===message.answerIndex)button.style.border='2px solid #159b68';});$('mathLocalFeedback').className='feedback show '+(message.correct?'good':'bad');$('mathLocalFeedback').textContent=message.correct?'Bonne réponse ! +100 points':`Raté. La bonne réponse était ${message.answer}.`;$('mathLocalScores').innerHTML=mathPlayers.map(player=>`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} : <b>${player.score}</b> pts`).join(' · ');return;}
+               if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);finishMathGame();return;}
+            }
+            function finishMathGame(){
+               mathGameStarted=false;const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);$('mathLocalQuestion').textContent='Partie terminée !';$('mathLocalFeedback').className='feedback show good';
+               $('mathLocalFeedback').innerHTML=ranked.map((player,index)=>`${index+1}. <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} — ${player.score} pts`).join('<br>');$('mathNextLocal').style.display='none';
+            }
+            $('goLocal').onclick=()=>{show('localMath');$('mathLocalPlay').style.display='none';$('mathRoomRoster').style.display='none';$('mathHostStart').style.display='none';$('mathJoinCode').value='';const profile=playerProfile.getProfile();$('mathOnlineName').value=profile.name;setMathStatus('Un salon démarre à partir de 3 joueurs.');};
+            $('localBack').onclick=()=>{if(mathPeer)mathPeer.destroy();mathPeer=null;mathConnections=[];mathHost=false;mathGameStarted=false;show('home');};
+            $('mathCreateRoom').onclick=()=>{
+               if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}
+               if(mathPeer)mathPeer.destroy();mathPlayers.length=0;mathConnections=[];mathHost=true;mathGameStarted=false;
+               const identity=mathIdentity();mathPlayers.push({...identity,id:'',score:0,team:0});setMathStatus('Création du salon…');$('mathCreateRoom').disabled=true;
+               mathPeer=new Peer('mathrush-multi-'+Math.random().toString(36).slice(2,8));
+               mathPeer.on('open',id=>{mathOnlineId=id;mathPlayers[0].id=id;setMathStatus(`Salon créé. Partage ce code : ${id.replace('mathrush-multi-','').toUpperCase()}`);renderMathRoster();});
+               mathPeer.on('connection',connection=>{connection.on('data',message=>handleMathData(connection,message));connection.on('close',()=>{mathConnections=mathConnections.filter(item=>item!==connection);mathPlayers.splice(0,mathPlayers.length,...mathPlayers.filter(player=>player.id!==connection.peer));if(!mathGameStarted)renderMathRoster();});});
+               mathPeer.on('error',error=>setMathStatus('Erreur de salon : '+(error.type||'connexion')));
+            };
+            $('mathJoinRoom').onclick=()=>{
+               const code=$('mathJoinCode').value.trim().toLowerCase();if(!code){setMathStatus('Saisis le code du salon.');return;}if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}
+               if(mathPeer)mathPeer.destroy();mathHost=false;mathGameStarted=false;const identity=mathIdentity();setMathStatus('Connexion au salon…');mathPeer=new Peer();
+               mathPeer.on('open',id=>{mathOnlineId=id;const connection=mathPeer.connect('mathrush-multi-'+code,{reliable:true});mathConnections=[connection];connection.on('open',()=>connection.send({type:'mathJoin',...identity}));connection.on('data',message=>handleMathData(connection,message));connection.on('error',()=>setMathStatus('Impossible de rejoindre ce salon. Vérifie le code.'));});
+               mathPeer.on('error',error=>setMathStatus('Connexion impossible : '+(error.type||'erreur réseau')));
+            };
+            $('mathHostStart').onclick=()=>{
+               if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}
+               duelMathMode=mathQuestionMode;mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion});setMathStatus('La partie est lancée.');
+            };
+            $('mathNextLocal').onclick=()=>{
+               if(!mathHost||!mathGameStarted)return;mathTurn++;if(mathTurn>=mathPlayers.length){mathTurn=0;mathRound++;}
+               if(mathRound>10){broadcastMath({type:'mathFinish',players:mathPlayers});finishMathGame();return;}
+               mathLocalQuestion=makeMathQuestion();mathLocalLocked=false;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});
+            };
+         }
+      })();
+   

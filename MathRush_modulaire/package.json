@@ -1,0 +1,9 @@
+{
+  "name": "mathrush",
+  "version": "2.0.0",
+  "private": true,
+  "description": "MathRush — jeu de maths modulaire",
+  "scripts": {
+    "test": "node tests/smoke-tests.js"
+  }
+}

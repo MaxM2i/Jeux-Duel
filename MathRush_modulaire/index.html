@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+   <meta name="theme-color" content="#172554">
+   <title>MathRush — jeu de maths</title>
+   <link rel="stylesheet" href="assets/css/player-profile.css">
+   <link rel="stylesheet" href="assets/css/mathrush.css">
+</head>
+
+<body>
+   <div class="app">
+      <header class="topbar">
+         <div class="logo">Math<span>Rush</span> ⚡</div>
+         <div class="top-actions">
+            <div class="stats">
+               <div class="stat">⭐ <span id="totalPoints">0</span></div>
+               <div class="stat">🔥 <span id="topStreak">0</span></div>
+            </div>
+         </div>
+      </header>
+
+      <section class="screen active" id="home">
+         <div class="hero">
+            <div class="kicker">Le terrain de jeu des maths</div>
+            <h1>Prêt à relever<br>le défi ?</h1>
+            <p>Progresse à ton rythme ou mesure-toi à un ami. Chaque réponse te rapproche du sommet !</p>
+         </div>
+         <div class="menu-grid">
+            <button class="menu-card primary-card" id="goSolo"><span class="emoji">🧭</span><strong>Parcours
+                  solo</strong><small>Apprends et débloque les niveaux un à un.</small></button>
+            <button class="menu-card duel-card" id="goDuel"><span class="emoji">⚔️</span><strong>Défi à
+                  deux</strong><small>Affronte un ami en direct sur 10 manches.</small></button>
+            <button class="menu-card" id="goLocal"><span class="emoji">👥</span><strong>Multijoueur en ligne</strong><small>Crée un salon pour 3 à 8 joueurs.</small></button><button class="menu-card" id="goDuoGogo"><span class="emoji">🧩</span><strong>Duo à gogo</strong><small>Associe un maximum de calculs et résultats en 60 secondes.</small></button><button class="menu-card" id="goQuests"><span class="emoji">🎁</span><strong>Mes quêtes</strong><small>Des objectifs à réussir seul ou avec un ami.</small></button>
+            <button class="menu-card" id="goProfile"><span class="emoji" id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></span><strong>Mon profil</strong><small>Ton avatar, tes statistiques, tes records et tes récompenses.</small></button>
+         </div>
+         <div class="panel section-gap">
+            <div class="kicker">Ta progression</div>
+            <h2 id="homeProgress">Section 1 · Niveau 1</h2>
+            <p class="small-note" style="text-align:left">15 sections · 15 niveaux par section · 15 exercices par
+               niveau.</p><button class="btn btn-soft full" id="seePath">Voir le parcours</button>
+         </div>
+      </section>
+
+      <section class="screen" id="pathScreen">
+         <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Parcours</span>
+         </div>
+         <div class="journey-banner"><div><span class="kicker">CE2 · Parcours d’aventure</span><h2>Opérations et astuces de calcul</h2><p>Avance étape par étape, gagne des étoiles et maîtrise les raccourcis.</p></div><div class="journey-mascot">🧑‍🚀🧊</div></div><div class="panel journey-map"><div class="journey-top"><span>⭐ <b id="journeyStars">0</b></span><span>🔥 <b id="journeyStreak">0</b></span><span>Niveau <b id="journeyLevel">1</b></span></div><div class="journey-path"><div class="path-node done">🏁</div><div class="path-node open">★</div><div class="path-node">★</div><div class="path-node">◷</div><div class="path-node">🎯</div></div><h2>Choisis ton type d’exercice</h2><div class="mode-grid math-mode-grid" id="soloMathModes"></div><h2>Les étapes de ce parcours</h2><div class="mode-journey-steps" id="modeJourneySteps"></div><h2>Choisis ton niveau</h2><p class="small-note">Chaque type d’exercice possède sa propre progression.</p><div class="level-list" id="levelList"></div></div><div class="panel quest-mini"><div class="kicker">Tes quêtes</div><h3>Un petit défi chaque jour</h3><div id="pathQuestPreview"></div><button class="btn btn-soft full" id="pathQuests">Voir toutes les quêtes</button><button class="btn btn-soft full" id="openReview">Revoir mes erreurs</button></div>
+      </section>
+
+      <section class="screen" id="solo">
+         <div class="backline"><button class="iconbtn" data-home>← Quitter</button><span class="kicker"
+               id="soloLabel">Section 1 · Niveau 1</span></div>
+         <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+               <div class="kicker">Parcours solo</div>
+               <div class="stats">
+                  <div class="stat" id="soloPoints">⭐ 0</div>
+                  <div class="stat" id="soloStreak">🔥 0</div>
+               </div>
+            </div>
+            <div class="progress"><i id="soloProgress"></i></div>
+            <div class="kicker" id="soloCount">Exercice 1 / 15</div>
+            <div id="soloQuestion"></div>
+            <div class="feedback" id="soloFeedback"></div>
+            <div class="btn-row"><button class="btn btn-soft" id="soloSkip">Passer</button><button class="btn btn-main"
+                  id="soloValidate" disabled>Valider</button></div>
+         </div>
+      </section>
+
+      <section class="screen" id="questsScreen"><div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Quêtes & récompenses</span></div><div class="panel"><div class="kicker">+ points de quête !</div><h2>Progresse à ton rythme</h2><div id="questList"></div><p class="small-note">Les défis duo se valident quand deux joueurs jouent ensemble sur le même appareil.</p></div></section>
+      <section class="screen" id="reviewScreen"><div class="backline"><button class="iconbtn" id="reviewBack">← Parcours</button><span class="kicker">Carnet d’erreurs</span></div><div class="panel"><div class="kicker">Révise pour progresser</div><h2>Les calculs à revoir</h2><div id="reviewList"></div><button class="btn btn-main full" id="reviewPractice">Refaire ces calculs</button></div></section>
+      <section class="screen" id="duoGogo"><div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Défi chronométré</span></div><div class="panel"><div class="kicker">DUO À GOGO</div><h2>Retrouve les bonnes paires !</h2><p>Associe chaque calcul à son résultat. Les tables de 2, 3, 4, 5 et 10 reviennent souvent.</p><div class="gogo-head"><div class="gogo-progress"><i id="gogoProgressFill"></i><b id="gogoStar1">★</b><b id="gogoStar2">★</b><b id="gogoStar3">★</b></div><strong id="gogoTime">90</strong></div><div class="duogogo-stats"><span>🧩 <b id="gogoScore">0</b>/<b id="gogoTarget">24</b> paires</span><span>⏱️ <b id="gogoDifficulty">Débutant</b></span></div><div class="strategy-tip">Astuce : ×10 ajoute un zéro ; ×5, c’est ×10 puis la moitié. Repère les tables pour aller vite !</div><div id="gogoBoard" class="gogo-board"></div><div id="gogoFeedback" class="feedback"></div><button class="btn btn-main full" id="gogoStart">Lancer le défi</button><button class="btn btn-soft full" id="gogoAgain" style="display:none">Rejouer</button></div></section>
+      <section class="screen" id="profileScreen">
+         <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Espace joueur</span></div>
+         <div class="panel profile-hero">
+            <div class="profile-avatar-large" id="profileAvatarPreview"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></div>
+            <div><div class="kicker">MON PROFIL MATHRUSH</div><h2 id="profileDisplayName">Super calculateur</h2><p class="small-note">Personnalise ton personnage et suis tes progrès.</p></div>
+         </div>
+         <div class="panel section-gap">
+            <h3>Choisis ton avatar</h3>
+            <button class="btn btn-soft full" id="chooseAvatar" type="button">Ajouter mon avatar perso</button>
+            <input id="avatarFile" type="file" accept="image/*" hidden>
+            <p class="small-note avatar-upload-status" id="avatarStatus" role="status"></p>
+            <div class="avatar-grid" id="avatarGrid"></div>
+            <label class="small-note" for="profileName">Ton pseudo</label>
+            <input class="field" id="profileName" maxlength="18" placeholder="Ex. CalculMan">
+            <button class="btn btn-main full" id="saveProfile">Enregistrer mon profil</button>
+         </div>
+         <div class="panel section-gap">
+            <h3>Mes statistiques</h3>
+            <div class="profile-stats">
+               <div><b id="profilePoints">0</b><small>Points</small></div>
+               <div><b id="profileLessons">0</b><small>Leçons terminées</small></div>
+               <div><b id="profileLevel">1</b><small>Niveau actuel</small></div>
+               <div><b id="profileErrors">0</b><small>Erreurs à revoir</small></div>
+               <div><b id="profileStreak">0</b><small>Meilleure série</small></div>
+               <div><b id="profileGogo">0</b><small>Record Duo à gogo</small></div>
+            </div>
+         </div>
+         <div class="panel section-gap">
+            <h3>Mes trophées</h3><div id="profileBadges" class="profile-badges"></div>
+         </div>
+         <div class="panel section-gap">
+            <h3>Mes statistiques par type</h3>
+            <div class="profile-mode-stats" id="profileModeStats"></div>
+         </div>
+      </section>
+      <section class="screen" id="duelSetup">
+         <div class="backline"><button class="iconbtn" data-home>← Menu</button><span class="kicker">Multijoueur</span>
+         </div>
+         <div class="panel">
+            <div class="kicker">Défi à deux</div>
+            <h2>Choisis le mode et la difficulté</h2>
+            <label class="small-note" for="duelPlayMode">Mode de jeu</label>
+            <select class="field" id="duelPlayMode"><option value="online" selected>En ligne</option><option value="local">Même appareil</option></select>
+            <label class="small-note" for="duelAdvanceRule">Fin des réponses</label>
+            <select class="field" id="duelAdvanceRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
+            <p>Affrontez-vous sur 10 manches de calcul mental. Le créateur choisit le niveau pour les deux joueurs.</p>
+            <div class="mode-grid math-mode-grid" id="duelMathModes">
+               <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
+               <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
+               <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">x,y</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
+               <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
+            </div>
+            <div id="localDuelSetup" style="display:none">
+               <label class="small-note" for="localDuelOpponent">Pseudo du deuxième joueur</label>
+               <input class="field" id="localDuelOpponent" maxlength="18" value="Joueur 2">
+               <label class="small-note" for="localDuelRule">Fin des réponses</label>
+               <select class="field" id="localDuelRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
+               <button class="btn btn-main full" id="startLocalDuel" type="button">Lancer le défi</button>
+            </div>
+            <label class="small-note" style="display:block;text-align:left;margin:10px 0 0">Difficulté</label>
+            <select class="field" id="difficulty">
+               <option value="0">Très facile</option>
+               <option value="1">Facile</option>
+               <option value="2">Normal</option>
+               <option value="3">Difficile</option>
+               <option value="4">Très difficile</option>
+               <option value="5">Expert</option>
+            </select>
+            <div id="onlineDuelSetup">
+            <button class="btn btn-main full" id="createRoom">Créer un salon</button>
+            <div class="small-note">Ou rejoins un ami avec son code</div><input class="field" id="joinCode"
+               placeholder="Code du salon" autocomplete="off"><button class="btn btn-soft full" id="joinRoom">Rejoindre
+               le duel</button>
+            <div class="status" id="networkStatus">En attente de connexion.</div>
+            <div class="section-gap">
+               <h3>Mes amis</h3>
+               <div id="friendsList" class="status">Aucun ami enregistré pour le moment.</div>
+            </div>
+            </div>
+         </div>
+      </section>
+
+      <section class="screen" id="duel">
+         <div class="backline"><button class="iconbtn" id="quitDuel">← Quitter le duel</button><span class="kicker"
+               id="duelRoundLabel">Manche 0 / 10</span></div>
+         <div class="panel">
+            <div class="kicker">Duel en direct</div>
+            <div class="duel-score"><span><img id="duelMyAvatar" src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt=""><b id="duelMyName">Toi</b> : <b id="myScore">0</b></span><span><img id="duelOpponentAvatar" src="assets/avatar/3d-rendering-cartoon-man-beach.jpg" alt=""><b id="duelOpponentName">Adversaire</b> : <b id="opScore">0</b></span></div>
+            <div class="countdown" id="duelCountdown">3</div>
+            <div id="duelQuestion"></div>
+            <div class="feedback" id="duelFeedback"></div>
+            <div id="duelOptions" class="choices"></div>
+            <div id="duelResult" class="summary" style="display:none"></div>
+            <div id="duelActions" class="btn-row" style="display:none;flex-wrap:wrap"><button class="btn btn-main"
+                  id="rematch">Revanche</button><button class="btn btn-soft" id="addFriend">Ajouter en
+                  ami</button><button class="btn btn-soft" id="abandon">Abandonner</button><button class="btn btn-dark"
+                  id="duelMenu">Menu</button></div>
+            <button class="btn btn-main full" id="localDuelNext" type="button" style="display:none">Joueur suivant</button>
+         </div>
+      </section>
+      <section class="screen" id="localMath">
+         <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur en ligne</span></div>
+         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><h3>Type d’exercices</h3>
+            <div class="mode-grid math-mode-grid" id="mathRoomModes">
+               <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
+               <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
+               <button class="mode-card" type="button" data-math-mode="rounding"><span class="mode-mark">≈</span><strong>Calculs arrondis</strong><small>Dizaines et centaines</small></button>
+               <button class="mode-card" type="button" data-math-mode="coordinates"><span class="mode-mark">x,y</span><strong>Placer les coordonnées</strong><small>Lis les points sur un repère</small></button>
+               <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
+               <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
+            </div>
+            <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
+         <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><div id="mathLocalVisual"></div><div id="mathLocalOptions" class="choices"></div><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
+      </section>
+   </div>
+   <script src="assets/js/player-profile.js"></script>
+   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+   <script src="assets/js/config.js" defer></script>
+   <script src="assets/js/exercises.js" defer></script>
+   <script src="assets/js/progression.js" defer></script>
+   <script src="assets/js/achievements.js" defer></script>
+   <script src="assets/js/app.js" defer></script>
+</body>
+
+</html>
