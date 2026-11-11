@@ -265,13 +265,14 @@
          function readGogoProgress(){try{return JSON.parse(localStorage.getItem(GOGO_PROGRESS_KEY)||'{}');}catch(_){return {};}}
          function saveGogoProgress(){const progress=readGogoProgress();progress[gogoMathMode]=Math.max(1,Number(progress[gogoMathMode]||1));localStorage.setItem(GOGO_PROGRESS_KEY,JSON.stringify(progress));}
          function gogoUnlockedLevel(){return Math.max(1,Number(readGogoProgress()[gogoMathMode]||1));}
-         function renderGogoLevels(){const unlocked=gogoUnlockedLevel();$('gogoLevelList').innerHTML=Array.from({length:unlocked},(_,i)=>{const level=i+1;const record=Number(localStorage.getItem(`mathrush_gogo_time_${gogoMathMode}_${level}`)||0);return `<button type="button" class="gogo-level${level===gogoLevel?' selected':''}" data-gogo-level="${level}"><b>Niveau ${level}</b><small>${record?`Record : ${record} s`:'À découvrir'}</small></button>`;}).join('');$('gogoLevelList').querySelectorAll('[data-gogo-level]').forEach(button=>button.onclick=()=>{gogoLevel=Number(button.dataset.gogoLevel);renderGogoLevels();resetGogo();});}
+         function formatGogoTime(seconds){return `${Number(seconds).toFixed(1).replace('.',',')} s`; }
+         function renderGogoLevels(){const unlocked=gogoUnlockedLevel();$('gogoLevelList').innerHTML=Array.from({length:unlocked},(_,i)=>{const level=i+1;const record=Number(localStorage.getItem(`mathrush_gogo_time_${gogoMathMode}_${level}`)||0);return `<button type="button" class="gogo-level${level===gogoLevel?' selected':''}" data-gogo-level="${level}"><b>Niveau ${level}</b><small>${record?`Record : ${formatGogoTime(record)}`:'À découvrir'}</small></button>`;}).join('');$('gogoLevelList').querySelectorAll('[data-gogo-level]').forEach(button=>button.onclick=()=>{gogoLevel=Number(button.dataset.gogoLevel);renderGogoLevels();resetGogo();});}
          function setGogoMode(mode){gogoMathMode=mode;gogoLevel=gogoUnlockedLevel();renderGogoLevels();resetGogo();}
          function resetGogo(){
             clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();
             const target=24+Math.min(16,(gogoLevel-1)*2),seconds=Math.max(45,90-(gogoLevel-1)*4);gogoRemaining=seconds;gogoTarget=target;$('gogoTime').textContent=String(seconds);$('gogoScore').textContent='0';$('gogoTarget').textContent=String(target);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
-            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoResultActions').style.display='none';$('gogoBoard').innerHTML='';
+            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoResultActions').style.display='none';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;
          }
          function makeGogoPairs(count){
             const pairs=[],seen=new Set(),rank=Math.min(6,Math.floor((gogoLevel-1)/2));
@@ -373,9 +374,11 @@
                // La paire reste grisée plus longtemps, mais ne bloque plus les autres cartes.
                const emptySlots=[a.parentElement,c.parentElement];
                gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];gogoBusy=false;
+               const completedAt=gogoPairs>=gogoTarget?Date.now():0;
+               if(completedAt&&gogoTimer){clearInterval(gogoTimer);gogoTimer=null;}
                setTimeout(()=>{
                   emptySlots.forEach(slot=>slot.replaceChildren());
-                  if(gogoPairs>=gogoTarget){finishGogo(true);return;}
+                  if(completedAt){finishGogo(true,completedAt);return;}
                   if(gogoRemaining>0)refillGogoSlots(emptySlots);
                },1450);
             }else{
@@ -384,27 +387,36 @@
             }
          }
          function startGogo(){
-            resetGogo();$('gogoStart').style.display='none';gogoStartedAt=Date.now();
+            resetGogo();$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';gogoStartedAt=Date.now();
             gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();
             gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
          }
-         function finishGogo(completed){
-            if(!gogoTimer&&$('gogoResultActions').style.display==='block')return;
+         function finishGogo(completed,finishedAt=Date.now()){
+            if($('gogoResultActions').style.display==='grid')return;
             clearInterval(gogoTimer);gogoTimer=null;gogoBusy=true;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
-            const elapsed=Math.max(0,Math.round((Date.now()-gogoStartedAt)/1000));
+            const elapsed=Math.max(0,Math.round((finishedAt-gogoStartedAt)/100)/10);
             const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
             const timeKey=`mathrush_gogo_time_${gogoMathMode}_${gogoLevel}`;const previousTime=Number(localStorage.getItem(timeKey)||0);
-            if(completed&&(!previousTime||elapsed<previousTime))localStorage.setItem(timeKey,String(elapsed));
-            if(completed){const progress=readGogoProgress();progress[gogoMathMode]=Math.max(Number(progress[gogoMathMode]||1),gogoLevel+1);localStorage.setItem(GOGO_PROGRESS_KEY,JSON.stringify(progress));}
-            const record=Number(localStorage.getItem(timeKey)||elapsed);
+            const improved=completed&&(!previousTime||elapsed<previousTime);
+            if(improved)localStorage.setItem(timeKey,String(elapsed));
+            let unlockedLevel=gogoUnlockedLevel();
+            if(completed){const progress=readGogoProgress();progress[gogoMathMode]=Math.max(Number(progress[gogoMathMode]||1),gogoLevel+1);localStorage.setItem(GOGO_PROGRESS_KEY,JSON.stringify(progress));unlockedLevel=Math.max(unlockedLevel,gogoLevel+1);}
             const stars=gogoPairs>=Math.ceil(gogoTarget*2/3)?3:gogoPairs>=Math.ceil(gogoTarget/3)?2:gogoPairs>0?1:0;
             ['gogoStar1','gogoStar2','gogoStar3'].forEach((id,i)=>$(id).classList.toggle('earned',i<stars));
-            $('gogoFeedback').className='feedback show '+(completed?'good':'near');
-            $('gogoFeedback').textContent=completed
-               ?`🎉 Niveau ${gogoLevel} réussi ! ${gogoPairs}/${gogoTarget} paires en ${elapsed} s. ${'⭐'.repeat(stars)} ${previousTime&&elapsed>=previousTime?`Ton meilleur temps reste ${previousTime} s.`:`Nouveau meilleur temps : ${record} s !`} Record de paires : ${best}.`
-               :`⏱️ Niveau ${gogoLevel} non terminé. ${gogoPairs}/${gogoTarget} paires trouvées. Encore un petit effort !`;
+            let timeMessage=`Temps effectué : ${formatGogoTime(elapsed)}.`;
+            if(completed){
+               if(!previousTime)timeMessage+=` Premier temps enregistré !`;
+               else if(improved)timeMessage+=` Nouveau record : tu gagnes ${formatGogoTime(previousTime-elapsed)} sur ton ancien temps de ${formatGogoTime(previousTime)} !`;
+               else timeMessage+=` Ton record est toujours de ${formatGogoTime(previousTime)} (écart : ${formatGogoTime(elapsed-previousTime)}).`;
+            }
+            const resultTitle=completed?'🎉 Bravo, niveau réussi !':'⏱️ Niveau non terminé';
+            const resultDetails=completed?`Tu as trouvé les ${gogoPairs}/${gogoTarget} paires. ${'⭐'.repeat(stars)}`:`Tu as trouvé ${gogoPairs}/${gogoTarget} paires. Encore un petit effort !`;
+            const unlockMessage=completed?`<p class="gogo-unlocked">🔓 Niveau ${unlockedLevel} débloqué !</p>`:'';
+            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
+            $('gogoBoard').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p></div>`;
             $('gogoImprove').style.display='block';$('gogoImprove').textContent=completed?'Rejouer pour améliorer mon temps':'Réessayer ce niveau';
-            $('gogoNext').style.display=completed?'block':'none';$('gogoResultActions').style.display='grid';renderGogoLevels();renderQuests();
+            $('gogoNext').style.display=completed?'block':'none';$('gogoNext').textContent=`Niveau ${unlockedLevel} : plus difficile`;
+            $('gogoResultActions').style.display='grid';renderGogoLevels();renderQuests();
          }
          $('gogoStart').onclick=startGogo;
          $('gogoImprove').onclick=()=>startGogo();

@@ -1316,3 +1316,14 @@
 .gogo-level small{font-size:11px;color:var(--muted)}
 .gogo-level.selected{border-color:#3989e8;background:#eaf5ff;box-shadow:0 3px 0 #b9dafa}
 .gogo-card{white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+
+/* Duo à gogo : écran de jeu épuré et résultat à la place des cartes */
+#gogoSetupControls[hidden]{display:none!important}
+.gogo-result-card{width:100%;min-height:260px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 18px;border:2px solid #b7e995;border-radius:24px;background:linear-gradient(145deg,#f0ffe8,#fff);box-shadow:0 7px 0 #d4efc5;margin:12px 0}
+.gogo-result-card.retry{border-color:#f4d58b;background:linear-gradient(145deg,#fff8e7,#fff)}
+.gogo-result-icon{font-size:54px;line-height:1.2}
+.gogo-result-card h3{font-size:clamp(22px,6vw,30px);margin:12px 0 8px;color:#398c2b}
+.gogo-result-card.retry h3{color:#9b6b13}
+.gogo-result-card p{margin:7px 0;line-height:1.45}
+.gogo-result-card .gogo-unlocked{font-size:20px;font-weight:900;color:#398c2b;margin-top:14px}
+.gogo-time-result{font-weight:800;color:var(--ink)}
