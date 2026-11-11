@@ -1276,3 +1276,32 @@
 .mode-step.is-done{background:#effaf4;border-color:#b9e7ce}
 .mode-step.is-done .mode-step-icon{background:var(--green);color:#fff}
 @media(max-width:420px){.mode-step{grid-template-columns:34px minmax(0,1fr)}.mode-step-range{grid-column:2}}
+
+/* Sélecteurs de modes robustes et écrans de fin animés */
+.mode-load-error{grid-column:1/-1;padding:12px;border-radius:12px;background:#fff4e5;color:#8a4b08}
+.math-mode-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;visibility:visible;opacity:1}
+.math-mode-grid .mode-card{display:grid!important;visibility:visible;opacity:1;min-width:0;min-height:92px;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.math-mode-grid .mode-card:active{transform:scale(.97)}
+.math-mode-grid .mode-card.selected{border-color:var(--blue);background:#edf4ff;box-shadow:0 5px 0 #cbdcff}
+.competitive-result{position:relative;overflow:hidden;text-align:center;padding:18px 10px 22px}
+.duel-finish-anim{animation:finish-pop .65s cubic-bezier(.2,.9,.25,1.25) both}
+.finish-confetti{font-size:clamp(20px,6vw,34px);letter-spacing:5px;text-align:center;animation:confetti-float 1.8s ease-in-out infinite alternate;margin:8px 0 14px}
+.finish-medal{font-size:clamp(58px,16vw,88px);line-height:1.1;animation:medal-bounce .9s ease-in-out infinite alternate;filter:drop-shadow(0 8px 8px #263c5b26)}
+.finish-eyebrow{font-size:11px;letter-spacing:2px;font-weight:950;color:var(--blue);margin:8px 0}
+.finish-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px auto;max-width:420px}
+.finish-score-grid>div{background:#f0f5ff;border:1px solid #dce7ff;border-radius:17px;padding:13px}
+.finish-score-grid small,.finish-score-grid strong{display:block}.finish-score-grid strong{font-size:30px;color:var(--blue)}
+.finish-rounds{color:var(--muted);font-size:13px}
+.podium-result{position:relative;overflow:hidden;text-align:center;padding:12px 4px 20px;animation:finish-pop .65s cubic-bezier(.2,.9,.25,1.25) both}
+.podium-stage{display:flex;align-items:flex-end;justify-content:center;gap:7px;min-height:245px;margin:20px auto 18px;max-width:520px}
+.podium-player{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;animation:podium-rise .7s cubic-bezier(.2,.8,.25,1.2) both;animation-delay:var(--podium-delay);opacity:0;animation-fill-mode:forwards}
+.podium-player img{width:clamp(48px,15vw,72px);height:clamp(48px,15vw,72px);object-fit:cover;border-radius:50%;border:4px solid white;box-shadow:0 4px 14px #22385b30}
+.podium-player strong{font-size:clamp(11px,3vw,15px);max-width:100%;overflow-wrap:anywhere}.podium-player>b{font-size:13px;color:var(--blue)}
+.podium-crown{font-size:25px;min-height:28px}.podium-block{display:grid;place-items:center;width:100%;height:var(--podium-height,80px);border-radius:12px 12px 0 0;background:linear-gradient(160deg,#f8d66b,#e8a92e);color:#674600;font-size:23px;font-weight:950;box-shadow:inset 0 3px 0 #fff8}
+.podium-first{--podium-height:115px}.podium-second{--podium-height:82px}.podium-third{--podium-height:62px}.podium-second .podium-block{background:linear-gradient(160deg,#e8edf4,#aeb9c8);color:#47556b}.podium-third .podium-block{background:linear-gradient(160deg,#eab18c,#b96e45);color:#fff}
+.podium-rest{max-width:460px;margin:14px auto;text-align:left;background:#f6f8fc;border-radius:14px;padding:12px}.podium-rest h3{margin:0 0 8px}.podium-rest>div{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-top:1px solid #e3e8f1;font-size:13px}.finish-menu-btn{margin-top:18px}
+@keyframes finish-pop{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes medal-bounce{from{transform:translateY(0) rotate(-5deg)}to{transform:translateY(-9px) rotate(5deg)}}
+@keyframes confetti-float{from{transform:translateY(0)}to{transform:translateY(-7px)}}
+@keyframes podium-rise{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.duel-finish-anim,.finish-confetti,.finish-medal,.podium-player,.podium-result{animation:none!important;opacity:1!important;transform:none!important}}

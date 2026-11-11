@@ -43,10 +43,12 @@ assert.ok(trophies.some(trophy => trophy.id === 'streak-10'));
 
 const appSource = fs.readFileSync(`${__dirname}/../assets/js/app.js`, 'utf8');
 const htmlSource = fs.readFileSync(`${__dirname}/../index.html`, 'utf8');
-assert.ok(appSource.includes('function recordCompetitiveResult'), 'enregistrement des statistiques compétitives manquant');
-assert.ok(appSource.includes("recordCompetitiveResult('duel'"), 'statistiques des défis absentes');
-assert.ok(appSource.includes("recordCompetitiveResult('multiplayer'"), 'statistiques multijoueur absentes');
-for (const id of ['profileDuelsPlayed','profileDuelsWon','profileMultiPlayed','profileMultiWon']) {
-  assert.ok(htmlSource.includes(`id=\"${id}\"`), `statistique ${id} absente du profil`);
-}
-console.log('MathRush : tests réussis (5 600 exercices, progression, trophées et statistiques compétitives).');
+assert.ok(appSource.includes('function renderSharedMathModeCards'), 'génération partagée des modes absente');
+assert.ok(appSource.includes("renderSharedMathModeCards('duelMathModes'"), 'sélecteur Défi non alimenté');
+assert.ok(appSource.includes("renderSharedMathModeCards('mathRoomModes'"), 'sélecteur Multijoueur non alimenté');
+assert.ok(appSource.includes('duel-finish-anim'), 'animation de fin du Défi absente');
+assert.ok(appSource.includes('podium-stage'), 'podium multijoueur absent');
+assert.ok(htmlSource.includes('id=\"duelMathModes\"'), 'conteneur de modes Défi absent');
+assert.ok(htmlSource.includes('id=\"mathRoomModes\"'), 'conteneur de modes Multijoueur absent');
+assert.ok(htmlSource.includes('id=\"mathPodiumResult\"'), 'conteneur de podium absent');
+console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
