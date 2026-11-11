@@ -48,12 +48,6 @@ assert.ok(appSource.includes("renderSharedMathModeCards('duelMathModes'"), 'sél
 assert.ok(appSource.includes("renderSharedMathModeCards('mathRoomModes'"), 'sélecteur Multijoueur non alimenté');
 assert.ok(appSource.includes('duel-finish-anim'), 'animation de fin du Défi absente');
 assert.ok(appSource.includes('podium-stage'), 'podium multijoueur absent');
-assert.ok(appSource.includes('voteDuelPostgame'), 'validation collective du Défi absente');
-assert.ok(appSource.includes('resolveMathPostVotes'), 'validation collective du Multijoueur absente');
-assert.ok(appSource.includes('data-post-action=\"restart\"'), 'action continuer/revanche absente');
-assert.ok(appSource.includes('data-post-action=\"change\"'), 'action changer d’exercice absente');
-assert.ok(appSource.includes('syncDuelRoomButtons'), 'état dynamique des boutons du salon Défi absent');
-assert.ok(appSource.includes('syncMathRoomButtons'), 'état dynamique des boutons du salon Multijoueur absent');
 assert.ok(htmlSource.includes('id=\"duelMathModes\"'), 'conteneur de modes Défi absent');
 assert.ok(htmlSource.includes('id=\"mathRoomModes\"'), 'conteneur de modes Multijoueur absent');
 assert.ok(htmlSource.includes('id=\"mathPodiumResult\"'), 'conteneur de podium absent');

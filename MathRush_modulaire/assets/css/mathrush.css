@@ -1308,3 +1308,11 @@
 
 /* Duo à gogo : actions de fin de niveau */
 .gogo-result-actions{display:grid;gap:10px;margin-top:14px}.gogo-result-actions .btn{width:100%;min-height:48px}.gogo-card.selected{outline:3px solid rgba(75,190,235,.18)}
+
+.gogo-intro{line-height:1.55;margin-bottom:18px}
+#gogoMathModes{margin:10px 0 20px}
+.gogo-level-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin:10px 0 18px}
+.gogo-level{border:2px solid var(--line);border-radius:13px;background:#fff;padding:10px 8px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:4px;min-height:62px}
+.gogo-level small{font-size:11px;color:var(--muted)}
+.gogo-level.selected{border-color:#3989e8;background:#eaf5ff;box-shadow:0 3px 0 #b9dafa}
+.gogo-card{white-space:normal;overflow-wrap:anywhere;line-height:1.25}

@@ -14,3 +14,7 @@
 .profile-badge{background:#fff3cf;border:1px solid #f1d98d;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:800}
 .avatar-upload-status{min-height:1.5em}
 @media(max-width:520px){.profile-hero{gap:12px}.profile-avatar-large{width:76px;height:76px;flex-basis:76px;border-radius:22px}}
+
+.profile-avatar-controls{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+#avatarChoicesPanel[hidden]{display:none}
+#avatarChoicesPanel{margin-top:12px}
