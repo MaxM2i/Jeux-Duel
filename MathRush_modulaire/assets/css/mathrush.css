@@ -1305,3 +1305,10 @@
 @keyframes confetti-float{from{transform:translateY(0)}to{transform:translateY(-7px)}}
 @keyframes podium-rise{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.duel-finish-anim,.finish-confetti,.finish-medal,.podium-player,.podium-result{animation:none!important;opacity:1!important;transform:none!important}}
+
+/* Actions de fin de partie : choix coordonné par tous les participants */
+.postgame-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:18px auto 8px;max-width:560px;animation:postgameRise .45s ease both}
+.postgame-actions .btn{flex:1 1 145px;min-height:46px}
+.postgame-actions .small-note{flex-basis:100%;text-align:center;margin:4px 0 0}
+.postgame-actions .btn:disabled{opacity:.48;filter:grayscale(.35);cursor:wait}
+@keyframes postgameRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
