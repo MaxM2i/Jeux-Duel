@@ -229,9 +229,9 @@
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
          function renderReview(){$('reviewList').innerHTML=errors.length?errors.map((e,i)=>`<div class="review-item"><b>${i+1}. ${e.question}</b><p>Réponse : <strong>${e.answer}</strong></p><small>${e.tip}</small></div>`).join(''):'<div class="strategy-tip">Aucune erreur enregistrée. Continue comme ça !</div>';$('reviewPractice').disabled=!errors.length;}
          $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
-         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[];
+         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[];
          function resetGogo(){
-            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];
+            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();
             $('gogoTime').textContent='90';$('gogoScore').textContent='0';$('gogoTarget').textContent='24';$('gogoDifficulty').textContent='Débutant';
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoAgain').style.display='none';$('gogoBoard').innerHTML='';
@@ -251,23 +251,65 @@
          function makeGogoCard(c){
             const b=document.createElement('button');b.className='gogo-card';b.dataset.pair=String(c.pair);b.dataset.kind=c.kind;b.textContent=c.text;b.onclick=()=>selectGogoCard(b);return b;
          }
-         function drawGogoBoard(initial=false){
+         function makeGogoSlot(card){
+            const slot=document.createElement('div');slot.className='gogo-slot';
+            if(card)slot.appendChild(makeGogoCard(card));
+            return slot;
+         }
+         function gogoCardFor(pair,kind){
+            return {pair:String(pair.id),kind,text:kind==='calc'?pair.label:String(pair.result)};
+         }
+         function drawGogoBoard(){
             const board=$('gogoBoard');board.innerHTML='';
             const first=gogoQueue.splice(0,4);
-            const cards=shuffle(first.flatMap(pair=>[
-               {pair:pair.id,kind:'calc',text:pair.label},
-               {pair:pair.id,kind:'result',text:String(pair.result)}
-            ]));
-            cards.forEach(c=>board.appendChild(makeGogoCard(c)));
+            const cards=shuffle(first.flatMap(pair=>[gogoCardFor(pair,'calc'),gogoCardFor(pair,'result')]));
+            cards.forEach(card=>{gogoIntroduced.add(`${card.pair}:${card.kind}`);board.appendChild(makeGogoSlot(card));});
          }
-         function addGogoPair(){
-            if(!gogoQueue.length)return;
-            const pair=gogoQueue.shift(),board=$('gogoBoard');
-            const next=[...Array.from(board.querySelectorAll('button')).map(b=>({pair:b.dataset.pair,kind:b.dataset.kind,text:b.textContent})),
-               {pair:String(pair.id),kind:'calc',text:pair.label},
-               {pair:String(pair.id),kind:'result',text:String(pair.result)}];
-            // Mélange toutes les cartes : les deux éléments d'une paire ne sont jamais placés côte à côte volontairement.
-            board.innerHTML='';shuffle(next).forEach(c=>board.appendChild(makeGogoCard(c)));
+         function syncGogoQueue(){
+            while(gogoQueue.length){
+               const id=String(gogoQueue[0].id);
+               if(gogoIntroduced.has(`${id}:calc`)&&gogoIntroduced.has(`${id}:result`))gogoQueue.shift();
+               else break;
+            }
+         }
+         function gogoReplacementCandidates(){
+            syncGogoQueue();
+            const board=$('gogoBoard');
+            const visiblePairs=new Set(Array.from(board.querySelectorAll('.gogo-card')).map(card=>card.dataset.pair));
+            const partial=Array.from(visiblePairs).filter(id=>
+               gogoIntroduced.has(`${id}:calc`)!==gogoIntroduced.has(`${id}:result`)
+            );
+            const upcoming=gogoQueue.slice(0,2).map(pair=>String(pair.id));
+            const allowed=new Set([...partial,...upcoming]);
+            const candidates=[];
+            allowed.forEach(id=>{
+               const pair=gogoQueue.find(item=>String(item.id)===id)||gogoAllPairs.find(item=>String(item.id)===id);
+               if(!pair)return;
+               ['calc','result'].forEach(kind=>{
+                  const key=`${id}:${kind}`;
+                  if(!gogoIntroduced.has(key))candidates.push(gogoCardFor(pair,kind));
+               });
+            });
+            return candidates;
+         }
+         function refillGogoSlots(slots){
+            const empty=shuffle(slots.filter(slot=>slot&&slot.isConnected&&!slot.querySelector('.gogo-card')));
+            const usedPairs=new Set();
+            empty.forEach(slot=>{
+               let candidates=gogoReplacementCandidates();
+               if(!candidates.length)return;
+               // Si deux cases sont à remplir, privilégie deux duos différents pour ne pas
+               // faire apparaître systématiquement les deux éléments d'une même paire ensemble.
+               const diversified=candidates.filter(card=>!usedPairs.has(card.pair));
+               if(diversified.length)candidates=diversified;
+               const card=candidates[Math.floor(Math.random()*candidates.length)];
+               gogoIntroduced.add(`${card.pair}:${card.kind}`);usedPairs.add(card.pair);
+               slot.replaceChildren(makeGogoCard(card));
+            });
+            syncGogoQueue();
+         }
+         function addGogoPair(slots){
+            refillGogoSlots(slots||Array.from($('gogoBoard').children).filter(slot=>!slot.querySelector('.gogo-card')));
          }
          function selectGogoCard(b){
             if(gogoBusy||b.disabled||b.classList.contains('selected')||gogoRemaining<=0)return;
@@ -279,9 +321,9 @@
                $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='✓ Paire trouvée !';
                // Laisse le temps de voir la réussite avant le remplacement.
                setTimeout(()=>{
-                  a.remove();c.remove();gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];
+                  const emptySlots=[a.parentElement,c.parentElement];emptySlots.forEach(slot=>slot.replaceChildren());gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];
                   if(gogoPairs>=gogoTarget){finishGogo(true);return;}
-                  setTimeout(()=>{if(gogoRemaining>0){addGogoPair();gogoBusy=false;}},450);
+                  setTimeout(()=>{if(gogoRemaining>0){addGogoPair(emptySlots);gogoBusy=false;}},450);
                },850);
             }else{
                $('gogoFeedback').className='feedback show near';$('gogoFeedback').textContent='Pas cette fois. Réessaie !';
@@ -291,7 +333,7 @@
          function startGogo(){
             resetGogo();const advanced=difficultyRank()>=4;gogoTarget=advanced?32:24;gogoRemaining=advanced?120:90;
             $('gogoTime').textContent=gogoRemaining;$('gogoTarget').textContent=gogoTarget;$('gogoDifficulty').textContent=advanced?'Confirmé':'Débutant';$('gogoStart').style.display='none';
-            gogoQueue=makeGogoPairs(gogoTarget);drawGogoBoard(true);
+            gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();
             gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
          }
          function finishGogo(completed){
