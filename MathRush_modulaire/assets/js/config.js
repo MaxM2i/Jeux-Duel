@@ -8,6 +8,8 @@
     { id: 'rounding', label: 'Calculs arrondis', mark: '≈', description: 'Dizaines et centaines', family: 'nombres' },
     { id: 'coordinates', label: 'Placer les coordonnées', mark: 'x,y', description: 'Lire un point sur un repère', family: 'géométrie' },
     { id: 'percentages', label: 'Pourcentages', mark: '%', description: 'Calculer une part', family: 'proportionnalité' },
+    { id: 'common-multiples', label: 'PPCM / PGCD', mark: '÷', description: 'Multiples et diviseurs communs', family: 'arithmétique' },
+    { id: 'multiplication-division', label: 'Multiplication / division', mark: '× ÷', description: 'Maîtriser les produits et les partages', family: 'calcul' },
     { id: 'mixed', label: 'Tout mélangé', mark: '?', description: 'Un exercice différent à chaque question', family: 'mixte' }
   ];
 

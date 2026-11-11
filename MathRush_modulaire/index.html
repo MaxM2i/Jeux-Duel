@@ -98,6 +98,10 @@
                <div><b id="profileErrors">0</b><small>Erreurs à revoir</small></div>
                <div><b id="profileStreak">0</b><small>Meilleure série</small></div>
                <div><b id="profileGogo">0</b><small>Record Duo à gogo</small></div>
+               <div><b id="profileDuelsPlayed">0</b><small>Défis joués</small></div>
+               <div><b id="profileDuelsWon">0</b><small>Défis gagnés</small></div>
+               <div><b id="profileMultiPlayed">0</b><small>Multijoueur joués</small></div>
+               <div><b id="profileMultiWon">0</b><small>Multijoueur gagnés</small></div>
             </div>
          </div>
          <div class="panel section-gap">
@@ -116,8 +120,8 @@
             <h2>Choisis le mode et la difficulté</h2>
             <label class="small-note" for="duelPlayMode">Mode de jeu</label>
             <select class="field" id="duelPlayMode"><option value="online" selected>En ligne</option><option value="local">Même appareil</option></select>
-            <label class="small-note" for="duelAdvanceRule">Fin des réponses</label>
-            <select class="field" id="duelAdvanceRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
+            <label class="small-note" for="duelAdvanceRule">On passe à la question suivante :</label>
+            <select class="field" id="duelAdvanceRule"><option value="firstCorrect" selected>Dès la première bonne réponse trouvée</option><option value="allAnswered">Après la réponse des deux joueurs</option><option value="turns">Chacun son tour</option></select>
             <p>Affrontez-vous sur 10 manches de calcul mental. Le créateur choisit le niveau pour les deux joueurs.</p>
             <div class="mode-grid math-mode-grid" id="duelMathModes">
                <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
@@ -130,8 +134,8 @@
             <div id="localDuelSetup" style="display:none">
                <label class="small-note" for="localDuelOpponent">Pseudo du deuxième joueur</label>
                <input class="field" id="localDuelOpponent" maxlength="18" value="Joueur 2">
-               <label class="small-note" for="localDuelRule">Fin des réponses</label>
-               <select class="field" id="localDuelRule"><option value="firstCorrect">Dès la première bonne réponse</option><option value="allAnswered">Après la réponse des deux joueurs</option></select>
+               <label class="small-note" for="localDuelRule">On passe à la question suivante :</label>
+               <select class="field" id="localDuelRule"><option value="firstCorrect" selected>Dès la première bonne réponse trouvée</option><option value="allAnswered">Après la réponse des deux joueurs</option><option value="turns">Chacun son tour</option></select>
                <button class="btn btn-main full" id="startLocalDuel" type="button">Lancer le défi</button>
             </div>
             <label class="small-note" style="display:block;text-align:left;margin:10px 0 0">Difficulté</label>
@@ -177,7 +181,7 @@
       </section>
       <section class="screen" id="localMath">
          <div class="backline"><button class="iconbtn" id="localBack">← Menu</button><span class="kicker">MathRush · Multijoueur en ligne</span></div>
-         <div class="panel"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><h3>Type d’exercices</h3>
+         <div class="panel" id="mathRoomSetup"><div class="kicker">3 à 8 joueurs</div><h2>Rejoins un salon</h2><label class="small-note" for="mathOnlineName">Ton pseudo</label><input class="field" id="mathOnlineName" maxlength="18" placeholder="Ton pseudo"><h3>Type d’exercices</h3>
             <div class="mode-grid math-mode-grid" id="mathRoomModes">
                <button class="mode-card selected" type="button" data-math-mode="quick"><span class="mode-mark">+</span><strong>Calculs rapides</strong><small>Additions et multiplications</small></button>
                <button class="mode-card" type="button" data-math-mode="complex"><span class="mode-mark">×+</span><strong>Calculs complexes</strong><small>Opérations en plusieurs étapes</small></button>
@@ -186,7 +190,7 @@
                <button class="mode-card" type="button" data-math-mode="percentages"><span class="mode-mark">%</span><strong>Pourcentages</strong><small>Calcule une part</small></button>
                <button class="mode-card" type="button" data-math-mode="mixed"><span class="mode-mark">?</span><strong>Tout mélangé</strong><small>Un exercice différent à chaque manche</small></button>
             </div>
-            <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
+            <label class="small-note">Organisation</label><select class="field" id="mathTeamMode"><option value="free">Chacun pour soi</option><option value="teams">En équipes (scores individuels affichés)</option></select><label class="small-note" for="mathAdvanceRuleMulti">On passe à la question suivante :</label><select class="field" id="mathAdvanceRuleMulti"><option value="firstCorrect" selected>Dès la première bonne réponse trouvée</option><option value="allAnswered">Après la réponse des deux joueurs</option><option value="turns">Chacun son tour</option></select><button class="btn btn-main full" id="mathCreateRoom">Créer un salon</button><label class="small-note" for="mathJoinCode">Code du salon</label><input class="field" id="mathJoinCode" placeholder="Code communiqué par l’hôte" autocomplete="off"><button class="btn btn-soft full" id="mathJoinRoom">Rejoindre</button><div class="status" id="mathRoomStatus">Un salon démarre à partir de 3 joueurs.</div><div class="status" id="mathRoomRoster" style="display:none"></div><button class="btn btn-main full" id="mathHostStart" style="display:none" disabled>Démarrer la partie</button></div>
          <div class="panel" id="mathLocalPlay" style="display:none"><div class="kicker" id="mathTurn"></div><h2 id="mathLocalQuestion"></h2><div id="mathLocalVisual"></div><div id="mathLocalOptions" class="choices"></div><div class="feedback" id="mathLocalFeedback"></div><div id="mathLocalScores" class="status"></div><button class="btn btn-soft full" id="mathNextLocal" style="display:none">Joueur suivant</button></div>
       </section>
    </div>

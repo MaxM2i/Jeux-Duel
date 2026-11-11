@@ -11,13 +11,17 @@ const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const shuffle = values => [...values].sort(() => Math.random() - 0.5);
 
 for (let difficulty = 0; difficulty <= 6; difficulty++) {
-  for (const mode of ['quick', 'complex', 'rounding', 'coordinates', 'percentages', 'mixed']) {
+  for (const mode of ['quick', 'complex', 'rounding', 'coordinates', 'percentages', 'common-multiples', 'multiplication-division', 'mixed']) {
     for (let i = 0; i < 100; i++) {
       const exercise = context.window.MathRushExercises.createSoloExercise(mode, difficulty, rand, shuffle);
       assert.ok(exercise.mode, `mode manquant (${mode}, difficulté ${difficulty})`);
       assert.ok(exercise.type, `type manquant (${mode}, difficulté ${difficulty})`);
       assert.notEqual(exercise.ans, undefined, `réponse manquante (${mode}, difficulté ${difficulty})`);
-      assert.ok(Array.isArray(exercise.opts) && exercise.opts.length >= 2, 'au moins deux propositions attendues');
+      if (exercise.type === 'commonSlider') {
+        assert.ok(Number.isFinite(exercise.min) && Number.isFinite(exercise.max) && exercise.max > exercise.min, 'curseur PPCM/PGCD invalide');
+      } else {
+        assert.ok(Array.isArray(exercise.opts) && exercise.opts.length >= 2, 'au moins deux propositions attendues');
+      }
       if (exercise.mode === 'rounding') assert.ok(Number.isFinite(exercise.ans));
     }
   }
@@ -37,4 +41,12 @@ const trophies = context.window.MathRushAchievements.getUnlocked({
 assert.ok(trophies.some(trophy => trophy.id === 'first-lesson'));
 assert.ok(trophies.some(trophy => trophy.id === 'streak-10'));
 
-console.log('MathRush : tests réussis (4 200 exercices, progression et trophées).');
+const appSource = fs.readFileSync(`${__dirname}/../assets/js/app.js`, 'utf8');
+const htmlSource = fs.readFileSync(`${__dirname}/../index.html`, 'utf8');
+assert.ok(appSource.includes('function recordCompetitiveResult'), 'enregistrement des statistiques compétitives manquant');
+assert.ok(appSource.includes("recordCompetitiveResult('duel'"), 'statistiques des défis absentes');
+assert.ok(appSource.includes("recordCompetitiveResult('multiplayer'"), 'statistiques multijoueur absentes');
+for (const id of ['profileDuelsPlayed','profileDuelsWon','profileMultiPlayed','profileMultiWon']) {
+  assert.ok(htmlSource.includes(`id=\"${id}\"`), `statistique ${id} absente du profil`);
+}
+console.log('MathRush : tests réussis (5 600 exercices, progression, trophées et statistiques compétitives).');

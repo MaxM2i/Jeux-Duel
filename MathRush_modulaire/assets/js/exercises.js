@@ -50,6 +50,9 @@
     throw new Error(`Type d'exercice visuel inconnu : ${type}`);
   }
 
+  function gcd(a, b) { while (b) [a, b] = [b, a % b]; return a; }
+  function lcm(a, b) { return a / gcd(a, b) * b; }
+
   function createSoloExercise(selectedMode, difficultyRank, rand, shuffle) {
     const mode = selectedMode === 'mixed'
       ? pick(window.MathRushConfig.MODES.filter(item => item.id !== 'mixed').map(item => item.id), rand)
@@ -81,6 +84,32 @@
       return { type: 'coordinates', mode, prompt: `Quelles sont les coordonnées du point ${label} ?`, visual, ans: answer,
         opts: shuffle(unique([answer, `(${Math.max(0, x - 1)} ; ${y})`, `(${x + 1} ; ${y})`, `(${x} ; ${y + 1})`])) };
     }
+    if (mode === 'common-multiples') {
+      const limit = difficultyRank <= 1 ? 6 : difficultyRank <= 3 ? 10 : difficultyRank <= 5 ? 12 : 15;
+      const a = rand(2, limit), b = rand(2, limit), askPpcm = Math.random() < 0.62;
+      const answer = askPpcm ? lcm(a, b) : gcd(a, b);
+      const label = askPpcm ? 'plus petit commun multiple' : 'plus grand commun diviseur';
+      const wrong = unique([answer + Math.max(1, Math.min(a, b)), Math.max(1, answer - Math.max(1, gcd(a, b))), answer * 2]).filter(n => n !== answer);
+      const opts = shuffle([answer, ...wrong].slice(0, 3));
+      if (Math.random() < 0.45) {
+        const max = Math.max(answer + Math.max(a, b) * 2, 12);
+        const step = max <= 30 ? 1 : 2;
+        const ticks = [0, Math.round(max / 4 / step) * step, Math.round(max / 2 / step) * step, Math.round(max * 3 / 4 / step) * step, max];
+        return { type: 'commonSlider', mode, a, b, askPpcm, label, ans: answer, min: 0, max, step, ticks: [...new Set(ticks)] };
+      }
+      while (opts.length < 3) opts.push(answer + opts.length + 3);
+      return { type: 'choice', mode, prompt: `Sélectionne le ${label} de ${a} et ${b}.`, subLabel: askPpcm ? 'PPCM' : 'PGCD', ans: answer, opts };
+    }
+    if (mode === 'multiplication-division') {
+      const d = window.MathRushConfig.DIFFICULTY[Math.max(0, Math.min(6, difficultyRank))];
+      const useDivision = Math.random() < 0.5;
+      let a, b, op, answer;
+      if (useDivision) { b = pick(d.tables, rand); answer = rand(2, Math.max(3, d.maxFactor)); a = b * answer; op = '÷'; }
+      else { a = pick(d.tables, rand); b = rand(2, Math.max(3, d.maxFactor)); answer = a * b; op = '×'; }
+      const delta = Math.max(1, Math.min(10, Math.ceil(answer * 0.2)));
+      const opts = shuffle(unique([answer, answer + delta, Math.max(0, answer - delta), answer + delta * 2]));
+      return { type: 'choice', mode, prompt: `${a} ${op} ${b} = ?`, subLabel: useDivision ? 'Division' : 'Multiplication', a, b, op, ans: answer, opts };
+    }
     if (mode === 'percentages') {
       const pct = pick(profile.percentages, rand), base = pick(profile.bases, rand), ans = base * pct / 100, delta = Math.max(1, base / 20);
       return { type: 'percent', mode, pct, base, ans, opts: shuffle(unique([ans, ans + delta, Math.max(0, ans - delta), ans * 2])) };
@@ -88,5 +117,5 @@
     throw new Error(`Mode solo inconnu : ${mode}`);
   }
 
-  window.MathRushExercises = Object.freeze({ makeMath, makeVisualExercise, createSoloExercise });
+  window.MathRushExercises = Object.freeze({ makeMath, makeVisualExercise, createSoloExercise, gcd, lcm });
 })();
