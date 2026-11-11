@@ -5,7 +5,7 @@
          function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
-         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0, duelStats=saved.duelStats||{played:0,won:0}, multiplayerStats=saved.multiplayerStats||{played:0,won:0};
+         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0;
          let soloMathMode=saved.soloMathMode||'mixed';
          let modeProgress = saved.modeProgress && typeof saved.modeProgress === 'object' ? saved.modeProgress : {};
          function ensureModeTrack(mode) {
@@ -30,18 +30,12 @@
             modeProgress[soloMathMode] = { section, level, done: [...done] };
             localStorage.setItem('mathrush_app_save', JSON.stringify({
                section, level, points, done, errors, soloLessons, highScoreLessons,
-               friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak, duelStats, multiplayerStats
+               friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak
             }));
             $('totalPoints').textContent = points;
             $('homeProgress').textContent = `Section ${section} · Niveau ${level} · ${MathRushConfig.MODES.find(mode => mode.id === soloMathMode)?.label || 'Parcours'}`;
          }
          function difficultyRank() { return MathRushProgression.difficultyFor(section, level); }
-         function recordCompetitiveResult(kind, won) {
-            const stats = kind === 'multiplayer' ? multiplayerStats : duelStats;
-            stats.played = (Number(stats.played) || 0) + 1;
-            if (won) stats.won = (Number(stats.won) || 0) + 1;
-            persist();
-         }
          function makeMath() {
             const d = difficultyRank(); let a, b, op, ans;
             // Progression douce : additions/soustractions sans retenue au début,
@@ -90,6 +84,24 @@
             }
          }
          const SOLO_MATH_MODES = MathRushConfig.MODES;
+         // Les sélecteurs Défi et Multijoueur sont générés depuis le catalogue :
+         // toute évolution de config.js est automatiquement répercutée ici.
+         function renderSharedMathModeCards(containerId, selectedId, onSelect) {
+            const container = $(containerId);
+            if (!container) return;
+            const modes = MathRushConfig.MODES;
+            container.innerHTML = modes.map(mode =>
+               `<button class="mode-card${mode.id === selectedId ? ' selected' : ''}" type="button" data-math-mode="${escapeHtml(mode.id)}"><span class="mode-mark">${escapeHtml(mode.mark || '?')}</span><strong>${escapeHtml(mode.label)}</strong><small>${escapeHtml(mode.description || '')}</small></button>`
+            ).join('');
+            container.querySelectorAll('[data-math-mode]').forEach(button => {
+               button.addEventListener('click', () => {
+                  const id = button.dataset.mathMode;
+                  container.querySelectorAll('.mode-card').forEach(card => card.classList.toggle('selected', card === button));
+                  onSelect(id);
+               });
+            });
+         }
+
          function makeMath() { return MathRushExercises.makeMath(difficultyRank()); }
          function makeVisualExercise(type) { return MathRushExercises.makeVisualExercise(type, rand, shuffle); }
          function makeSoloModeExercise(selectedMode) {
@@ -221,8 +233,6 @@
             playerProfile.render();
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
             $('profileErrors').textContent=errors.length;$('profileStreak').textContent=lifetimeBestStreak;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
-            $('profileDuelsPlayed').textContent=Number(duelStats.played)||0;$('profileDuelsWon').textContent=Number(duelStats.won)||0;
-            $('profileMultiPlayed').textContent=Number(multiplayerStats.played)||0;$('profileMultiWon').textContent=Number(multiplayerStats.won)||0;
             $('profileModeStats').innerHTML=SOLO_MATH_MODES.map(mode=>{const stat=soloModeStats[mode.id]||{played:0,correct:0},accuracy=stat.played?Math.round(stat.correct/stat.played*100):0;return`<div><span>${mode.label}</span><b>${stat.correct}/${stat.played} · ${accuracy}%</b></div>`;}).join('');
             const trophyMetrics = {
                points, soloLessons, highScoreLessons, gogoBest: Number(localStorage.getItem('mathrush_gogo_best') || 0),
@@ -375,7 +385,6 @@
                ], iceCandidateTimeout: 15000, sdpSemantics: 'unified-plan'
             }
          };
-         let duelStatsRecorded=false;
          let peer = null, conn = null, role = null, duelDiff = 2, round = 0, roundTarget = 10, duelMy = 0, duelOpp = 0, duelQ = null, roundEnded = false, answeredThisRound = false, duelLive = false, rematchPending = false, opponentLeft = false, duelAdvanceRule = 'firstCorrect', duelMathMode = 'quick', duelHostAnswered = null, duelGuestAnswered = null, duelFirstCorrectSide = null;
          const netStatus = t => $('networkStatus').textContent = t;
          const FRIENDS_KEY = 'mathrush_friends_v1';
@@ -404,7 +413,7 @@
             return{choiceBased:true,type,prompt,visual,opts:options,answerIndex:options.indexOf(String(answer)),ans:String(answer)};
          }
          function duelQuestion() {
-            const modes=['quick','complex','rounding','coordinates','percentages'];
+            const modes=MathRushConfig.MODES.filter(mode=>mode.id!=='mixed').map(mode=>mode.id);
             const type=duelMathMode==='mixed'?modes[rand(0,modes.length-1)]:duelMathMode;
             if(type==='quick'){
                const d=duelDiff,base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
@@ -423,6 +432,15 @@
                const answer=`(${x} ; ${y})`;
                return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
             }
+            if(type==='common-multiples'||type==='multiplication-division'){
+               const generated=MathRushExercises.createSoloExercise(type,duelDiff,rand,shuffle);
+               const answer=generated.ans;
+               const prompt=generated.prompt || (generated.type==='commonSlider'
+                  ? `Sélectionne le ${generated.label} de ${generated.a} et ${generated.b}.`
+                  : `${generated.a} ${generated.op} ${generated.b} = ?`);
+               const distractors=(generated.opts||[]).filter(value=>String(value)!==String(answer));
+               return makeDuelChoiceQuestion(type,prompt,answer,distractors.length>=3?distractors:[Number(answer)+2,Math.max(0,Number(answer)-2),Number(answer)+5]);
+            }
             const percent=[5,10,20,25,50,75][rand(0,5)],base=[40,60,80,100,120,200][rand(0,5)],answer=percent*base/100;
             const delta=Math.max(1,base/10);
             return makeDuelChoiceQuestion(type,`Combien font ${percent} % de ${base} ?`,answer,[answer+delta,Math.max(0,answer-delta),answer+delta*2]);
@@ -438,16 +456,13 @@
          }
          $('duelPlayMode').onchange=updateDuelSetupMode;
          $('startLocalDuel').onclick=()=>{
-            localDuelMode=true;duelStatsRecorded=false;duelDiff=Number($('difficulty').value);duelMathMode=$('duelMathMode').value;roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
+            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMathMode=$('duelMathMode').value;roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
             localDuelRule=$('duelPlayMode').value==='local'?$('localDuelRule').value:$('duelAdvanceRule').value;localDuelAnswers=[];localDuelHandoff=false;role=null;conn=null;
             const profile=playerProfile.getProfile();
             localDuelPlayers=[{name:profile.name||'Joueur 1',avatar:profile.avatar,customAvatar:profile.customAvatar||''},{name:$('localDuelOpponent').value.trim()||'Joueur 2',avatar:'3d-rendering-cartoon-man-beach.jpg',customAvatar:''}];
             renderDuelIdentity(localDuelPlayers[1]);$('duelResult').style.display='none';$('duelActions').style.display='none';renderLocalDuelAttempt();show('duel');
          };
-         document.querySelectorAll('#duelMathModes .mode-card').forEach(button => button.onclick = () => {
-            duelMathMode=button.dataset.mathMode;
-            document.querySelectorAll('#duelMathModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));
-         });
+         renderSharedMathModeCards('duelMathModes',duelMathMode,id=>{duelMathMode=id;});
          function burgerQuestion() {
             const item = burgerDeck[(round - 1) % burgerDeck.length];
             // Mélange de l'ordre des réponses pour que la bonne ne soit jamais au même endroit.
@@ -459,7 +474,7 @@
             duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; duelFirstCorrectSide = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
             $('duelQuestion').innerHTML = q.burger
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
-               : q.choiceBased ? `<div class="question"><small>${({quick:'Calculs rapides',complex:'Calculs complexes',rounding:'Calculs arrondis',coordinates:'Placer les coordonnées',percentages:'Pourcentages'})[q.type]||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
+               : q.choiceBased ? `<div class="question"><small>${(MathRushConfig.MODES.find(mode=>mode.id===q.type)?.label)||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
             $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
             $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
@@ -501,7 +516,7 @@
          }
          $('localDuelNext').onclick=()=>{
             if(localDuelHandoff){localDuelHandoff=false;localDuelTurn=1-localDuelTurn;renderLocalDuelAttempt();return;}
-            if(localDuelRound>=roundTarget){localDuelMode=false;$('localDuelNext').style.display='none';if(!duelStatsRecorded){duelStatsRecorded=true;recordCompetitiveResult('duel',localDuelPlayers[0].score>localDuelPlayers[1].score);}showDuelSummary();$('duelActions').style.display='none';return;}
+            if(localDuelRound>=roundTarget){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
             localDuelRound++;localDuelTurn=0;localDuelAnswers=[];renderLocalDuelAttempt();
          };
          function startCountdown() {
@@ -554,7 +569,7 @@
             if (role === 'host') setTimeout(hostNext, 2500);
          }
          function endDuel() {
-            duelLive = false; if(!duelStatsRecorded){duelStatsRecorded=true;recordCompetitiveResult('duel',duelMy>duelOpp);} conn.send({ type: 'finish', hostScore: duelMy, guestScore: duelOpp });
+            duelLive = false; conn.send({ type: 'finish', hostScore: duelMy, guestScore: duelOpp });
             showDuelSummary();
          }
          function showDuelSummary(message = '') {
@@ -563,7 +578,7 @@
             $('duelResult').innerHTML = `<div class="big">${message ? '👋' : duelMy === duelOpp ? '🤝' : duelMy > duelOpp ? '🏆' : '💪'}</div><h2>${message ? escapeHtml(message) : result}</h2><p>Ton score : <b>${duelMy}</b></p><p>Score adverse : <b>${duelOpp}</b></p><p>${round} manches jouées</p>`;
          }
          function prepareRematch() {
-            duelStatsRecorded=false; round = 0; duelMy = 0; duelOpp = 0; opponentLeft = false; rematchPending = false; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false;
+            round = 0; duelMy = 0; duelOpp = 0; opponentLeft = false; rematchPending = false; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false;
             if (role === 'host' && duelMode === 'burger') burgerDeck = buildBurgerDeck();
             $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = ''; updateDuelScore(); startCountdown();
          }
@@ -586,7 +601,7 @@
                $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
                $('duelFeedback').className = 'feedback show good'; $('duelFeedback').innerHTML = (m.winner === 'guest' ? 'Tu as trouvé en premier !' : m.winner === 'host' ? 'Ton adversaire a trouvé en premier !' : 'Manche terminée') + `<br>Bonne réponse : <b>${m.answer}</b>`;
             }
-            if (m.type === 'finish' && role === 'guest') { duelMy = m.guestScore; duelOpp = m.hostScore; if(!duelStatsRecorded){duelStatsRecorded=true;recordCompetitiveResult('duel',duelMy>duelOpp);} showDuelSummary(); }
+            if (m.type === 'finish' && role === 'guest') { duelMy = m.guestScore; duelOpp = m.hostScore; showDuelSummary(); }
             if (m.type === 'friendAdded') {
                const senderCode = String(m.fromId || '').replace(/^mathrush-/, '').toUpperCase();
                if (senderCode) {
@@ -625,7 +640,7 @@
          }
          $('createRoom').onclick = () => {
             if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
-            duelStatsRecorded=false; duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value;duelMathMode=$('duelMathMode').value;roundTarget=10; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
+            duelDiff = Number($('difficulty').value); duelAdvanceRule=$('duelAdvanceRule').value;duelMathMode=$('duelMathMode').value;roundTarget=10; round = 0; duelMy = 0; duelOpp = 0; role = 'host'; hostWrong = false; guestWrong = false;
             if (duelMode === 'burger') burgerDeck = buildBurgerDeck();
             peer = new Peer('mathrush-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
             peer.on('open', id => netStatus(`Salon créé ! Partage ce code : ${id.replace('mathrush-', '').toUpperCase()}\nEn attente de ton adversaire…`));
@@ -634,7 +649,7 @@
          $('joinRoom').onclick = () => {
             const code = $('joinCode').value.trim().toLowerCase(); if (!code) { netStatus('Entre le code du salon.'); return; }
             if (!window.Peer) { netStatus('Connexion réseau indisponible. Recharge la page avec Internet.'); return; }
-            duelStatsRecorded=false; role = 'guest'; peer = new Peer(undefined, PEER_OPTS); peer.on('open', () => { netStatus('Tentative de connexion au salon… (quelques secondes selon le réseau)'); wire(peer.connect('mathrush-' + code)); }); peer.on('error', e => netStatus('Impossible de rejoindre : ' + e.type + '. Vérifie le code.'));
+            role = 'guest'; peer = new Peer(undefined, PEER_OPTS); peer.on('open', () => { netStatus('Tentative de connexion au salon… (quelques secondes selon le réseau)'); wire(peer.connect('mathrush-' + code)); }); peer.on('error', e => netStatus('Impossible de rejoindre : ' + e.type + '. Vérifie le code.'));
          };
          function leaveDuel() { if (conn && conn.open) { try { conn.send({ type: 'abandon' }); } catch (e) { } } const old = peer; peer = null; conn = null; show('home'); if (old) setTimeout(() => { try { old.destroy(); } catch (e) { } }, 350); }
          $('quitDuel').onclick = leaveDuel; $('abandon').onclick = leaveDuel; $('duelMenu').onclick = leaveDuel;
@@ -658,8 +673,8 @@
          const localMathScreen = $('localMath');
          if (localMathScreen) {
             const mathPlayers=[];
-            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick',mathAdvanceRule='firstCorrect',mathAnswers={},mathTurnOrder=[],mathStatsRecorded=false,mathTeamModeValue='free';
-            document.querySelectorAll('#mathRoomModes .mode-card').forEach(button=>button.onclick=()=>{mathQuestionMode=button.dataset.mathMode;document.querySelectorAll('#mathRoomModes .mode-card').forEach(card=>card.classList.toggle('selected',card===button));});
+            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick',mathAdvanceRule='firstCorrect',mathAnswers={},mathTurnOrder=[];
+            renderSharedMathModeCards('mathRoomModes',mathQuestionMode,id=>{mathQuestionMode=id;});
             function setMathStatus(message){$('mathRoomStatus').textContent=message;}
             function mathIdentity(){const profile=playerProfile.getProfile();return{name:profile.name||'Joueur',avatar:profile.avatar,customAvatar:profile.customAvatar||''};}
             function renderMathRoster(){
@@ -733,20 +748,20 @@
                if(message.type==='mathJoined'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();setMathStatus('En attente du démarrage par l’hôte.');return;}
                if(message.type==='mathRejected'){setMathStatus(message.reason||'Connexion refusée.');return;}
                if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){applyMathAnswer(connection.peer,message.answerIndex);return;}
-               if(message.type==='mathStart'&&!mathHost){mathStatsRecorded=false;mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathAdvanceRule=message.advanceRule||'firstCorrect';mathTeamModeValue=message.teamMode||'free';$('mathTeamMode').value=mathTeamModeValue;mathAnswers={};mathLocalQuestion=message.question;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
+               if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathAdvanceRule=message.advanceRule||'firstCorrect';mathAnswers={};mathLocalQuestion=message.question;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
                if(message.type==='mathQuestion'&&!mathHost){mathRound=message.round;mathTurn=message.turn||0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=message.question;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();return;}
                if(message.type==='mathAttempt'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathAnswers[message.playerId]={correct:message.correct};$('mathLocalScores').innerHTML=mathScores();if(message.playerId===mathOnlineId){$('mathLocalFeedback').className='feedback show bad';$('mathLocalFeedback').textContent='Raté ! Les autres joueurs peuvent encore répondre.';}}
                if(message.type==='mathTurn'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathTurn=message.turn;mathLocalLocked=false;$('mathLocalFeedback').className='feedback show bad';$('mathLocalFeedback').textContent=`${message.wrongPlayer} s’est trompé. Au joueur suivant !`;renderMathQuestion();return;}
                if(message.type==='mathAnswerResult'&&!mathHost){renderMathResult(message);$('mathNextLocal').style.display='none';return;}
                if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);finishMathGame();return;}
             }
-            function finishMathGame(){if(!mathStatsRecorded){mathStatsRecorded=true;const me=mathPlayers.find(player=>player.id===mathOnlineId);if(me&&mathPlayers.length){const teamMode=(mathTeamModeValue||$('mathTeamMode').value)==='teams';const ownTeam=me.team;const teamScore=team=>mathPlayers.filter(player=>player.team===team).reduce((sum,player)=>sum+player.score,0);const ownScore=teamMode?teamScore(ownTeam):me.score;const bestScore=teamMode?Math.max(...[...new Set(mathPlayers.map(player=>player.team))].map(teamScore)):Math.max(...mathPlayers.map(player=>player.score));recordCompetitiveResult('multiplayer',ownScore===bestScore);}}mathGameStarted=false;$('mathCreateRoom').disabled=false;const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);$('mathLocalQuestion').textContent='Partie terminée !';$('mathLocalFeedback').className='feedback show good';$('mathLocalFeedback').innerHTML=ranked.map((player,index)=>`${index+1}. <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} — ${player.score} pts`).join('<br>');$('mathNextLocal').style.display='none';$('mathRoomSetup').style.display='block';$('mathHostStart').style.display='none';}
+            function finishMathGame(){mathGameStarted=false;$('mathCreateRoom').disabled=false;const ranked=[...mathPlayers].sort((a,b)=>b.score-a.score);$('mathLocalQuestion').textContent='Partie terminée !';$('mathLocalFeedback').className='feedback show good';$('mathLocalFeedback').innerHTML=ranked.map((player,index)=>`${index+1}. <img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)} — ${player.score} pts`).join('<br>');$('mathNextLocal').style.display='none';$('mathRoomSetup').style.display='block';$('mathHostStart').style.display='none';}
             function nextMathQuestion(){if(!mathHost||!mathGameStarted)return;if(mathRound>=10){broadcastMath({type:'mathFinish',players:mathPlayers});finishMathGame();return;}mathRound++;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});}
             $('goLocal').onclick=()=>{show('localMath');$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathRoomRoster').style.display='none';$('mathHostStart').style.display='none';$('mathHostStart').disabled=true;$('mathCreateRoom').disabled=false;$('mathJoinCode').value='';const profile=playerProfile.getProfile();$('mathOnlineName').value=profile.name;setMathStatus('Un salon démarre à partir de 3 joueurs.');};
             $('localBack').onclick=()=>{if(mathPeer)mathPeer.destroy();mathPeer=null;mathConnections=[];mathHost=false;mathGameStarted=false;$('mathCreateRoom').disabled=false;show('home');};
             $('mathCreateRoom').onclick=()=>{if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}if(mathPeer)mathPeer.destroy();mathPlayers.length=0;mathConnections=[];mathHost=true;mathGameStarted=false;const identity=mathIdentity();mathPlayers.push({...identity,id:'',score:0,team:0});setMathStatus('Création du salon…');$('mathCreateRoom').disabled=true;mathPeer=new Peer('mathrush-multi-'+Math.random().toString(36).slice(2,8));mathPeer.on('open',id=>{mathOnlineId=id;mathPlayers[0].id=id;setMathStatus(`Salon créé. Partage ce code : ${id.replace('mathrush-multi-','').toUpperCase()}`);renderMathRoster();});mathPeer.on('connection',connection=>{connection.on('data',message=>handleMathData(connection,message));connection.on('close',()=>{mathConnections=mathConnections.filter(item=>item!==connection);mathPlayers.splice(0,mathPlayers.length,...mathPlayers.filter(player=>player.id!==connection.peer));if(!mathGameStarted)renderMathRoster();});});mathPeer.on('error',error=>{setMathStatus('Erreur de salon : '+(error.type||'connexion'));$('mathCreateRoom').disabled=false;});};
             $('mathJoinRoom').onclick=()=>{const code=$('mathJoinCode').value.trim().toLowerCase();if(!code){setMathStatus('Saisis le code du salon.');return;}if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}if(mathPeer)mathPeer.destroy();mathHost=false;mathGameStarted=false;const identity=mathIdentity();setMathStatus('Connexion au salon…');mathPeer=new Peer();mathPeer.on('open',id=>{mathOnlineId=id;const connection=mathPeer.connect('mathrush-multi-'+code,{reliable:true});mathConnections=[connection];connection.on('open',()=>connection.send({type:'mathJoin',...identity}));connection.on('data',message=>handleMathData(connection,message));connection.on('error',()=>setMathStatus('Impossible de rejoindre ce salon. Vérifie le code.'));});mathPeer.on('error',error=>setMathStatus('Connexion impossible : '+(error.type||'erreur réseau')));};
-            $('mathHostStart').onclick=()=>{if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}mathAdvanceRule=$('mathAdvanceRuleMulti').value;mathTeamModeValue=$('mathTeamMode').value;mathStatsRecorded=false;mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion,advanceRule:mathAdvanceRule,teamMode:mathTeamModeValue});setMathStatus('La partie est lancée.');};
+            $('mathHostStart').onclick=()=>{if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}mathAdvanceRule=$('mathAdvanceRuleMulti').value;mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion,advanceRule:mathAdvanceRule});setMathStatus('La partie est lancée.');};
             $('mathNextLocal').onclick=nextMathQuestion;
          }
 
