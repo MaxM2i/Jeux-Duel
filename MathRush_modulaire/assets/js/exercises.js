@@ -81,7 +81,7 @@
     if (mode === 'coordinates') {
       const x = rand(1, profile.coordinateMax), y = rand(1, profile.coordinateMax), label = ['A', 'B', 'C', 'D'][rand(0, 3)], answer = `(${x} ; ${y})`;
       const visual = `<div class="coordinate-plane" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point" style="left:${x * 100 / (profile.coordinateMax + 1)}%;bottom:${y * 100 / (profile.coordinateMax + 1)}%">${label}</span></div>`;
-      return { type: 'coordinates', mode, prompt: `Quelles sont les coordonnées du point ${label} ?`, visual, ans: answer,
+      return { type: 'coordinates', mode, x, y, prompt: `Quelles sont les coordonnées du point ${label} ?`, visual, ans: answer,
         opts: shuffle(unique([answer, `(${Math.max(0, x - 1)} ; ${y})`, `(${x + 1} ; ${y})`, `(${x} ; ${y + 1})`])) };
     }
     if (mode === 'common-multiples') {

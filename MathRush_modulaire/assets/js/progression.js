@@ -20,7 +20,8 @@
     });
   }
   function difficultyFor(section, level) {
-    return Math.min(6, Math.floor(((level || 1) - 1) / 4) + Math.floor(((section || 1) - 1) / 6));
+    // Niveau de base volontairement plus accessible dans tous les modes.
+    return Math.max(0, Math.min(6, Math.floor(((level || 1) - 1) / 4) + Math.floor(((section || 1) - 1) / 6) - 1));
   }
   window.MathRushProgression = Object.freeze({ getMilestones, difficultyFor });
 })();

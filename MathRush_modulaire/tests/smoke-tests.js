@@ -57,7 +57,11 @@ assert.ok(appSource.includes('finishGogo(true,completedAt)'), 'temps de fin rée
 assert.ok(appSource.includes('Nouveau record : tu gagnes'), 'comparaison du record Duo à gogo absente');
 assert.ok(appSource.includes('gogo-unlocked'), 'affichage du niveau débloqué absent');
 assert.ok(htmlSource.includes('id=\"gogoResultPanel\"'), 'panneau de résultat indépendant Duo à gogo absent');
-assert.ok(appSource.includes('Number(a.dataset.matchValue)===Number(c.dataset.matchValue)'), 'validation des paires par égalité mathématique absente');
+assert.ok(appSource.includes('const sameValue=Number.isFinite(numericA)&&Number.isFinite(numericC)?numericA===numericC:valueA===valueC'), 'validation des paires par égalité mathématique absente');
+assert.ok(appSource.includes('function pauseGogo()') && appSource.includes('function resumeGogo()'), 'pause/reprise Duo à gogo absente');
+assert.ok(htmlSource.includes('id="gogoPause"') && htmlSource.includes('id="gogoResume"'), 'commandes de pause/reprise Duo à gogo absentes');
+assert.ok(appSource.includes('coord-${exercise.x}-${exercise.y}'), 'correspondance compacte des coordonnées absente');
+assert.ok(appSource.includes('label=`${exercise.pct} % de ${exercise.base}`'), 'énoncé des pourcentages Duo à gogo absent');
 assert.ok(appSource.includes("$('gogoGamePanel').hidden=true"), 'masquage du plateau après la partie absent');
 assert.ok(appSource.includes("$('duoGogo').classList.add('gogo-playing')"), 'mise au point du plateau au lancement absente');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');

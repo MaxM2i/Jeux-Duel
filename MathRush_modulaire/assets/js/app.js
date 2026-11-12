@@ -260,7 +260,7 @@
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
          function renderReview(){$('reviewList').innerHTML=errors.length?errors.map((e,i)=>`<div class="review-item"><b>${i+1}. ${e.question}</b><p>Réponse : <strong>${e.answer}</strong></p><small>${e.tip}</small></div>`).join(''):'<div class="strategy-tip">Aucune erreur enregistrée. Continue comme ça !</div>';$('reviewPractice').disabled=!errors.length;}
          $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
-         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[],gogoLevel=1,gogoStartedAt=0,gogoMathMode='quick';
+         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[],gogoLevel=1,gogoStartedAt=0,gogoElapsedMs=0,gogoResumeAt=0,gogoPaused=false,gogoMathMode='quick';
          const GOGO_PROGRESS_KEY='mathrush_gogo_progress_v2';
          function readGogoProgress(){try{return JSON.parse(localStorage.getItem(GOGO_PROGRESS_KEY)||'{}');}catch(_){return {};}}
          function saveGogoProgress(){const progress=readGogoProgress();progress[gogoMathMode]=Math.max(1,Number(progress[gogoMathMode]||1));localStorage.setItem(GOGO_PROGRESS_KEY,JSON.stringify(progress));}
@@ -269,28 +269,31 @@
          function renderGogoLevels(){const unlocked=gogoUnlockedLevel();$('gogoLevelList').innerHTML=Array.from({length:unlocked},(_,i)=>{const level=i+1;const record=Number(localStorage.getItem(`mathrush_gogo_time_${gogoMathMode}_${level}`)||0);return `<button type="button" class="gogo-level${level===gogoLevel?' selected':''}" data-gogo-level="${level}"><b>Niveau ${level}</b><small>${record?`Record : ${formatGogoTime(record)}`:'À découvrir'}</small></button>`;}).join('');$('gogoLevelList').querySelectorAll('[data-gogo-level]').forEach(button=>button.onclick=()=>{gogoLevel=Number(button.dataset.gogoLevel);renderGogoLevels();resetGogo();});}
          function setGogoMode(mode){gogoMathMode=mode;gogoLevel=gogoUnlockedLevel();renderGogoLevels();resetGogo();}
          function resetGogo(){
-            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();
+            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();gogoPaused=false;gogoElapsedMs=0;gogoResumeAt=0;
             const target=24+Math.min(16,(gogoLevel-1)*2),seconds=Math.max(45,90-(gogoLevel-1)*4);gogoRemaining=seconds;gogoTarget=target;$('gogoTime').textContent=String(seconds);$('gogoScore').textContent='0';$('gogoTarget').textContent=String(target);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
-            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('duoGogo').classList.remove('gogo-playing');
+            $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('duoGogo').classList.remove('gogo-playing');
          }
          function makeGogoPairs(count){
-            const pairs=[],seen=new Set(),rank=Math.min(6,Math.floor((gogoLevel-1)/2));
+            const pairs=[],seen=new Set(),rank=Math.max(0,Math.min(6,Math.floor((gogoLevel-1)/2)-1));
             let attempts=0;
             while(pairs.length<count&&attempts<count*30){
                attempts++;
                const exercise=window.MathRushExercises.createSoloExercise(gogoMathMode,rank,rand,shuffle);
                let label=exercise.prompt;
+               let resultText=String(exercise.ans);
+               if(exercise.mode==='coordinates' && Number.isFinite(exercise.x) && Number.isFinite(exercise.y)){label=`(${exercise.x} ; ${exercise.y})`;resultText=`x = ${exercise.x} · y = ${exercise.y}`;}
+               if(exercise.mode==='percentages'){label=`${exercise.pct} % de ${exercise.base}`;resultText=String(Number(exercise.ans.toFixed(2))); }
                if(!label&&exercise.type==='round')label=`Arrondis ${exercise.number} à la ${exercise.unit===10?'dizaine':exercise.unit===100?'centaine':'millier'} près`;
                if(!label&&exercise.mode==='percentages')label=`${exercise.pct} % de ${exercise.base}`;
                if(!label&&exercise.type==='commonSlider')label=`${exercise.label} de ${exercise.a} et ${exercise.b}`;
                if(!label)label=`${exercise.mode} : ${exercise.a??''} ${exercise.op??''} ${exercise.b??''} = ?`;
-               const result=String(exercise.ans),key=`${label}|${result}`;
+               const result=resultText,key=`${label}|${result}`;
                if(seen.has(key))continue;
-               seen.add(key);pairs.push({id:pairs.length,label,result,visual:exercise.visual||''});
+               seen.add(key);pairs.push({id:pairs.length,label,result,matchValue:exercise.mode==='coordinates'?`coord-${exercise.x}-${exercise.y}`:String(exercise.ans),mode:exercise.mode,visual:''});
             }
             // Repli sûr si un mode produit trop peu d'énoncés distincts.
-            while(pairs.length<count){const a=rand(2,12),b=rand(2,12),label=`${a} × ${b} = ?`,result=String(a*b),key=`${label}|${result}`;if(!seen.has(key)){seen.add(key);pairs.push({id:pairs.length,label,result,visual:exercise.visual||''});}}
+            while(pairs.length<count){const a=rand(2,12),b=rand(2,12),label=`${a} × ${b} = ?`,result=String(a*b),key=`${label}|${result}`;if(!seen.has(key)){seen.add(key);pairs.push({id:pairs.length,label,result,matchValue:result,mode:'quick',visual:''});}}
             return shuffle(pairs);
          }
          function updateGogoProgress(){
@@ -306,7 +309,7 @@
             return slot;
          }
          function gogoCardFor(pair,kind){
-            return {pair:String(pair.id),kind,matchValue:String(pair.result),text:kind==='calc'?pair.label:String(pair.result),visual:kind==='calc'?pair.visual||'':''};
+            return {pair:String(pair.id),kind,matchValue:String(pair.matchValue??pair.result),text:kind==='calc'?pair.label:(Number.isFinite(Number(pair.result))?Number(pair.result).toLocaleString('fr-FR'):String(pair.result)),visual:''};
          }
          function drawGogoBoard(){
             const board=$('gogoBoard');board.innerHTML='';
@@ -361,13 +364,16 @@
             refillGogoSlots(slots||Array.from($('gogoBoard').children).filter(slot=>!slot.querySelector('.gogo-card')));
          }
          function selectGogoCard(b){
-            if(gogoBusy||gogoPairs>=gogoTarget||b.disabled||b.classList.contains('matched')||gogoRemaining<=0)return;
+            if(gogoPaused||gogoBusy||gogoPairs>=gogoTarget||b.disabled||b.classList.contains('matched')||gogoRemaining<=0)return;
             // Un second clic sur la même carte annule simplement sa sélection.
             if(b.classList.contains('selected')){b.classList.remove('selected');gogoSelected=gogoSelected.filter(card=>card!==b);return;}
             b.classList.add('selected');gogoSelected.push(b);
             if(gogoSelected.length!==2)return;
             gogoBusy=true;const [a,c]=gogoSelected;
-            const isCalcResult=a.dataset.kind!==c.dataset.kind&&Number.isFinite(Number(a.dataset.matchValue))&&Number.isFinite(Number(c.dataset.matchValue))&&Number(a.dataset.matchValue)===Number(c.dataset.matchValue);
+            const valueA=String(a.dataset.matchValue),valueC=String(c.dataset.matchValue);
+            const numericA=Number(valueA),numericC=Number(valueC);
+            const sameValue=Number.isFinite(numericA)&&Number.isFinite(numericC)?numericA===numericC:valueA===valueC;
+            const isCalcResult=a.dataset.kind!==c.dataset.kind&&sameValue;
             if(isCalcResult){
                a.classList.add('matched');c.classList.add('matched');
                a.disabled=true;c.disabled=true;
@@ -376,7 +382,7 @@
                const emptySlots=[a.parentElement,c.parentElement];
                gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];gogoBusy=false;
                const completedAt=gogoPairs>=gogoTarget?Date.now():0;
-               if(completedAt&&gogoTimer){clearInterval(gogoTimer);gogoTimer=null;}
+               if(completedAt&&gogoTimer){gogoElapsedMs+=Math.max(0,completedAt-gogoResumeAt);clearInterval(gogoTimer);gogoTimer=null;}
                setTimeout(()=>{
                   emptySlots.forEach(slot=>slot.replaceChildren());
                   if(completedAt){finishGogo(true,completedAt);return;}
@@ -387,15 +393,27 @@
                setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');gogoSelected=[];gogoBusy=false;},700);
             }
          }
+         function runGogoClock(){
+            clearInterval(gogoTimer);gogoResumeAt=Date.now();gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
+         }
+         function pauseGogo(){
+            if(gogoPaused||!gogoTimer)return;
+            gogoElapsedMs+=Date.now()-gogoResumeAt;clearInterval(gogoTimer);gogoTimer=null;gogoPaused=true;
+            $('gogoPausePanel').hidden=false;$('gogoBoard').hidden=true;$('gogoPause').hidden=true;
+         }
+         function resumeGogo(){
+            if(!gogoPaused)return;
+            gogoPaused=false;$('gogoPausePanel').hidden=true;$('gogoBoard').hidden=false;$('gogoPause').hidden=false;runGogoClock();
+         }
          function startGogo(){
-            resetGogo();$('duoGogo').classList.add('gogo-playing');$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';gogoStartedAt=Date.now();
-            gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();
-            gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
+            resetGogo();$('duoGogo').classList.add('gogo-playing');$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';$('gogoPause').hidden=false;gogoStartedAt=Date.now();gogoElapsedMs=0;
+            gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();runGogoClock();
          }
          function finishGogo(completed,finishedAt=Date.now()){
             if(!$('gogoResultPanel').hidden)return;
-            clearInterval(gogoTimer);gogoTimer=null;gogoBusy=true;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
-            const elapsed=Math.max(0,Math.round((finishedAt-gogoStartedAt)/100)/10);
+            if(gogoTimer)gogoElapsedMs+=Math.max(0,finishedAt-gogoResumeAt);
+            clearInterval(gogoTimer);gogoTimer=null;gogoPaused=false;gogoBusy=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('gogoBoard').hidden=false;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
+            const elapsed=Math.max(0,Math.round(gogoElapsedMs/100)/10);
             const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
             const timeKey=`mathrush_gogo_time_${gogoMathMode}_${gogoLevel}`;const previousTime=Number(localStorage.getItem(timeKey)||0);
             const improved=completed&&(!previousTime||elapsed<previousTime);
@@ -422,6 +440,9 @@
             renderGogoLevels();renderQuests();
          }
          $('gogoStart').onclick=startGogo;
+         $('gogoPause').onclick=pauseGogo;
+         $('gogoResume').onclick=resumeGogo;
+         $('gogoStopPaused').onclick=()=>{resetGogo();renderGogoLevels();};
          $('gogoImprove').onclick=()=>startGogo();
          $('gogoNext').onclick=()=>{gogoLevel=Math.min(gogoUnlockedLevel(),gogoLevel+1);renderGogoLevels();startGogo();};
          $('gogoQuit').onclick=()=>{resetGogo();show('home');};
@@ -470,7 +491,7 @@
             const modes=MathRushConfig.MODES.filter(mode=>mode.id!=='mixed').map(mode=>mode.id);
             const type=duelMathMode==='mixed'?modes[rand(0,modes.length-1)]:duelMathMode;
             if(type==='quick'){
-               const d=duelDiff,base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
+               const d=Math.max(0,duelDiff-1),base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
                return makeDuelChoiceQuestion(type,`${a} ${op} ${b} = ?`,answer,[Math.max(0,answer-delta),answer+delta,answer+2*delta]);
             }
             if(type==='complex'){
@@ -487,7 +508,7 @@
                return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
             }
             if(type==='common-multiples'||type==='multiplication-division'){
-               const generated=MathRushExercises.createSoloExercise(type,duelDiff,rand,shuffle);
+               const generated=MathRushExercises.createSoloExercise(type,Math.max(0,duelDiff-1),rand,shuffle);
                const answer=generated.ans;
                const prompt=generated.prompt || (generated.type==='commonSlider'
                   ? `Sélectionne le ${generated.label} de ${generated.a} et ${generated.b}.`
