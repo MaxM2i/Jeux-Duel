@@ -373,8 +373,13 @@
       .range {
          width: 100%;
          height: 34px;
-         padding: 0 175px;
-         accent-color: var(--blue)
+         /* IMPORTANT : aucun padding horizontal, sinon le rail tactile est écrasé sur mobile. */
+         padding: 0 !important;
+         margin-inline: 0;
+         box-sizing: border-box;
+         accent-color: var(--blue);
+         pointer-events: auto;
+         touch-action: pan-y
       }
 
       .ticks {
@@ -1486,3 +1491,7 @@
 .math-answer-toast .toast-points{font-size:.9em;font-weight:1000;letter-spacing:.01em}
 .math-answer-toast .toast-stars{color:#f5b400;font-size:1.35em;letter-spacing:.12em;text-shadow:0 2px 8px rgba(245,180,0,.28)}
 .math-answer-toast.bad .toast-points{color:inherit}
+
+/* Correctif curseur : le rail occupe toute la largeur utile et reste manipulable au doigt. */
+#solo input[type=range].range{display:block;width:100%;max-width:100%;min-width:0;padding:0!important;margin:12px 0 4px;box-sizing:border-box;pointer-events:auto;touch-action:pan-y;position:relative;z-index:2;cursor:pointer}
+#soloQuestion{min-width:0}

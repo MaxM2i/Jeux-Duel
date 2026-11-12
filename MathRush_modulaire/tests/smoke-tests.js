@@ -76,7 +76,7 @@ assert.ok(appSource.includes('function recordTiming(') && appSource.includes('fu
 assert.ok(appSource.includes('function showAnswerToast(') && appSource.includes('answerFeedbackObserver'), 'feedback central des réponses absent');
 assert.ok(appSource.includes('toast-points') && appSource.includes('toast-stars'), 'détail des points et étoiles du feedback absent');
 assert.ok(appSource.includes('elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0'), 'seuils des étoiles de rapidité absents');
-assert.ok(appSource.includes('answerToastAnimationTimer') && appSource.includes('520ms cubic-bezier'), 'animation du feedback vers la jauge absente');
+assert.ok(appSource.includes('answerToastAnimationTimer') && appSource.includes('1050ms cubic-bezier'), 'animation du feedback vers la jauge absente');
 assert.ok(appSource.includes('soloBackHome') && appSource.includes('duelBackHome') && appSource.includes('mathBackHome'), 'boutons retour à l’accueil des modes absents');
 assert.ok(appSource.includes("a.classList.add('answer-wrong')") && appSource.includes("'answer-correct'"), 'coloration des cartes Duo à gogo absente');
 assert.ok(fs.readFileSync(`${__dirname}/../assets/css/mathrush.css`, 'utf8').includes('.math-answer-toast.visible'), 'style du feedback central absent');
@@ -86,3 +86,11 @@ assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionSt
 assert.ok(appSource.includes('timingSummaryHtml(gogoTimingStats'), 'statistiques de rapidité Duo à gogo absentes');
 assert.ok(appSource.includes('mathPlayerTiming[player.id]'), 'statistiques de rapidité multijoueur absentes');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
+
+// Régression curseur mobile : aucun padding horizontal ne doit écraser le rail tactile.
+const cssSource = require('fs').readFileSync(require('path').join(__dirname, '../assets/css/mathrush.css'), 'utf8');
+assert(cssSource.includes('#solo input[type=range].range') && cssSource.includes('padding:0!important'), 'range tactile sans padding');
+assert(appSource.includes('answerToastTimer=setTimeout(travel,3000)'), 'feedback visible 3000 ms');
+assert(appSource.includes('1050ms cubic-bezier'), 'animation feedback prolongée');
+
+assert.ok(fs.existsSync(`${__dirname}/../exercise-lab.html`), 'laboratoire indépendant des exercices absent');

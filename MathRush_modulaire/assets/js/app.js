@@ -19,17 +19,20 @@
                if(!target||!toast.isConnected)return;
                const a=toast.getBoundingClientRect(),b=target.getBoundingClientRect();
                const dx=b.left+b.width/2-a.left-a.width/2,dy=b.top+b.height/2-a.top-a.height/2;
-               toast.style.transition='transform 520ms cubic-bezier(.2,.8,.2,1), opacity 520ms ease';
+               // Animation longue et lisible : le feedback reste d'abord 3 s au centre, puis voyage vers la jauge.
+               toast.style.transition='transform 1050ms cubic-bezier(.18,.72,.22,1), opacity 1050ms ease';
                toast.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.18)`;toast.style.opacity='0';
-               answerToastAnimationTimer=setTimeout(()=>{toast.classList.remove('visible');toast.hidden=true;toast.style.opacity='';},540);
+               answerToastAnimationTimer=setTimeout(()=>{toast.classList.remove('visible');toast.hidden=true;toast.style.opacity='';},1080);
             };
-            answerToastTimer=setTimeout(travel,900);
+            // 3 000 ms de lecture avant le déplacement vers la jauge.
+            answerToastTimer=setTimeout(travel,3000);
          }
          document.addEventListener('click',event=>{
             const button=event.target.closest?.('#soloValidate,#duelContinue,#mathNextLocal');const toast=$('mathAnswerToast');
             if(button&&toast&&!toast.hidden&&toast.classList.contains('visible')){
                clearTimeout(answerToastTimer);const target=$('soloProgress')||$('gogoProgressFill')||$('homeProgress')||$('soloPoints');
-               if(target){const a=toast.getBoundingClientRect(),b=target.getBoundingClientRect(),dx=b.left+b.width/2-a.left-a.width/2,dy=b.top+b.height/2-a.top-a.height/2;toast.style.transition='transform 150ms ease,opacity 150ms ease';toast.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`;toast.style.opacity='0';answerToastAnimationTimer=setTimeout(()=>{toast.hidden=true;toast.classList.remove('visible');toast.style.opacity='';},160);}
+               if(target){const a=toast.getBoundingClientRect(),b=target.getBoundingClientRect(),dx=b.left+b.width/2-a.left-a.width/2,dy=b.top+b.height/2-a.top-a.height/2;// Un appui sur Continuer accélère le déplacement au lieu d'attendre la fin du feedback.
+               toast.style.transition='transform 190ms cubic-bezier(.2,.8,.2,1),opacity 190ms ease';toast.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`;toast.style.opacity='0';answerToastAnimationTimer=setTimeout(()=>{toast.hidden=true;toast.classList.remove('visible');toast.style.opacity='';},210);}
             }
          },true);
          const answerFeedbackObserver=new MutationObserver(records=>{
@@ -178,10 +181,12 @@
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
             if (exercise.type === 'commonSlider') {
                q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.a} <em>,</em> ${exercise.b}</div></div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.ticks[1]))}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div>`;
-               $('soloRange').oninput = e => { choice = Number(e.target.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; };
+               // Le curseur met à jour la valeur et l'état de validation à chaque mouvement tactile/souris.
+               $('soloRange').addEventListener('input', e => { choice = Number(e.currentTarget.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; });
             } else if (['slider', 'line'].includes(exercise.type)) {
                q.innerHTML = `<div class="question"><small>${exercise.type === 'line' ? 'Place le résultat sur la droite graduée' : 'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="1" value="${rand(exercise.min, exercise.max)}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
-               $('soloRange').oninput = e => { choice = Number(e.target.value); $('soloValidate').disabled = false; };
+               // Même gestion pour les estimations : ne pas bloquer les gestes tactiles sur le range.
+               $('soloRange').addEventListener('input', e => { choice = Number(e.currentTarget.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; });
             } else if (exercise.type === 'choice') {
                q.innerHTML = `<div class="question"><small>${exercise.subLabel || (exercise.mode==='complex'?'Résous le calcul en respectant les priorités':'Choisis la bonne réponse')}</small>${exercise.prompt||`${exercise.a} ${exercise.op} ${exercise.b} = ?`}</div><div class="choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
@@ -264,7 +269,7 @@
             const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0,totalMs:0,responses:0,fastestMs:0,slowestMs:0,bonusPoints:0});modeStats.played++;if(exact)modeStats.correct++;recordTiming(modeStats,elapsedMs,exact?speed:0);});
             let gain = 0, answerPoints = 0, speedPoints = 0; if (exact) { answerPoints = 100 + Math.min(40, streak * 5); speedPoints = speed; gain = answerPoints + speedPoints; streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); answerPoints=gain; streak = 0; } else streak = 0;
             points += gain; best = Math.max(best, streak); lifetimeBestStreak = Math.max(lifetimeBestStreak, best); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
-            const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?(elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0):0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
+            const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?(elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0):0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b>` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
             if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
             $('soloValidate').disabled = false; $('soloValidate').textContent = exIndex === 14 ? 'Terminer le niveau' : 'Continuer';
             // Amener l'action suivante dans la zone visible sans enfermer le contenu dans un scroll interne.

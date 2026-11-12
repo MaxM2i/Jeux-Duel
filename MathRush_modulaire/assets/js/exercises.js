@@ -53,6 +53,8 @@
   function gcd(a, b) { while (b) [a, b] = [b, a % b]; return a; }
   function lcm(a, b) { return a / gcd(a, b) * b; }
 
+  // Point d'entrée unique des exercices solo et des modes qui réutilisent le catalogue.
+  // Chaque branche renvoie un objet normalisé : type, mode, consigne/visuel, réponse et choix éventuels.
   function createSoloExercise(selectedMode, difficultyRank, rand, shuffle) {
     const mode = selectedMode === 'mixed'
       ? pick(window.MathRushConfig.MODES.filter(item => item.id !== 'mixed').map(item => item.id), rand)
@@ -78,6 +80,7 @@
         opts: shuffle(unique([answer, Math.max(0, answer - unit), answer + unit, answer + unit * 2])),
         tip: `Arrondis à la ${unit === 10 ? 'dizaine' : unit === 100 ? 'centaine' : 'millier'} la plus proche.` };
     }
+    // COORDONNÉES : x/y sont des unités du repère ; le visuel et la réponse partagent les mêmes valeurs.
     if (mode === 'coordinates') {
       const coordinateMax = profile.coordinateMax;
       const x = rand(1, coordinateMax), y = rand(1, coordinateMax), label = ['A', 'B', 'C', 'D'][rand(0, 3)], answer = `(${x} ; ${y})`;
@@ -87,6 +90,7 @@
       return { type: 'coordinates', mode, x, y, coordinateMax, prompt: `Quelles sont les coordonnées du point ${label} ?`, visual, ans: answer,
         opts: shuffle(unique([answer, `(${Math.max(0, x - 1)} ; ${y})`, `(${x + 1} ; ${y})`, `(${x} ; ${y + 1})`])) };
     }
+    // PPCM/PGCD : une partie des tirages utilise un curseur (commonSlider), le reste des choix.
     if (mode === 'common-multiples') {
       const limit = difficultyRank <= 1 ? 6 : difficultyRank <= 3 ? 10 : difficultyRank <= 5 ? 12 : 15;
       const a = rand(2, limit), b = rand(2, limit), askPpcm = Math.random() < 0.62;
@@ -113,6 +117,7 @@
       const opts = shuffle(unique([answer, answer + delta, Math.max(0, answer - delta), answer + delta * 2]));
       return { type: 'choice', mode, prompt: `${a} ${op} ${b} = ?`, subLabel: useDivision ? 'Division' : 'Multiplication', a, b, op, ans: answer, opts };
     }
+    // POURCENTAGES : ans reste numérique pour que validation et affichage comparent la même valeur.
     if (mode === 'percentages') {
       const pct = pick(profile.percentages, rand), base = pick(profile.bases, rand), ans = base * pct / 100, delta = Math.max(1, base / 20);
       return { type: 'percent', mode, pct, base, ans, opts: shuffle(unique([ans, ans + delta, Math.max(0, ans - delta), ans * 2])) };
