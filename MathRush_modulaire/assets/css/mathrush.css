@@ -1425,3 +1425,44 @@
 .podium-rest-player{padding:9px 0;border-top:1px solid #e3e8f1}
 .podium-rest-player>div:first-child{display:flex;justify-content:space-between;gap:8px;font-size:13px}
 .podium-rest-player .timing-summary{margin:6px 0 0;padding:8px}
+
+
+/* Correctif ergonomie mobile : conserver le scroll naturel de la page.
+   Les écrans de jeu ne sont plus enfermés dans une hauteur viewport fixe. */
+@media(max-width:700px){
+  #solo.active,#duel.active,#localMath.active,#duoGogo.active{
+    height:auto!important;min-height:0!important;max-height:none!important;
+    overflow:visible!important;flex:0 0 auto!important;
+  }
+  #solo.active>.panel,#duel.active>.panel,#localMath.active>#mathLocalPlay,
+  #duoGogo.active>#gogoGamePanel{
+    height:auto!important;min-height:0!important;max-height:none!important;
+    overflow:visible!important;flex:0 0 auto!important;
+  }
+  #solo #soloQuestion,#duel #duelQuestion,#duel #duelOptions,
+  #localMath #mathLocalQuestion,#localMath #mathLocalVisual,#localMath #mathLocalOptions{
+    overflow:visible!important;max-height:none!important;flex:0 0 auto!important;
+  }
+  #solo .btn-row{
+    position:sticky;bottom:0;z-index:12;flex-wrap:wrap;
+    margin:10px -2px 0;padding:8px 2px max(8px,env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.98);box-shadow:0 -6px 18px #243d7018;
+  }
+  #solo .btn-row .btn{min-height:48px;flex:1 1 130px}
+  #duel #duelActions,#duel #localDuelNext,#localMath #mathNextLocal{
+    position:sticky;bottom:0;z-index:12;
+  }
+  #duoGogo.gogo-playing{height:auto!important;min-height:0!important;overflow:visible!important}
+  #duoGogo.gogo-playing #gogoGamePanel{height:auto!important;min-height:0!important;overflow:visible!important}
+  #duoGogo.gogo-playing .gogo-board{grid-template-rows:repeat(4,minmax(95px,1fr))!important}
+}
+.strategy-tip,.gogo-tip{position:relative;padding-right:42px}
+.tip-dismiss{
+  position:absolute;top:6px;right:7px;width:30px;height:30px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:50%;background:rgba(255,255,255,.78);
+  color:inherit;font-size:14px;font-weight:1000;line-height:1;cursor:pointer;
+  box-shadow:0 1px 4px #243d7020;
+}
+.solo-help-close{font-size:0!important;min-width:34px;min-height:34px}
+.solo-help-close::before{content:"X";font-size:15px;font-weight:1000}

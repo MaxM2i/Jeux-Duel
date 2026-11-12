@@ -130,7 +130,7 @@
             locked = false; choice = null; exercise = buildExercise(); startTime = Date.now();
             $('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / 15`; $('soloProgress').style.width = (exIndex / 15 * 100) + '%';
-            $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + streak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true;
+            $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + streak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true; $('soloValidate').style.display=''; $('soloSkip').style.display='';
             const q = $('soloQuestion');
             const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.a!==undefined){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
@@ -225,6 +225,8 @@
             const fb = $('soloFeedback'); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
             if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
             $('soloValidate').disabled = false; $('soloValidate').textContent = exIndex === 14 ? 'Terminer le niveau' : 'Continuer';
+            // Amener l'action suivante dans la zone visible sans enfermer le contenu dans un scroll interne.
+            requestAnimationFrame(() => $('soloValidate').scrollIntoView({block:'nearest',behavior:'smooth'}));
          }
          function nextSolo() {
             if (!locked) return;
@@ -914,6 +916,24 @@
             $('mathHostStart').onclick=()=>{if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}mathAdvanceRule=$('mathAdvanceRuleMulti').value;mathPlayerTiming={};mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion,advanceRule:mathAdvanceRule});setMathStatus('La partie est lancée.');};
             $('mathNextLocal').onclick=nextMathQuestion;
          }
+
+
+         // Chaque bulle orange « Astuce » peut être fermée avec un X.
+         const tipCloseObserver = new MutationObserver(() => {
+            document.querySelectorAll('.strategy-tip,.gogo-tip').forEach(tip => {
+               if (tip.querySelector(':scope > .tip-dismiss')) return;
+               const close = document.createElement('button');
+               close.type = 'button'; close.className = 'tip-dismiss'; close.textContent = 'X';
+               close.setAttribute('aria-label', 'Fermer l’astuce');
+               close.addEventListener('click', () => { tip.hidden = true; });
+               tip.appendChild(close);
+            });
+         });
+         tipCloseObserver.observe(document.body, {childList:true,subtree:true});
+         document.querySelectorAll('.strategy-tip,.gogo-tip').forEach(tip => {
+            if (tip.querySelector(':scope > .tip-dismiss')) return;
+            const close=document.createElement('button');close.type='button';close.className='tip-dismiss';close.textContent='X';close.setAttribute('aria-label','Fermer l’astuce');close.addEventListener('click',()=>{tip.hidden=true;});tip.appendChild(close);
+         });
 
       })();
    

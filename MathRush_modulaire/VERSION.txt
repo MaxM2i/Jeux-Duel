@@ -1,1 +1,2 @@
 Refactorisation modulaire de MathRush(4).html — 11 novembre 2026.
+Correctif ergonomie mobile — 12 novembre 2026 : scroll naturel, action suivante amenée à l’écran, réinitialisation des boutons au démarrage et fermeture X des bulles d’aide/astuce.
