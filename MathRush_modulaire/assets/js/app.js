@@ -3,15 +3,35 @@
          const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
          const screens = ['home', 'pathScreen', 'solo', 'duelSetup', 'duel', 'localMath', 'questsScreen', 'reviewScreen', 'duoGogo', 'profileScreen'];
          function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
-         // Feedback central : ne change jamais la hauteur du contenu de jeu.
-         let answerToastTimer=null;
-         function showAnswerToast(message,kind='good'){
+         // Feedback central : affiche les points gagnés puis rejoint visuellement la jauge.
+         let answerToastTimer=null, answerToastAnimationTimer=null;
+         function showAnswerToast(message,kind='good',meta={}){
             let toast=$('mathAnswerToast');
             if(!toast){toast=document.createElement('div');toast.id='mathAnswerToast';toast.className='math-answer-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast);}
-            toast.className=`math-answer-toast ${kind}`;toast.textContent=message;toast.hidden=false;
-            clearTimeout(answerToastTimer);requestAnimationFrame(()=>toast.classList.add('visible'));
-            answerToastTimer=setTimeout(()=>{toast.classList.remove('visible');setTimeout(()=>{if(!toast.classList.contains('visible'))toast.hidden=true;},220);},1800);
+            clearTimeout(answerToastTimer);clearTimeout(answerToastAnimationTimer);
+            const pointsLine=meta.points!==undefined?`<span class="toast-points">${meta.points} pts réponse${meta.speedPoints!==undefined?` · +${meta.speedPoints} pts rapidité`:''}</span>`:'';
+            const stars=meta.stars?`<span class="toast-stars">${'★'.repeat(meta.stars)}</span>`:'';
+            toast.className=`math-answer-toast ${kind}`;toast.innerHTML=`<span class="toast-message">${message}</span>${pointsLine}${stars}`;
+            toast.hidden=false;toast.style.transition='';toast.style.left='50%';toast.style.top='50%';toast.style.transform='translate(-50%,-50%) scale(.96)';toast.style.opacity='';
+            requestAnimationFrame(()=>toast.classList.add('visible'));
+            const travel=()=>{
+               const target=$('soloProgress')||$('gogoProgressFill')||$('homeProgress')||$('soloPoints');
+               if(!target||!toast.isConnected)return;
+               const a=toast.getBoundingClientRect(),b=target.getBoundingClientRect();
+               const dx=b.left+b.width/2-a.left-a.width/2,dy=b.top+b.height/2-a.top-a.height/2;
+               toast.style.transition='transform 520ms cubic-bezier(.2,.8,.2,1), opacity 520ms ease';
+               toast.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.18)`;toast.style.opacity='0';
+               answerToastAnimationTimer=setTimeout(()=>{toast.classList.remove('visible');toast.hidden=true;toast.style.opacity='';},540);
+            };
+            answerToastTimer=setTimeout(travel,900);
          }
+         document.addEventListener('click',event=>{
+            const button=event.target.closest?.('#soloValidate,#duelContinue,#mathNextLocal');const toast=$('mathAnswerToast');
+            if(button&&toast&&!toast.hidden&&toast.classList.contains('visible')){
+               clearTimeout(answerToastTimer);const target=$('soloProgress')||$('gogoProgressFill')||$('homeProgress')||$('soloPoints');
+               if(target){const a=toast.getBoundingClientRect(),b=target.getBoundingClientRect(),dx=b.left+b.width/2-a.left-a.width/2,dy=b.top+b.height/2-a.top-a.height/2;toast.style.transition='transform 150ms ease,opacity 150ms ease';toast.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`;toast.style.opacity='0';answerToastAnimationTimer=setTimeout(()=>{toast.hidden=true;toast.classList.remove('visible');toast.style.opacity='';},160);}
+            }
+         },true);
          const answerFeedbackObserver=new MutationObserver(records=>{
             const nodes=new Set(records.map(record=>record.target.nodeType===1?record.target:record.target.parentElement).filter(Boolean));
             nodes.forEach(node=>{
@@ -21,7 +41,7 @@
                const message=(feedback.textContent||'').trim();if(!message||feedback.dataset.lastToast===message)return;
                feedback.dataset.lastToast=message;
                const kind=feedback.classList.contains('good')?'good':feedback.classList.contains('bad')?'bad':'near';
-               showAnswerToast(message,kind);
+               showAnswerToast(message,kind,{points:feedback.dataset.points,speedPoints:feedback.dataset.speedPoints,stars:Number(feedback.dataset.stars)||0});
             });
          });
          answerFeedbackObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});
@@ -242,9 +262,9 @@
             const elapsedMs=Math.max(0,Date.now()-startTime), slider = ['slider', 'line', 'commonSlider'].includes(exercise.type), exact = diff === 0, near = ['slider', 'line'].includes(exercise.type) && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, elapsedMs / 1000 - 4) * 2));
             recordTiming(soloSessionStats,elapsedMs,exact?speed:0);recordTiming(rapidityStats,elapsedMs,exact?speed:0);
             const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0,totalMs:0,responses:0,fastestMs:0,slowestMs:0,bonusPoints:0});modeStats.played++;if(exact)modeStats.correct++;recordTiming(modeStats,elapsedMs,exact?speed:0);});
-            let gain = 0; if (exact) { gain = 100 + speed + Math.min(40, streak * 5); streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); streak = 0; } else streak = 0;
+            let gain = 0, answerPoints = 0, speedPoints = 0; if (exact) { answerPoints = 100 + Math.min(40, streak * 5); speedPoints = speed; gain = answerPoints + speedPoints; streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); answerPoints=gain; streak = 0; } else streak = 0;
             points += gain; best = Math.max(best, streak); lifetimeBestStreak = Math.max(lifetimeBestStreak, best); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
-            const fb = $('soloFeedback'); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
+            const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?(elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0):0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
             if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
             $('soloValidate').disabled = false; $('soloValidate').textContent = exIndex === 14 ? 'Terminer le niveau' : 'Continuer';
             // Amener l'action suivante dans la zone visible sans enfermer le contenu dans un scroll interne.
@@ -255,9 +275,9 @@
             if (exIndex < 14) { exIndex++; renderSolo(); return; }
             const key = `${section}-${level}`; if (!done.includes(key)) done.push(key); soloLessons++;if(correctCount>=14)highScoreLessons++;
             if (level < 15) level++; else if (section < 15) { section++; level = 1; }
-            persist(); renderPath(); $('soloQuestion').innerHTML = `<div class="summary"><div class="big">🏆</div><h2>Niveau terminé !</h2><p>Tu as terminé les 15 exercices.</p><p><b>${points} points</b> · ${correctCount} bonnes réponses</p>${timingSummaryHtml(soloSessionStats)}<button class="btn btn-main full" id="nextLevel">Continuer le parcours</button><button class="btn btn-soft full" id="reviewFromEnd">Revoir mes erreurs</button></div>`;
+            persist(); renderPath(); $('soloQuestion').innerHTML = `<div class="summary"><div class="big">🏆</div><h2>Niveau terminé !</h2><p>Tu as terminé les 15 exercices.</p><p><b>${points} points</b> · ${correctCount} bonnes réponses</p>${timingSummaryHtml(soloSessionStats)}<button class="btn btn-main full" id="nextLevel">Continuer le parcours</button><button class="btn btn-soft full" id="reviewFromEnd">Revoir mes erreurs</button><button class="btn btn-soft full" id="soloBackHome">Retour à l’accueil du parcours solo</button></div>`;
             $('soloFeedback').className = 'feedback'; $('soloValidate').style.display = 'none'; $('soloSkip').style.display = 'none';
-            $('nextLevel').onclick = () => { $('soloValidate').style.display = ''; $('soloSkip').style.display = ''; startSolo(); };$('reviewFromEnd').onclick=()=>{renderReview();show('reviewScreen');};
+            $('nextLevel').onclick = () => { $('soloValidate').style.display = ''; $('soloSkip').style.display = ''; startSolo(); };$('reviewFromEnd').onclick=()=>{renderReview();show('reviewScreen');};$('soloBackHome').onclick=()=>show('pathScreen');
          }
          function renderPath() {
             loadModeTrack();
@@ -736,7 +756,8 @@
             const result = duelMy === duelOpp ? 'Égalité !' : duelMy > duelOpp ? 'Victoire !' : 'Cette fois, ton adversaire gagne';
             const won = duelMy > duelOpp, tied = duelMy === duelOpp;
             $('duelResult').className = 'summary competitive-result duel-finish-anim';
-            $('duelResult').innerHTML = `<div class="finish-confetti" aria-hidden="true">${won?'🎉 ✨ 🏆 ✨ 🎉':tied?'🤝 ✨ 🤝':'💪 ⭐ 💫'}</div><div class="finish-medal">${message ? '👋' : tied ? '🤝' : won ? '🏆' : '💪'}</div><p class="finish-eyebrow">DÉFI TERMINÉ</p><h2>${message ? escapeHtml(message) : result}</h2><div class="finish-score-grid"><div><small>Ton score</small><strong>${duelMy}</strong></div><div><small>Adversaire</small><strong>${duelOpp}</strong></div></div><p class="finish-rounds">${round} manches jouées</p>${timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)}`;
+            $('duelResult').innerHTML = `<div class="finish-confetti" aria-hidden="true">${won?'🎉 ✨ 🏆 ✨ 🎉':tied?'🤝 ✨ 🤝':'💪 ⭐ 💫'}</div><div class="finish-medal">${message ? '👋' : tied ? '🤝' : won ? '🏆' : '💪'}</div><p class="finish-eyebrow">DÉFI TERMINÉ</p><h2>${message ? escapeHtml(message) : result}</h2><div class="finish-score-grid"><div><small>Ton score</small><strong>${duelMy}</strong></div><div><small>Adversaire</small><strong>${duelOpp}</strong></div></div><p class="finish-rounds">${round} manches jouées</p>${timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)}<button class="btn btn-soft full finish-menu-btn" id="duelBackHome" type="button">Retour à l’accueil du Défi</button>`;
+            $('duelBackHome').onclick=()=>{show('duelSetup');$('duelResult').style.display='none';$('duelActions').style.display='none';};
          }
          function prepareRematch() {
             round = 0; duelMy = 0; duelOpp = 0; opponentLeft = false; rematchPending = false; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false;
@@ -927,8 +948,8 @@
                $('mathLocalScores').innerHTML='';$('mathNextLocal').style.display='none';
                $('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';
                $('mathPodiumResult').style.display='block';persist();
-               $('mathPodiumResult').innerHTML=`<div class="finish-confetti" aria-hidden="true">🎉 ✨ 🎊 🏆 🎊 ✨ 🎉</div><p class="finish-eyebrow">PARTIE MULTIJOUEUR TERMINÉE</p><h2>Le podium MathRush</h2><div class="podium-stage">${top.map((player,index)=>{const rank=ranked.findIndex(p=>p.score===player.score);const place=index===0?'first':index===1?'second':'third';return `<div class="podium-player podium-${place}" style="--podium-delay:${index*180}ms"><div class="podium-crown">${index===0?'👑':index===1?'🥈':'🥉'}</div><img src="${profileAvatarUrl(player)}" alt=""><strong>${escapeHtml(player.name)}</strong><b>${player.score} pts</b>${timingSummaryHtml(mathPlayerTiming[player.id]||createTimingStats(),'Rapidité · '+escapeHtml(player.name))}<span class="podium-block">${rank+1}</span></div>`;}).join('')}</div>${rest.length?`<div class="podium-rest"><h3>Classement</h3>${rest.map((player,index)=>{const st=mathPlayerTiming[player.id]||createTimingStats();return `<article class="podium-rest-player"><div><span>${index+4}. ${escapeHtml(player.name)}</span><b>${player.score} pts</b></div>${timingSummaryHtml(st,'Rapidité · '+escapeHtml(player.name))}</article>`;}).join('')}</div>`:''}<button class="btn btn-main full finish-menu-btn" id="mathBackToLobby" type="button">Retour au salon</button>`;
-               $('mathPodiumResult').querySelector('#mathBackToLobby').onclick=()=>{$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;setMathStatus('Partie terminée. Tu peux créer un nouveau salon.');};
+               $('mathPodiumResult').innerHTML=`<div class="finish-confetti" aria-hidden="true">🎉 ✨ 🎊 🏆 🎊 ✨ 🎉</div><p class="finish-eyebrow">PARTIE MULTIJOUEUR TERMINÉE</p><h2>Le podium MathRush</h2><div class="podium-stage">${top.map((player,index)=>{const rank=ranked.findIndex(p=>p.score===player.score);const place=index===0?'first':index===1?'second':'third';return `<div class="podium-player podium-${place}" style="--podium-delay:${index*180}ms"><div class="podium-crown">${index===0?'👑':index===1?'🥈':'🥉'}</div><img src="${profileAvatarUrl(player)}" alt=""><strong>${escapeHtml(player.name)}</strong><b>${player.score} pts</b>${timingSummaryHtml(mathPlayerTiming[player.id]||createTimingStats(),'Rapidité · '+escapeHtml(player.name))}<span class="podium-block">${rank+1}</span></div>`;}).join('')}</div>${rest.length?`<div class="podium-rest"><h3>Classement</h3>${rest.map((player,index)=>{const st=mathPlayerTiming[player.id]||createTimingStats();return `<article class="podium-rest-player"><div><span>${index+4}. ${escapeHtml(player.name)}</span><b>${player.score} pts</b></div>${timingSummaryHtml(st,'Rapidité · '+escapeHtml(player.name))}</article>`;}).join('')}</div>`:''}<button class="btn btn-main full finish-menu-btn" id="mathBackToLobby" type="button">Retour au salon</button><button class="btn btn-soft full finish-menu-btn" id="mathBackHome" type="button">Retour à l’accueil du Multijoueur</button>`;
+               $('mathPodiumResult').querySelector('#mathBackToLobby').onclick=()=>{$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;setMathStatus('Partie terminée. Tu peux créer un nouveau salon.');};$('mathPodiumResult').querySelector('#mathBackHome').onclick=()=>{show('home');$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';};
             }
             function nextMathQuestion(){if(!mathHost||!mathGameStarted)return;if(mathRound>=10){broadcastMath({type:'mathFinish',players:mathPlayers,timings:mathPlayerTiming});finishMathGame();return;}mathRound++;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});}
             $('goLocal').onclick=()=>{renderSharedMathModeCards('mathRoomModes',mathQuestionMode,id=>{mathQuestionMode=id;});show('localMath');$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathPodiumResult').style.display='none';$('mathRoomRoster').style.display='none';$('mathHostStart').style.display='none';$('mathHostStart').disabled=true;$('mathCreateRoom').disabled=false;$('mathJoinCode').value='';const profile=playerProfile.getProfile();$('mathOnlineName').value=profile.name;setMathStatus('Un salon démarre à partir de 3 joueurs.');};

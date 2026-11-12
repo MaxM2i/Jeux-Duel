@@ -1479,3 +1479,10 @@
 #duoGogo.gogo-playing #gogoFeedback{display:none!important}
 #duoGogo.gogo-playing .gogo-card.answer-correct{background:#dff7e9!important;border-color:#20a36b!important;color:#116b49!important;box-shadow:0 4px 0 #b8e8ce!important}
 #duoGogo.gogo-playing .gogo-card.answer-wrong{background:#ffe3e5!important;border-color:#df5260!important;color:#a51f2d!important;box-shadow:0 4px 0 #f3c2c7!important}
+
+/* Feedback de réponse : détail des points et étoiles de rapidité */
+.math-answer-toast{display:flex;flex-direction:column;align-items:center;gap:7px;will-change:transform,opacity;}
+.math-answer-toast .toast-message{display:block}
+.math-answer-toast .toast-points{font-size:.9em;font-weight:1000;letter-spacing:.01em}
+.math-answer-toast .toast-stars{color:#f5b400;font-size:1.35em;letter-spacing:.12em;text-shadow:0 2px 8px rgba(245,180,0,.28)}
+.math-answer-toast.bad .toast-points{color:inherit}

@@ -74,6 +74,10 @@ assert.ok(htmlSource.includes('id="soloHelpClose"'), 'bouton de fermeture de l�
 assert.ok(htmlSource.includes('id="profileSpeed"'), 'rapidité moyenne absente du profil');
 assert.ok(appSource.includes('function recordTiming(') && appSource.includes('function timingSummaryHtml('), 'statistiques de rapidité communes absentes');
 assert.ok(appSource.includes('function showAnswerToast(') && appSource.includes('answerFeedbackObserver'), 'feedback central des réponses absent');
+assert.ok(appSource.includes('toast-points') && appSource.includes('toast-stars'), 'détail des points et étoiles du feedback absent');
+assert.ok(appSource.includes('elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0'), 'seuils des étoiles de rapidité absents');
+assert.ok(appSource.includes('answerToastAnimationTimer') && appSource.includes('520ms cubic-bezier'), 'animation du feedback vers la jauge absente');
+assert.ok(appSource.includes('soloBackHome') && appSource.includes('duelBackHome') && appSource.includes('mathBackHome'), 'boutons retour à l’accueil des modes absents');
 assert.ok(appSource.includes("a.classList.add('answer-wrong')") && appSource.includes("'answer-correct'"), 'coloration des cartes Duo à gogo absente');
 assert.ok(fs.readFileSync(`${__dirname}/../assets/css/mathrush.css`, 'utf8').includes('.math-answer-toast.visible'), 'style du feedback central absent');
 assert.ok(appSource.includes('Moyenne / réponse') && appSource.includes('Plus rapide') && appSource.includes('Plus lente') && appSource.includes('Bonus de rapidité cumulé'), 'détails des statistiques de rapidité absents');
