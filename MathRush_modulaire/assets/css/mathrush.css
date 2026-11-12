@@ -1466,3 +1466,16 @@
 }
 .solo-help-close{font-size:0!important;min-width:34px;min-height:34px}
 .solo-help-close::before{content:"X";font-size:15px;font-weight:1000}
+
+/* Feedback des réponses : superposition centrale, sans décaler les exercices. */
+.math-answer-toast{position:fixed;z-index:10000;left:50%;top:50%;width:max-content;max-width:min(88vw,560px);box-sizing:border-box;padding:16px 22px;border-radius:18px;background:#e9f8f0;color:#14764e;border:2px solid rgba(20,118,78,.16);box-shadow:0 16px 48px rgba(22,35,64,.24);font-size:clamp(16px,4.2vw,22px);font-weight:900;line-height:1.35;text-align:center;opacity:0;visibility:hidden;transform:translate(-50%,-42%) scale(.96);transition:opacity .18s ease,transform .18s ease,visibility .18s;pointer-events:none}
+.math-answer-toast.visible{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+.math-answer-toast.bad{background:#fff0f0;color:#b42332;border-color:rgba(180,35,50,.18)}
+.math-answer-toast.near{background:#fff5df;color:#925b0c;border-color:rgba(146,91,12,.18)}
+.math-answer-toast[hidden]{display:none!important}
+/* Les feedbacks classiques sont relayés par la superposition centrale. */
+#solo #soloFeedback,#duel #duelFeedback,#localMath #mathLocalFeedback{display:none!important}
+/* Duo à gogo : retour immédiat par la couleur des deux cartes, sans bandeau sur le plateau. */
+#duoGogo.gogo-playing #gogoFeedback{display:none!important}
+#duoGogo.gogo-playing .gogo-card.answer-correct{background:#dff7e9!important;border-color:#20a36b!important;color:#116b49!important;box-shadow:0 4px 0 #b8e8ce!important}
+#duoGogo.gogo-playing .gogo-card.answer-wrong{background:#ffe3e5!important;border-color:#df5260!important;color:#a51f2d!important;box-shadow:0 4px 0 #f3c2c7!important}

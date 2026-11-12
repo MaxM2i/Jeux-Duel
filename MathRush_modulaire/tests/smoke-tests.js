@@ -73,6 +73,9 @@ assert.ok(htmlSource.includes('id="soloExplain"') && htmlSource.includes('id="so
 assert.ok(htmlSource.includes('id="soloHelpClose"'), 'bouton de fermeture de l’aide absent');
 assert.ok(htmlSource.includes('id="profileSpeed"'), 'rapidité moyenne absente du profil');
 assert.ok(appSource.includes('function recordTiming(') && appSource.includes('function timingSummaryHtml('), 'statistiques de rapidité communes absentes');
+assert.ok(appSource.includes('function showAnswerToast(') && appSource.includes('answerFeedbackObserver'), 'feedback central des réponses absent');
+assert.ok(appSource.includes("a.classList.add('answer-wrong')") && appSource.includes("'answer-correct'"), 'coloration des cartes Duo à gogo absente');
+assert.ok(fs.readFileSync(`${__dirname}/../assets/css/mathrush.css`, 'utf8').includes('.math-answer-toast.visible'), 'style du feedback central absent');
 assert.ok(appSource.includes('Moyenne / réponse') && appSource.includes('Plus rapide') && appSource.includes('Plus lente') && appSource.includes('Bonus de rapidité cumulé'), 'détails des statistiques de rapidité absents');
 assert.ok(appSource.includes('timingSummaryHtml(soloSessionStats)'), 'statistiques de rapidité solo absentes');
 assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)'), 'statistiques de rapidité défi absentes');

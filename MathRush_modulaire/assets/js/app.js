@@ -3,6 +3,28 @@
          const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
          const screens = ['home', 'pathScreen', 'solo', 'duelSetup', 'duel', 'localMath', 'questsScreen', 'reviewScreen', 'duoGogo', 'profileScreen'];
          function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
+         // Feedback central : ne change jamais la hauteur du contenu de jeu.
+         let answerToastTimer=null;
+         function showAnswerToast(message,kind='good'){
+            let toast=$('mathAnswerToast');
+            if(!toast){toast=document.createElement('div');toast.id='mathAnswerToast';toast.className='math-answer-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast);}
+            toast.className=`math-answer-toast ${kind}`;toast.textContent=message;toast.hidden=false;
+            clearTimeout(answerToastTimer);requestAnimationFrame(()=>toast.classList.add('visible'));
+            answerToastTimer=setTimeout(()=>{toast.classList.remove('visible');setTimeout(()=>{if(!toast.classList.contains('visible'))toast.hidden=true;},220);},1800);
+         }
+         const answerFeedbackObserver=new MutationObserver(records=>{
+            const nodes=new Set(records.map(record=>record.target.nodeType===1?record.target:record.target.parentElement).filter(Boolean));
+            nodes.forEach(node=>{
+               const feedback=node.closest?.('.feedback');
+               if(!feedback||feedback.id==='gogoFeedback')return;
+               if(!feedback.classList.contains('show')){delete feedback.dataset.lastToast;return;}
+               const message=(feedback.textContent||'').trim();if(!message||feedback.dataset.lastToast===message)return;
+               feedback.dataset.lastToast=message;
+               const kind=feedback.classList.contains('good')?'good':feedback.classList.contains('bad')?'bad':'near';
+               showAnswerToast(message,kind);
+            });
+         });
+         answerFeedbackObserver.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
          let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0, rapidityStats=saved.rapidityStats||{totalMs:0,count:0,fastestMs:0,slowestMs:0,bonusPoints:0};
@@ -206,7 +228,7 @@
          $('soloExplain').onclick=()=>{$('soloHelpText').textContent=soloExerciseExplanation();$('soloHelpPanel').hidden=false;$('soloHelpPanel').scrollIntoView({block:'nearest',behavior:'smooth'});};
          $('soloHint').onclick=()=>{$('soloHelpText').textContent=soloExerciseHint();$('soloHelpPanel').hidden=false;$('soloHelpPanel').scrollIntoView({block:'nearest',behavior:'smooth'});};
          $('soloHelpClose').onclick=()=>{$('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';};
-         let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
+         let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched','answer-correct');c.classList.add('matched','answer-correct');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
          function selectSolo(v, b) { if (locked) return; choice = v; document.querySelectorAll('#soloQuestion .choice').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('soloValidate').disabled = false; }
          function validateSolo() {
             if (locked || choice === null) return; locked = true;
@@ -422,7 +444,7 @@
                const pairElapsed=Date.now()-(gogoLastPairAt||Date.now());recordTiming(gogoTimingStats,pairElapsed,0);recordTiming(rapidityStats,pairElapsed,0);gogoLastPairAt=Date.now();
                a.classList.add('matched');c.classList.add('matched');
                a.disabled=true;c.disabled=true;
-               $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='✓ Paire trouvée ! Tu peux continuer.';
+               $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
                // La paire reste grisée plus longtemps, mais ne bloque plus les autres cartes.
                const emptySlots=[a.parentElement,c.parentElement];
                gogoPairs++;$('gogoScore').textContent=gogoPairs;updateGogoProgress();gogoSelected=[];gogoBusy=false;
@@ -434,8 +456,8 @@
                   if(gogoRemaining>0)refillGogoSlots(emptySlots);
                },1450);
             }else{
-               $('gogoFeedback').className='feedback show near';$('gogoFeedback').textContent='Pas cette fois. Réessaie !';
-               setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');gogoSelected=[];gogoBusy=false;},700);
+               a.classList.add('answer-wrong');c.classList.add('answer-wrong');$('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
+               setTimeout(()=>{a.classList.remove('selected','answer-wrong');c.classList.remove('selected','answer-wrong');gogoSelected=[];gogoBusy=false;},1100);
             }
          }
          function runGogoClock(){
