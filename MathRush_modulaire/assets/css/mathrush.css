@@ -1375,3 +1375,53 @@
 
 .coordinate-plane:before{content:none}
 .coord-axis-x{position:absolute;right:-14px;bottom:-17px;font-size:11px;font-weight:900;color:#45536d}.coord-axis-y{position:absolute;left:-18px;top:-14px;font-size:11px;font-weight:900;color:#45536d}
+
+/* Statistiques de rapidité communes aux écrans de fin */
+.timing-summary{width:100%;box-sizing:border-box;margin:14px 0;padding:12px;border:1px solid #dce6f5;border-radius:16px;background:#f7faff;text-align:left}
+.timing-summary h3{margin:0 0 9px;font-size:14px;color:#33476b}
+.timing-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.timing-summary-grid>div{min-width:0;padding:9px;border-radius:11px;background:#fff;border:1px solid #e7edf6;display:flex;flex-direction:column;gap:4px}
+.timing-summary-grid small{font-size:11px;color:#68758c;line-height:1.25}
+.timing-summary-grid b{font-size:15px;color:#1e3155;overflow-wrap:anywhere}
+.podium-player .timing-summary{grid-column:1/-1;margin:7px 0;padding:7px;font-size:11px}
+.podium-player .timing-summary-grid{grid-template-columns:1fr 1fr;gap:4px}
+.podium-player .timing-summary-grid>div{padding:5px}
+.podium-player .timing-summary-grid b{font-size:12px}
+.podium-player .timing-summary-grid small{font-size:9px}
+/* Aide solo visible dès l'arrivée sur l'exercice, avec fermeture explicite */
+.solo-help-actions{order:0;margin:8px 0 10px;position:relative;z-index:2}
+.solo-help-actions .btn{min-height:42px;padding:9px 10px;font-size:13px}
+.solo-help-panel{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+.solo-help-panel[hidden]{display:none!important}
+.solo-help-content{flex:1;min-width:0}
+.solo-help-close{flex:0 0 auto;padding:7px 9px;font-size:12px}
+/* Écran solo compact : les actions restent accessibles sans faire défiler toute la page */
+@media(max-width:700px){
+  #solo.active{height:calc(100dvh - 96px);min-height:0;overflow:hidden}
+  #solo.active>.panel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px clamp(12px,4vw,18px)}
+  #solo #soloQuestion{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:6px}
+  #solo .solo-help-actions{flex:0 0 auto}
+  #solo .solo-help-panel{flex:0 0 auto;max-height:23dvh;overflow:auto}
+  #solo #soloFeedback{flex:0 0 auto;margin:5px 0}
+  #solo .btn-row{flex:0 0 auto;position:sticky;bottom:0;z-index:5;margin:7px -2px 0;padding:8px 2px max(6px,env(safe-area-inset-bottom));background:rgba(255,255,255,.97);box-shadow:0 -7px 16px #243d7010}
+  #solo .btn-row .btn{min-height:48px}
+}
+@media(max-height:700px) and (max-width:700px){
+  #solo.active{height:calc(100dvh - 84px)}
+  #solo .question{font-size:clamp(23px,6vw,32px);margin:8px 0}
+  #solo .choice{min-height:44px;padding:8px 5px}
+  #solo .solo-help-actions{margin:4px 0}
+  #solo .solo-help-actions .btn{min-height:36px;padding:6px}
+  #solo .btn-row{margin-top:4px;padding-top:4px}
+}
+/* Actions principales accessibles sans descendre en bas de l’écran */
+@media(max-width:700px){
+  #duel.active,#localMath.active{height:calc(100dvh - 96px);min-height:0;overflow:hidden}
+  #duel.active>.panel,#localMath.active>#mathLocalPlay{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px clamp(12px,4vw,18px)}
+  #duel #duelQuestion,#duel #duelOptions,#localMath #mathLocalQuestion,#localMath #mathLocalVisual,#localMath #mathLocalOptions{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  #duel #localDuelNext,#localMath #mathNextLocal{flex:0 0 auto;position:sticky;bottom:0;z-index:5;margin-top:auto;min-height:48px;background:var(--blue);box-shadow:0 -7px 16px #243d7010}
+  #duel #duelActions{flex:0 0 auto;position:sticky;bottom:0;z-index:5;background:rgba(255,255,255,.97);padding:8px 0 max(6px,env(safe-area-inset-bottom))}
+}
+.podium-rest-player{padding:9px 0;border-top:1px solid #e3e8f1}
+.podium-rest-player>div:first-child{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.podium-rest-player .timing-summary{margin:6px 0 0;padding:8px}

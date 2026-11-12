@@ -5,7 +5,12 @@
          function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0); }
          document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
          let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
-         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0;
+         let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0, rapidityStats=saved.rapidityStats||{totalMs:0,count:0,fastestMs:0,slowestMs:0,bonusPoints:0};
+         function createTimingStats(){return{totalMs:0,count:0,fastestMs:0,slowestMs:0,bonusPoints:0};}
+         function recordTiming(stats,elapsedMs,bonus=0){if(!stats)return;const ms=Math.max(0,Number(elapsedMs)||0),priorCount=stats.count||0;stats.totalMs=(stats.totalMs||0)+ms;stats.count=priorCount+1;stats.fastestMs=priorCount?Math.min(stats.fastestMs,ms):ms;stats.slowestMs=priorCount?Math.max(stats.slowestMs||0,ms):ms;stats.bonusPoints=(stats.bonusPoints||0)+Math.max(0,Number(bonus)||0);}
+         function formatDurationMs(ms){if(!Number.isFinite(ms)||ms<=0)return '—';return `${(ms/1000).toFixed(1).replace('.',',')} s`;}
+         function timingSummaryHtml(stats,label='Temps de réponse'){const count=stats?.count||0,avg=count?stats.totalMs/count:0;return `<section class="timing-summary"><h3>${label}</h3><div class="timing-summary-grid"><div><small>Moyenne / réponse</small><b>${count?formatDurationMs(avg):'—'}</b></div><div><small>Plus rapide</small><b>${count?formatDurationMs(stats.fastestMs):'—'}</b></div><div><small>Plus lente</small><b>${count?formatDurationMs(stats.slowestMs):'—'}</b></div><div><small>Bonus de rapidité cumulé</small><b>+${stats?.bonusPoints||0} pts</b></div></div></section>`;}
+         function mergeTimingStats(target,source){if(!source||!source.count)return;target.totalMs+=source.totalMs||0;target.count+=source.count||0;target.fastestMs=target.fastestMs?Math.min(target.fastestMs,source.fastestMs||Infinity):(source.fastestMs||0);target.slowestMs=Math.max(target.slowestMs,source.slowestMs||0);target.bonusPoints+=source.bonusPoints||0;}
          let soloMathMode=saved.soloMathMode||'mixed';
          let modeProgress = saved.modeProgress && typeof saved.modeProgress === 'object' ? saved.modeProgress : {};
          function ensureModeTrack(mode) {
@@ -25,12 +30,12 @@
             section = track.section; level = track.level; done = track.done;
          }
          loadModeTrack();
-         let exIndex = 0, streak = 0, best = 0, correctCount = 0, exercise = null, choice = null, locked = false, startTime = 0;
+         let exIndex = 0, streak = 0, best = 0, correctCount = 0, exercise = null, choice = null, locked = false, startTime = 0, soloSessionStats=createTimingStats();
          function persist() {
             modeProgress[soloMathMode] = { section, level, done: [...done] };
             localStorage.setItem('mathrush_app_save', JSON.stringify({
                section, level, points, done, errors, soloLessons, highScoreLessons,
-               friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak
+               friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak, rapidityStats
             }));
             $('totalPoints').textContent = points;
             $('homeProgress').textContent = `Section ${section} · Niveau ${level} · ${MathRushConfig.MODES.find(mode => mode.id === soloMathMode)?.label || 'Parcours'}`;
@@ -120,10 +125,10 @@
          function buildExercise() {
             return makeSoloModeExercise(soloMathMode);
          }
-         function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = 0; best = 0; correctCount = 0; renderSolo(); }
+         function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = 0; best = 0; correctCount = 0; soloSessionStats=createTimingStats(); renderSolo(); }
          function renderSolo() {
             locked = false; choice = null; exercise = buildExercise(); startTime = Date.now();
-            $('soloHelpPanel').hidden=true;$('soloHelpPanel').textContent='';
+            $('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / 15`; $('soloProgress').style.width = (exIndex / 15 * 100) + '%';
             $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + streak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true;
             const q = $('soloQuestion');
@@ -198,8 +203,9 @@
             if(exercise.op==='+')return `Additionne séparément les dizaines et les unités.`;
             return 'Élimine les réponses impossibles en estimant le résultat avant de calculer précisément.';
          }
-         $('soloExplain').onclick=()=>{$('soloHelpPanel').textContent=soloExerciseExplanation();$('soloHelpPanel').hidden=false;};
-         $('soloHint').onclick=()=>{$('soloHelpPanel').textContent=soloExerciseHint();$('soloHelpPanel').hidden=false;};
+         $('soloExplain').onclick=()=>{$('soloHelpText').textContent=soloExerciseExplanation();$('soloHelpPanel').hidden=false;$('soloHelpPanel').scrollIntoView({block:'nearest',behavior:'smooth'});};
+         $('soloHint').onclick=()=>{$('soloHelpText').textContent=soloExerciseHint();$('soloHelpPanel').hidden=false;$('soloHelpPanel').scrollIntoView({block:'nearest',behavior:'smooth'});};
+         $('soloHelpClose').onclick=()=>{$('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';};
          let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
          function selectSolo(v, b) { if (locked) return; choice = v; document.querySelectorAll('#soloQuestion .choice').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('soloValidate').disabled = false; }
          function validateSolo() {
@@ -211,8 +217,9 @@
                const parsed = Number(String(choice).replace(/[\s\u00a0]/g, '').replace(',', '.'));
                diff = isNaN(parsed) ? 1 : Math.abs(parsed - target);
             } else diff = String(choice) === String(target) ? 0 : 1;
-            const slider = ['slider', 'line', 'commonSlider'].includes(exercise.type), exact = diff === 0, near = ['slider', 'line'].includes(exercise.type) && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, (Date.now() - startTime) / 1000 - 4) * 2));
-            const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0});modeStats.played++;if(exact)modeStats.correct++;});
+            const elapsedMs=Math.max(0,Date.now()-startTime), slider = ['slider', 'line', 'commonSlider'].includes(exercise.type), exact = diff === 0, near = ['slider', 'line'].includes(exercise.type) && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, elapsedMs / 1000 - 4) * 2));
+            recordTiming(soloSessionStats,elapsedMs,exact?speed:0);recordTiming(rapidityStats,elapsedMs,exact?speed:0);
+            const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0,totalMs:0,responses:0,fastestMs:0,slowestMs:0,bonusPoints:0});modeStats.played++;if(exact)modeStats.correct++;recordTiming(modeStats,elapsedMs,exact?speed:0);});
             let gain = 0; if (exact) { gain = 100 + speed + Math.min(40, streak * 5); streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); streak = 0; } else streak = 0;
             points += gain; best = Math.max(best, streak); lifetimeBestStreak = Math.max(lifetimeBestStreak, best); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
             const fb = $('soloFeedback'); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
@@ -224,7 +231,7 @@
             if (exIndex < 14) { exIndex++; renderSolo(); return; }
             const key = `${section}-${level}`; if (!done.includes(key)) done.push(key); soloLessons++;if(correctCount>=14)highScoreLessons++;
             if (level < 15) level++; else if (section < 15) { section++; level = 1; }
-            persist(); renderPath(); $('soloQuestion').innerHTML = `<div class="summary"><div class="big">🏆</div><h2>Niveau terminé !</h2><p>Tu as terminé les 15 exercices.</p><p><b>${points} points</b> · ${correctCount} bonnes réponses</p><button class="btn btn-main full" id="nextLevel">Continuer le parcours</button><button class="btn btn-soft full" id="reviewFromEnd">Revoir mes erreurs</button></div>`;
+            persist(); renderPath(); $('soloQuestion').innerHTML = `<div class="summary"><div class="big">🏆</div><h2>Niveau terminé !</h2><p>Tu as terminé les 15 exercices.</p><p><b>${points} points</b> · ${correctCount} bonnes réponses</p>${timingSummaryHtml(soloSessionStats)}<button class="btn btn-main full" id="nextLevel">Continuer le parcours</button><button class="btn btn-soft full" id="reviewFromEnd">Revoir mes erreurs</button></div>`;
             $('soloFeedback').className = 'feedback'; $('soloValidate').style.display = 'none'; $('soloSkip').style.display = 'none';
             $('nextLevel').onclick = () => { $('soloValidate').style.display = ''; $('soloSkip').style.display = ''; startSolo(); };$('reviewFromEnd').onclick=()=>{renderReview();show('reviewScreen');};
          }
@@ -275,8 +282,8 @@
          function renderProfile(){
             playerProfile.render();
             $('profilePoints').textContent=points;$('profileLessons').textContent=soloLessons;$('profileLevel').textContent=`${section}.${level}`;
-            $('profileErrors').textContent=errors.length;$('profileStreak').textContent=lifetimeBestStreak;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
-            $('profileModeStats').innerHTML=SOLO_MATH_MODES.map(mode=>{const stat=soloModeStats[mode.id]||{played:0,correct:0},accuracy=stat.played?Math.round(stat.correct/stat.played*100):0;return`<div><span>${mode.label}</span><b>${stat.correct}/${stat.played} · ${accuracy}%</b></div>`;}).join('');
+            $('profileErrors').textContent=errors.length;$('profileStreak').textContent=lifetimeBestStreak;const rapidAvg=rapidityStats.count?formatDurationMs(rapidityStats.totalMs/rapidityStats.count):'—';const speedNode=$('profileSpeed');if(speedNode)speedNode.textContent=rapidAvg;$('profileGogo').textContent=Number(localStorage.getItem('mathrush_gogo_best')||0);
+            $('profileModeStats').innerHTML=SOLO_MATH_MODES.map(mode=>{const stat=soloModeStats[mode.id]||{played:0,correct:0,responses:0,totalMs:0},accuracy=stat.played?Math.round(stat.correct/stat.played*100):0,avg=stat.count?formatDurationMs(stat.totalMs/stat.count):'—';return`<div><span>${mode.label}</span><b>${stat.correct}/${stat.played} · ${accuracy}% · ${avg}/rép.</b></div>`;}).join('');
             const trophyMetrics = {
                points, soloLessons, highScoreLessons, gogoBest: Number(localStorage.getItem('mathrush_gogo_best') || 0),
                section, level, errors: errors.length, bestStreak: lifetimeBestStreak, modeStats: soloModeStats
@@ -294,7 +301,7 @@
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
          function renderReview(){$('reviewList').innerHTML=errors.length?errors.map((e,i)=>`<div class="review-item"><b>${i+1}. ${e.question}</b><p>Réponse : <strong>${e.answer}</strong></p><small>${e.tip}</small></div>`).join(''):'<div class="strategy-tip">Aucune erreur enregistrée. Continue comme ça !</div>';$('reviewPractice').disabled=!errors.length;}
          $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
-         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[],gogoLevel=1,gogoStartedAt=0,gogoElapsedMs=0,gogoResumeAt=0,gogoPaused=false,gogoMathMode='quick';
+         let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[],gogoLevel=1,gogoStartedAt=0,gogoElapsedMs=0,gogoResumeAt=0,gogoPaused=false,gogoMathMode='quick',gogoTimingStats=createTimingStats(),gogoLastPairAt=0;
          const GOGO_PROGRESS_KEY='mathrush_gogo_progress_v2';
          const GOGO_PAUSE_KEY='mathrush_gogo_paused_v1';
          function readGogoProgress(){try{return JSON.parse(localStorage.getItem(GOGO_PROGRESS_KEY)||'{}');}catch(_){return {};}}
@@ -304,7 +311,7 @@
          function renderGogoLevels(){const unlocked=gogoUnlockedLevel();$('gogoLevelList').innerHTML=Array.from({length:unlocked},(_,i)=>{const level=i+1;const record=Number(localStorage.getItem(`mathrush_gogo_time_${gogoMathMode}_${level}`)||0);return `<button type="button" class="gogo-level${level===gogoLevel?' selected':''}" data-gogo-level="${level}"><b>Niveau ${level}</b><small>${record?`Record : ${formatGogoTime(record)}`:'À découvrir'}</small></button>`;}).join('');$('gogoLevelList').querySelectorAll('[data-gogo-level]').forEach(button=>button.onclick=()=>{gogoLevel=Number(button.dataset.gogoLevel);renderGogoLevels();resetGogo();});}
          function setGogoMode(mode){gogoMathMode=mode;gogoLevel=gogoUnlockedLevel();renderGogoLevels();resetGogo();}
          function resetGogo(){
-            localStorage.removeItem(GOGO_PAUSE_KEY);clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();gogoPaused=false;gogoElapsedMs=0;gogoResumeAt=0;
+            localStorage.removeItem(GOGO_PAUSE_KEY);clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();gogoPaused=false;gogoElapsedMs=0;gogoResumeAt=0;gogoTimingStats=createTimingStats();gogoLastPairAt=Date.now();
             const target=24+Math.min(16,(gogoLevel-1)*2),seconds=Math.max(45,90-(gogoLevel-1)*4);gogoRemaining=seconds;gogoTarget=target;$('gogoTime').textContent=String(seconds);$('gogoScore').textContent='0';$('gogoTarget').textContent=String(target);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('duoGogo').classList.remove('gogo-playing');
@@ -410,6 +417,7 @@
             const sameValue=Number.isFinite(numericA)&&Number.isFinite(numericC)?numericA===numericC:valueA===valueC;
             const isCalcResult=a.dataset.kind!==c.dataset.kind&&sameValue;
             if(isCalcResult){
+               const pairElapsed=Date.now()-(gogoLastPairAt||Date.now());recordTiming(gogoTimingStats,pairElapsed,0);recordTiming(rapidityStats,pairElapsed,0);gogoLastPairAt=Date.now();
                a.classList.add('matched');c.classList.add('matched');
                a.disabled=true;c.disabled=true;
                $('gogoFeedback').className='feedback show good';$('gogoFeedback').textContent='✓ Paire trouvée ! Tu peux continuer.';
@@ -433,12 +441,12 @@
          }
          function savePausedGogo(){
             const board=Array.from($('gogoBoard').children).map(slot=>{const card=slot.querySelector('.gogo-card');return card?{pair:card.dataset.pair,kind:card.dataset.kind,matchValue:card.dataset.matchValue,text:card.textContent,matched:card.classList.contains('matched')}:null;});
-            localStorage.setItem(GOGO_PAUSE_KEY,JSON.stringify({mode:gogoMathMode,level:gogoLevel,remaining:gogoRemaining,pairs:gogoPairs,target:gogoTarget,elapsed:gogoElapsedMs,allPairs:gogoAllPairs,queue:gogoQueue,introduced:[...gogoIntroduced],board}));
+            localStorage.setItem(GOGO_PAUSE_KEY,JSON.stringify({mode:gogoMathMode,level:gogoLevel,remaining:gogoRemaining,pairs:gogoPairs,target:gogoTarget,elapsed:gogoElapsedMs,timing:gogoTimingStats,lastPairAt:gogoLastPairAt,allPairs:gogoAllPairs,queue:gogoQueue,introduced:[...gogoIntroduced],board}));
          }
          function restorePausedGogo(){
             let state;try{state=JSON.parse(localStorage.getItem(GOGO_PAUSE_KEY)||'null');}catch(_){state=null;}
             if(!state||!Array.isArray(state.board)||!state.board.length)return false;
-            gogoMathMode=state.mode||'quick';gogoLevel=Number(state.level)||1;gogoRemaining=Number(state.remaining)||1;gogoPairs=Number(state.pairs)||0;gogoTarget=Number(state.target)||24;gogoElapsedMs=Number(state.elapsed)||0;gogoAllPairs=Array.isArray(state.allPairs)?state.allPairs:[];gogoQueue=Array.isArray(state.queue)?state.queue:[];gogoIntroduced=new Set(state.introduced||[]);gogoSelected=[];gogoBusy=false;gogoPaused=true;
+            gogoMathMode=state.mode||'quick';gogoLevel=Number(state.level)||1;gogoRemaining=Number(state.remaining)||1;gogoPairs=Number(state.pairs)||0;gogoTarget=Number(state.target)||24;gogoElapsedMs=Number(state.elapsed)||0;gogoTimingStats=state.timing||createTimingStats();gogoLastPairAt=Date.now();gogoAllPairs=Array.isArray(state.allPairs)?state.allPairs:[];gogoQueue=Array.isArray(state.queue)?state.queue:[];gogoIntroduced=new Set(state.introduced||[]);gogoSelected=[];gogoBusy=false;gogoPaused=true;
             renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();$('gogoTime').textContent=String(gogoRemaining);$('gogoScore').textContent=String(gogoPairs);$('gogoTarget').textContent=String(gogoTarget);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;$('gogoProgressFill').style.width=`${Math.min(100,gogoPairs/gogoTarget*100)}%`;
             [1,2,3].forEach(n=>$(`gogoStar${n}`).classList.toggle('earned',gogoPairs>=Math.ceil(gogoTarget*n/3)));
             $('gogoBoard').innerHTML='';state.board.forEach(card=>{const slot=document.createElement('div');slot.className='gogo-slot';if(card){const b=makeGogoCard(card);if(card.matched){b.classList.add('matched');b.disabled=true;}slot.appendChild(b);} $('gogoBoard').appendChild(slot);});
@@ -454,7 +462,7 @@
             gogoPaused=false;$('gogoPausePanel').hidden=true;$('gogoBoard').hidden=false;$('gogoPause').hidden=false;runGogoClock();
          }
          function startGogo(){
-            resetGogo();$('duoGogo').classList.add('gogo-playing');$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';$('gogoPause').hidden=false;gogoStartedAt=Date.now();gogoElapsedMs=0;
+            resetGogo();$('duoGogo').classList.add('gogo-playing');$('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';$('gogoPause').hidden=false;gogoStartedAt=Date.now();gogoElapsedMs=0;gogoTimingStats=createTimingStats();gogoLastPairAt=Date.now();
             gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();runGogoClock();
          }
          function finishGogo(completed,finishedAt=Date.now()){
@@ -482,10 +490,10 @@
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
             $('gogoGamePanel').hidden=true;
             $('gogoResultPanel').hidden=false;
-            $('gogoResultContent').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p></div>`;
+            $('gogoResultContent').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p>${timingSummaryHtml(gogoTimingStats,'Rapidité des associations')}</div>`;
             $('gogoImprove').style.display='block';$('gogoImprove').textContent=completed?'Rejouer pour améliorer mon temps':'Réessayer ce niveau';
             $('gogoNext').style.display=completed?'block':'none';$('gogoNext').textContent=`Niveau ${unlockedLevel} : plus difficile`;
-            renderGogoLevels();renderQuests();
+            persist();renderGogoLevels();renderQuests();
          }
          $('gogoStart').onclick=startGogo;
          $('gogoPause').onclick=pauseGogo;
@@ -571,7 +579,7 @@
          }
          
          let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
-         let localDuelMode=false,localDuelRound=0,localDuelTurn=0,localDuelPlayers=[],localDuelAnswers=[],localDuelRule='firstCorrect',localDuelHandoff=false,duelTurnSide='host',duelAnsweredSides=[];
+         let localDuelMode=false,localDuelRound=0,localDuelTurn=0,localDuelPlayers=[],localDuelAnswers=[],localDuelRule='firstCorrect',localDuelHandoff=false,duelTurnSide='host',duelAnsweredSides=[],duelSessionStats=createTimingStats(),localDuelSessionStats=createTimingStats(),duelQuestionStartedAt=0;
          function updateDuelSetupMode(){
             const online=$('duelPlayMode').value==='online';
             $('onlineDuelSetup').style.display=online?'block':'none';$('localDuelSetup').style.display=online?'none':'block';
@@ -580,7 +588,7 @@
          }
          $('duelPlayMode').onchange=updateDuelSetupMode;
          $('startLocalDuel').onclick=()=>{
-            localDuelMode=true;duelDiff=Number($('difficulty').value);duelMathMode=duelMathMode||'quick';roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
+            localDuelMode=true;localDuelSessionStats=createTimingStats();duelDiff=Number($('difficulty').value);duelMathMode=duelMathMode||'quick';roundTarget=10;duelMy=0;duelOpp=0;localDuelRound=1;localDuelTurn=0;
             localDuelRule=$('duelPlayMode').value==='local'?$('localDuelRule').value:$('duelAdvanceRule').value;localDuelAnswers=[];localDuelHandoff=false;role=null;conn=null;
             const profile=playerProfile.getProfile();
             localDuelPlayers=[{name:profile.name||'Joueur 1',avatar:profile.avatar,customAvatar:profile.customAvatar||''},{name:$('localDuelOpponent').value.trim()||'Joueur 2',avatar:'3d-rendering-cartoon-man-beach.jpg',customAvatar:''}];
@@ -595,7 +603,7 @@
          }
          function updateDuelScore() { $('myScore').textContent = duelMy; $('opScore').textContent = duelOpp; }
          function renderDuelQuestion(q) {
-            duelQ = q; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; duelFirstCorrectSide = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
+            duelQ = q; duelQuestionStartedAt=Date.now(); roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; duelFirstCorrectSide = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
             $('duelQuestion').innerHTML = q.burger
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
                : q.choiceBased ? `<div class="question"><small>${(MathRushConfig.MODES.find(mode=>mode.id===q.type)?.label)||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
@@ -621,7 +629,7 @@
          }
          function answerLocalDuel(value){
             if(answeredThisRound||roundEnded)return;
-            answeredThisRound=true;const correct=value===duelQ.answerIndex;
+            answeredThisRound=true;const elapsed=Date.now()-duelQuestionStartedAt;recordTiming(localDuelSessionStats,elapsed,0);recordTiming(rapidityStats,elapsed,0);persist();const correct=value===duelQ.answerIndex;
             localDuelAnswers.push({player:localDuelTurn,correct,at:Date.now()});
             const player=localDuelPlayers[localDuelTurn];
             $('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
@@ -629,7 +637,7 @@
                if(correct){player.score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
                if(localDuelAnswers.length===2){roundEnded=true;finishLocalDuelQuestion();return;}
             }else if(localDuelRule==='allAnswered'){
-               if(localDuelAnswers.length===2){const right=localDuelAnswers.filter(a=>a.correct);right.forEach((a,i)=>localDuelPlayers[a.player].score+=100+(i===0?50:0));duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
+               if(localDuelAnswers.length===2){const right=localDuelAnswers.filter(a=>a.correct);right.forEach((a,i)=>{localDuelPlayers[a.player].score+=100+(i===0?50:0);if(i===0)localDuelSessionStats.bonusPoints+=50;});duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
             }else{
                if(correct){player.score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
                if(localDuelTurn===1){roundEnded=true;finishLocalDuelQuestion();return;}
@@ -640,10 +648,11 @@
          }
          $('localDuelNext').onclick=()=>{
             if(localDuelHandoff){localDuelHandoff=false;localDuelTurn=1-localDuelTurn;renderLocalDuelAttempt();return;}
-            if(localDuelRound>=roundTarget){localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
+            if(localDuelRound>=roundTarget){duelSessionStats=localDuelSessionStats;localDuelMode=false;$('localDuelNext').style.display='none';showDuelSummary();$('duelActions').style.display='none';return;}
             localDuelRound++;localDuelTurn=0;localDuelAnswers=[];renderLocalDuelAttempt();
          };
          function startCountdown() {
+            duelSessionStats=createTimingStats();
             show('duel'); $('duelResult').style.display = 'none'; $('duelActions').style.display = 'none'; $('duelOptions').innerHTML = ''; $('duelQuestion').innerHTML = '';
             let n = 3; $('duelCountdown').textContent = n;
             const t = () => { n--; if (n > 0) { $('duelCountdown').textContent = n; setTimeout(t, 1000); } else { $('duelCountdown').textContent = 'GO !'; setTimeout(() => { if (role === 'host') hostNext(); }, 500); } };
@@ -656,6 +665,7 @@
          function answerDuel(value, btn) {
             if(localDuelMode){answerLocalDuel(value);return;}
             if (roundEnded || answeredThisRound || !conn || !conn.open) return;
+            const elapsed=Date.now()-duelQuestionStartedAt;recordTiming(duelSessionStats,elapsed,0);recordTiming(rapidityStats,elapsed,0);persist();
             const right = duelQ.burger ? value === duelQ.ansIdx : duelQ.choiceBased ? value === duelQ.answerIndex : value === duelQ.ans;
             answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
             if(duelAdvanceRule==='turns'){
@@ -689,7 +699,8 @@
             const resultMessage=winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':winner==='both'?`Réponses reçues. ${duelHostAnswered?'Tu marques 100 points.':'Tu ne marques pas de point.'} ${duelGuestAnswered?'Ton adversaire marque 100 points.':'Ton adversaire ne marque pas de point.'}`:duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée';
             $('duelFeedback').innerHTML = resultMessage + `<br>Bonne réponse : <b>${escapeHtml(String(goodAnswer))}</b>`;
             updateDuelScore();
-            conn.send({ type: 'roundEnd', winner, hostScore: role === 'host' ? duelMy : duelOpp, guestScore: role === 'guest' ? duelMy : duelOpp, answer: goodAnswer });
+            conn.send({ type: 'roundEnd', winner, firstCorrectSide:duelFirstCorrectSide, hostScore: role === 'host' ? duelMy : duelOpp, guestScore: role === 'guest' ? duelMy : duelOpp, answer: goodAnswer });
+            if(winner==='both'&&duelFirstCorrectSide===role)duelSessionStats.bonusPoints+=50;
             if (role === 'host') setTimeout(hostNext, 2500);
          }
          function endDuel() {
@@ -701,7 +712,7 @@
             const result = duelMy === duelOpp ? 'Égalité !' : duelMy > duelOpp ? 'Victoire !' : 'Cette fois, ton adversaire gagne';
             const won = duelMy > duelOpp, tied = duelMy === duelOpp;
             $('duelResult').className = 'summary competitive-result duel-finish-anim';
-            $('duelResult').innerHTML = `<div class="finish-confetti" aria-hidden="true">${won?'🎉 ✨ 🏆 ✨ 🎉':tied?'🤝 ✨ 🤝':'💪 ⭐ 💫'}</div><div class="finish-medal">${message ? '👋' : tied ? '🤝' : won ? '🏆' : '💪'}</div><p class="finish-eyebrow">DÉFI TERMINÉ</p><h2>${message ? escapeHtml(message) : result}</h2><div class="finish-score-grid"><div><small>Ton score</small><strong>${duelMy}</strong></div><div><small>Adversaire</small><strong>${duelOpp}</strong></div></div><p class="finish-rounds">${round} manches jouées</p>`;
+            $('duelResult').innerHTML = `<div class="finish-confetti" aria-hidden="true">${won?'🎉 ✨ 🏆 ✨ 🎉':tied?'🤝 ✨ 🤝':'💪 ⭐ 💫'}</div><div class="finish-medal">${message ? '👋' : tied ? '🤝' : won ? '🏆' : '💪'}</div><p class="finish-eyebrow">DÉFI TERMINÉ</p><h2>${message ? escapeHtml(message) : result}</h2><div class="finish-score-grid"><div><small>Ton score</small><strong>${duelMy}</strong></div><div><small>Adversaire</small><strong>${duelOpp}</strong></div></div><p class="finish-rounds">${round} manches jouées</p>${timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)}`;
          }
          function prepareRematch() {
             round = 0; duelMy = 0; duelOpp = 0; opponentLeft = false; rematchPending = false; roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false;
@@ -723,6 +734,7 @@
             if(m.type==='turnUpdate'&&!roundEnded){const myTurn=(role==='host'&&m.next==='host')||(role==='guest'&&m.next==='guest');answeredThisRound=!myTurn;$('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=!myTurn);$('duelFeedback').className='feedback show bad';$('duelFeedback').textContent=myTurn?'Ton adversaire a raté. À toi de jouer !':'Raté ! C’est au tour de ton adversaire.';}
             if(m.type==='allAnsweredResult'&&role==='guest'&&!roundEnded){roundEnded=true;const good=duelQ.choiceBased?duelQ.opts[duelQ.answerIndex]:duelQ.ans;$('duelFeedback').className='feedback show '+(m.guestRight?'good':'bad');$('duelFeedback').textContent=`Les deux réponses sont enregistrées. ${m.guestRight?'Tu as trouvé !':'Tu n’as pas trouvé.'} Bonne réponse : ${good}`;}
             if (m.type === 'roundEnd' && role === 'guest') {
+               if(m.winner==='both'&&m.firstCorrectSide==='guest')duelSessionStats.bonusPoints+=50;
                roundEnded = true; duelMy = m.guestScore; duelOpp = m.hostScore; updateDuelScore();
                $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
                $('duelFeedback').className = 'feedback show good'; $('duelFeedback').innerHTML = (m.winner === 'guest' ? 'Tu as trouvé en premier !' : m.winner === 'host' ? 'Ton adversaire a trouvé en premier !' : 'Manche terminée') + `<br>Bonne réponse : <b>${m.answer}</b>`;
@@ -799,7 +811,7 @@
          const localMathScreen = $('localMath');
          if (localMathScreen) {
             const mathPlayers=[];
-            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick',mathAdvanceRule='firstCorrect',mathAnswers={},mathTurnOrder=[];
+            let mathPeer=null,mathConnections=[],mathHost=false,mathOnlineId='',mathTurn=0,mathRound=1,mathLocalQuestion=null,mathLocalLocked=false,mathGameStarted=false,mathQuestionMode='quick',mathAdvanceRule='firstCorrect',mathAnswers={},mathTurnOrder=[],mathQuestionStartedAt=0,mathPlayerTiming={};
             renderSharedMathModeCards('mathRoomModes',mathQuestionMode,id=>{mathQuestionMode=id;});
             function setMathStatus(message){$('mathRoomStatus').textContent=message;}
             function mathIdentity(){const profile=playerProfile.getProfile();return{name:profile.name||'Joueur',avatar:profile.avatar,customAvatar:profile.customAvatar||''};}
@@ -812,6 +824,7 @@
             function makeMathQuestion(){duelMathMode=mathQuestionMode;return duelQuestion();}
             function mathScores(){return mathPlayers.map(x=>`${$('mathTeamMode').value==='teams'?`Équipe ${x.team+1} · `:''}<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');}
             function renderMathQuestion(){
+               mathQuestionStartedAt=Date.now();
                const player=mathPlayers[mathTurn];if(!player)return;
                $('mathTurn').innerHTML=`Manche ${mathRound}/10 · ${mathAdvanceRule==='turns'?'Au tour de ':''}${mathAdvanceRule==='turns'?`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`:'À vous de répondre'}`;
                $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
@@ -827,15 +840,15 @@
             }
             function submitMathAnswer(answerIndex){
                if(mathLocalLocked||!mathGameStarted)return;
-               const payload={type:'mathAnswer',round:mathRound,answerIndex};mathLocalLocked=true;
+               const elapsedMs=Math.max(0,Date.now()-mathQuestionStartedAt);recordTiming(rapidityStats,elapsedMs,0);persist();const payload={type:'mathAnswer',round:mathRound,answerIndex,elapsedMs};mathLocalLocked=true;
                $('mathLocalOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
-               if(mathHost)applyMathAnswer(mathOnlineId,answerIndex);else if(mathConnections[0]?.open)mathConnections[0].send(payload);
+               if(mathHost)applyMathAnswer(mathOnlineId,answerIndex,elapsedMs);else if(mathConnections[0]?.open)mathConnections[0].send(payload);
             }
-            function applyMathAnswer(playerId,answerIndex){
+            function applyMathAnswer(playerId,answerIndex,elapsedMs=0){
                if(!mathHost||!mathGameStarted)return;
                const playerIndex=mathPlayers.findIndex(player=>player.id===playerId);if(playerIndex<0||mathAnswers[playerId]!==undefined)return;
                if(mathAdvanceRule==='turns'&&playerIndex!==mathTurn)return;
-               const correct=Number(answerIndex)===mathLocalQuestion.answerIndex;mathAnswers[playerId]={correct,at:Date.now(),answerIndex};
+               const correct=Number(answerIndex)===mathLocalQuestion.answerIndex;const responseMs=Math.max(0,Number(elapsedMs)||0);const timing=mathPlayerTiming[playerId]||(mathPlayerTiming[playerId]=createTimingStats());recordTiming(timing,responseMs,0);mathAnswers[playerId]={correct,at:Date.now(),answerIndex,elapsedMs:responseMs};
                const player=mathPlayers[playerIndex];
                if(mathAdvanceRule==='firstCorrect'){
                   if(correct){player.score+=100;finishMathRound(playerId,answerIndex,`${player.name} a trouvé en premier ! +100 points`,true);return;}
@@ -849,7 +862,7 @@
                   broadcastMath({type:'mathAttempt',players:mathPlayers,playerId,correct,answerIndex});
                   if(mathPlayers.every(p=>mathAnswers[p.id]!==undefined)){
                      const winners=mathPlayers.filter(p=>mathAnswers[p.id].correct).sort((a,b)=>mathAnswers[a.id].at-mathAnswers[b.id].at);
-                     winners.forEach((p,i)=>p.score+=100+(i===0?50:0));
+                     winners.forEach((p,i)=>{p.score+=100+(i===0?50:0);if(i===0&&mathPlayerTiming[p.id])mathPlayerTiming[p.id].bonusPoints+=50;});
                      finishMathRound(winners[0]?.id||'',mathLocalQuestion.answerIndex,winners.length?`${winners[0].name} reçoit le bonus de rapidité (+50 points).`:'Personne n’a trouvé.',!!winners.length);
                   }else if(playerId===mathOnlineId){$('mathLocalFeedback').className='feedback show near';$('mathLocalFeedback').textContent=correct?'Bonne réponse enregistrée. En attente des autres joueurs…':'Réponse enregistrée. En attente des autres joueurs…';}
                   return;
@@ -873,13 +886,13 @@
                if(message.type==='mathRoster'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();return;}
                if(message.type==='mathJoined'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);renderMathRoster();setMathStatus('En attente du démarrage par l’hôte.');return;}
                if(message.type==='mathRejected'){setMathStatus(message.reason||'Connexion refusée.');return;}
-               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){applyMathAnswer(connection.peer,message.answerIndex);return;}
-               if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathAdvanceRule=message.advanceRule||'firstCorrect';mathAnswers={};mathLocalQuestion=message.question;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
+               if(message.type==='mathAnswer'&&mathHost&&mathGameStarted){applyMathAnswer(connection.peer,message.answerIndex,message.elapsedMs);return;}
+               if(message.type==='mathStart'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathGameStarted=true;mathRound=1;mathTurn=0;mathAdvanceRule=message.advanceRule||'firstCorrect';mathAnswers={};mathPlayerTiming={};mathLocalQuestion=message.question;$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();return;}
                if(message.type==='mathQuestion'&&!mathHost){mathRound=message.round;mathTurn=message.turn||0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=message.question;$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();return;}
                if(message.type==='mathAttempt'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathAnswers[message.playerId]={correct:message.correct};$('mathLocalScores').innerHTML=mathScores();if(message.playerId===mathOnlineId){$('mathLocalFeedback').className='feedback show bad';$('mathLocalFeedback').textContent='Raté ! Les autres joueurs peuvent encore répondre.';}}
                if(message.type==='mathTurn'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathTurn=message.turn;mathLocalLocked=false;$('mathLocalFeedback').className='feedback show bad';$('mathLocalFeedback').textContent=`${message.wrongPlayer} s’est trompé. Au joueur suivant !`;renderMathQuestion();return;}
                if(message.type==='mathAnswerResult'&&!mathHost){renderMathResult(message);$('mathNextLocal').style.display='none';return;}
-               if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);finishMathGame();return;}
+               if(message.type==='mathFinish'&&!mathHost){mathPlayers.splice(0,mathPlayers.length,...message.players);mathPlayerTiming=message.timings||{};finishMathGame();return;}
             }
             function finishMathGame(){
                mathGameStarted=false;$('mathCreateRoom').disabled=false;
@@ -889,16 +902,16 @@
                $('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';
                $('mathLocalScores').innerHTML='';$('mathNextLocal').style.display='none';
                $('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';
-               $('mathPodiumResult').style.display='block';
-               $('mathPodiumResult').innerHTML=`<div class="finish-confetti" aria-hidden="true">🎉 ✨ 🎊 🏆 🎊 ✨ 🎉</div><p class="finish-eyebrow">PARTIE MULTIJOUEUR TERMINÉE</p><h2>Le podium MathRush</h2><div class="podium-stage">${top.map((player,index)=>{const rank=ranked.findIndex(p=>p.score===player.score);const place=index===0?'first':index===1?'second':'third';return `<div class="podium-player podium-${place}" style="--podium-delay:${index*180}ms"><div class="podium-crown">${index===0?'👑':index===1?'🥈':'🥉'}</div><img src="${profileAvatarUrl(player)}" alt=""><strong>${escapeHtml(player.name)}</strong><b>${player.score} pts</b><span class="podium-block">${rank+1}</span></div>`;}).join('')}</div>${rest.length?`<div class="podium-rest"><h3>Classement</h3>${rest.map((player,index)=>`<div><span>${index+4}. ${escapeHtml(player.name)}</span><b>${player.score} pts</b></div>`).join('')}</div>`:''}<button class="btn btn-main full finish-menu-btn" id="mathBackToLobby" type="button">Retour au salon</button>`;
+               $('mathPodiumResult').style.display='block';persist();
+               $('mathPodiumResult').innerHTML=`<div class="finish-confetti" aria-hidden="true">🎉 ✨ 🎊 🏆 🎊 ✨ 🎉</div><p class="finish-eyebrow">PARTIE MULTIJOUEUR TERMINÉE</p><h2>Le podium MathRush</h2><div class="podium-stage">${top.map((player,index)=>{const rank=ranked.findIndex(p=>p.score===player.score);const place=index===0?'first':index===1?'second':'third';return `<div class="podium-player podium-${place}" style="--podium-delay:${index*180}ms"><div class="podium-crown">${index===0?'👑':index===1?'🥈':'🥉'}</div><img src="${profileAvatarUrl(player)}" alt=""><strong>${escapeHtml(player.name)}</strong><b>${player.score} pts</b>${timingSummaryHtml(mathPlayerTiming[player.id]||createTimingStats(),'Rapidité · '+escapeHtml(player.name))}<span class="podium-block">${rank+1}</span></div>`;}).join('')}</div>${rest.length?`<div class="podium-rest"><h3>Classement</h3>${rest.map((player,index)=>{const st=mathPlayerTiming[player.id]||createTimingStats();return `<article class="podium-rest-player"><div><span>${index+4}. ${escapeHtml(player.name)}</span><b>${player.score} pts</b></div>${timingSummaryHtml(st,'Rapidité · '+escapeHtml(player.name))}</article>`;}).join('')}</div>`:''}<button class="btn btn-main full finish-menu-btn" id="mathBackToLobby" type="button">Retour au salon</button>`;
                $('mathPodiumResult').querySelector('#mathBackToLobby').onclick=()=>{$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3;setMathStatus('Partie terminée. Tu peux créer un nouveau salon.');};
             }
-            function nextMathQuestion(){if(!mathHost||!mathGameStarted)return;if(mathRound>=10){broadcastMath({type:'mathFinish',players:mathPlayers});finishMathGame();return;}mathRound++;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});}
+            function nextMathQuestion(){if(!mathHost||!mathGameStarted)return;if(mathRound>=10){broadcastMath({type:'mathFinish',players:mathPlayers,timings:mathPlayerTiming});finishMathGame();return;}mathRound++;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();$('mathLocalFeedback').className='feedback';$('mathLocalFeedback').textContent='';renderMathQuestion();broadcastMath({type:'mathQuestion',round:mathRound,turn:mathTurn,question:mathLocalQuestion});}
             $('goLocal').onclick=()=>{renderSharedMathModeCards('mathRoomModes',mathQuestionMode,id=>{mathQuestionMode=id;});show('localMath');$('mathRoomSetup').style.display='block';$('mathLocalPlay').style.display='none';$('mathPodiumResult').style.display='none';$('mathRoomRoster').style.display='none';$('mathHostStart').style.display='none';$('mathHostStart').disabled=true;$('mathCreateRoom').disabled=false;$('mathJoinCode').value='';const profile=playerProfile.getProfile();$('mathOnlineName').value=profile.name;setMathStatus('Un salon démarre à partir de 3 joueurs.');};
             $('localBack').onclick=()=>{if(mathPeer)mathPeer.destroy();mathPeer=null;mathConnections=[];mathHost=false;mathGameStarted=false;$('mathCreateRoom').disabled=false;show('home');};
             $('mathCreateRoom').onclick=()=>{if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}if(mathPeer)mathPeer.destroy();mathPlayers.length=0;mathConnections=[];mathHost=true;mathGameStarted=false;const identity=mathIdentity();mathPlayers.push({...identity,id:'',score:0,team:0});setMathStatus('Création du salon…');$('mathCreateRoom').disabled=true;mathPeer=new Peer('mathrush-multi-'+Math.random().toString(36).slice(2,8));mathPeer.on('open',id=>{mathOnlineId=id;mathPlayers[0].id=id;setMathStatus(`Salon créé. Partage ce code : ${id.replace('mathrush-multi-','').toUpperCase()}`);renderMathRoster();});mathPeer.on('connection',connection=>{connection.on('data',message=>handleMathData(connection,message));connection.on('close',()=>{mathConnections=mathConnections.filter(item=>item!==connection);mathPlayers.splice(0,mathPlayers.length,...mathPlayers.filter(player=>player.id!==connection.peer));if(!mathGameStarted)renderMathRoster();});});mathPeer.on('error',error=>{setMathStatus('Erreur de salon : '+(error.type||'connexion'));$('mathCreateRoom').disabled=false;});};
             $('mathJoinRoom').onclick=()=>{const code=$('mathJoinCode').value.trim().toLowerCase();if(!code){setMathStatus('Saisis le code du salon.');return;}if(!window.Peer){setMathStatus('Connexion réseau indisponible. Recharge la page avec Internet.');return;}if(mathPeer)mathPeer.destroy();mathHost=false;mathGameStarted=false;const identity=mathIdentity();setMathStatus('Connexion au salon…');mathPeer=new Peer();mathPeer.on('open',id=>{mathOnlineId=id;const connection=mathPeer.connect('mathrush-multi-'+code,{reliable:true});mathConnections=[connection];connection.on('open',()=>connection.send({type:'mathJoin',...identity}));connection.on('data',message=>handleMathData(connection,message));connection.on('error',()=>setMathStatus('Impossible de rejoindre ce salon. Vérifie le code.'));});mathPeer.on('error',error=>setMathStatus('Connexion impossible : '+(error.type||'erreur réseau')));};
-            $('mathHostStart').onclick=()=>{if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}mathAdvanceRule=$('mathAdvanceRuleMulti').value;mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion,advanceRule:mathAdvanceRule});setMathStatus('La partie est lancée.');};
+            $('mathHostStart').onclick=()=>{if(!mathHost||mathPlayers.length<3){setMathStatus('Il faut au moins 3 joueurs pour démarrer.');return;}mathAdvanceRule=$('mathAdvanceRuleMulti').value;mathPlayerTiming={};mathPlayers.forEach(player=>player.score=0);mathRound=1;mathTurn=0;mathAnswers={};mathLocalLocked=false;mathLocalQuestion=makeMathQuestion();mathGameStarted=true;$('mathPodiumResult').style.display='none';$('mathRoomSetup').style.display='none';$('mathLocalPlay').style.display='block';renderMathQuestion();broadcastMath({type:'mathStart',players:mathPlayers,question:mathLocalQuestion,advanceRule:mathAdvanceRule});setMathStatus('La partie est lancée.');};
             $('mathNextLocal').onclick=nextMathQuestion;
          }
 

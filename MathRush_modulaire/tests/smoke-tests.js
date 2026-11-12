@@ -70,4 +70,12 @@ assert.ok(appSource.includes('gogoChangePaused'), 'action de changement d’exer
 assert.ok(appSource.includes('function soloExerciseExplanation()') && appSource.includes('function soloExerciseHint()'), 'aide et indice du parcours solo absents');
 assert.ok(htmlSource.includes('id="gogoChangePaused"'), 'bouton changer d’exercice en pause absent');
 assert.ok(htmlSource.includes('id="soloExplain"') && htmlSource.includes('id="soloHint"'), 'boutons aide/indice du parcours solo absents');
+assert.ok(htmlSource.includes('id="soloHelpClose"'), 'bouton de fermeture de l’aide absent');
+assert.ok(htmlSource.includes('id="profileSpeed"'), 'rapidité moyenne absente du profil');
+assert.ok(appSource.includes('function recordTiming(') && appSource.includes('function timingSummaryHtml('), 'statistiques de rapidité communes absentes');
+assert.ok(appSource.includes('Moyenne / réponse') && appSource.includes('Plus rapide') && appSource.includes('Plus lente') && appSource.includes('Bonus de rapidité cumulé'), 'détails des statistiques de rapidité absents');
+assert.ok(appSource.includes('timingSummaryHtml(soloSessionStats)'), 'statistiques de rapidité solo absentes');
+assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)'), 'statistiques de rapidité défi absentes');
+assert.ok(appSource.includes('timingSummaryHtml(gogoTimingStats'), 'statistiques de rapidité Duo à gogo absentes');
+assert.ok(appSource.includes('mathPlayerTiming[player.id]'), 'statistiques de rapidité multijoueur absentes');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
