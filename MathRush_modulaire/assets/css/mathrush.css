@@ -1357,3 +1357,21 @@
 .gogo-pause-panel[hidden]{display:none!important}
 #duoGogo.gogo-playing .gogo-pause-panel{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px}
 #duoGogo.gogo-playing .gogo-pause-panel[hidden]{display:none!important}
+
+/* Aide contextuelle du parcours solo */
+.solo-help-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 8px}
+.solo-help-actions .btn{flex:1;min-width:140px}
+.solo-help-panel{padding:14px 16px;margin:8px 0 14px;border-radius:16px;background:#eef6ff;border:1px solid #c8ddf8;color:#29476d;line-height:1.5;font-size:14px}
+.solo-help-panel[hidden]{display:none!important}
+
+/* Repère de coordonnées gradué : une ligne = une unité */
+.coordinate-wrap{width:100%;max-width:340px;margin:14px auto 20px;padding:8px 20px 20px 28px;box-sizing:border-box}
+.coordinate-plane{width:100%;max-width:none;margin:0;aspect-ratio:1;background-size:calc(100% / var(--coord-max)) calc(100% / var(--coord-max));overflow:visible}
+.coordinate-plane .coordinate-point{left:var(--coord-x);bottom:var(--coord-y);transform:translate(-50%,50%);z-index:2}
+.coordinate-tick{position:absolute;font-size:10px;font-weight:700;color:#64748b;line-height:1}
+.coord-x-tick{bottom:-17px;transform:translateX(-50%)}
+.coord-y-tick{left:-20px;transform:translateY(50%)}
+.coordinate-scale{display:block;text-align:center;margin-top:22px;color:#64748b;font-size:11px;font-weight:700}
+
+.coordinate-plane:before{content:none}
+.coord-axis-x{position:absolute;right:-14px;bottom:-17px;font-size:11px;font-weight:900;color:#45536d}.coord-axis-y{position:absolute;left:-18px;top:-14px;font-size:11px;font-weight:900;color:#45536d}

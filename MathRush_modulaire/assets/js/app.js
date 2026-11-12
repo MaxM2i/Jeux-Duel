@@ -123,6 +123,7 @@
          function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = 0; best = 0; correctCount = 0; renderSolo(); }
          function renderSolo() {
             locked = false; choice = null; exercise = buildExercise(); startTime = Date.now();
+            $('soloHelpPanel').hidden=true;$('soloHelpPanel').textContent='';
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / 15`; $('soloProgress').style.width = (exIndex / 15 * 100) + '%';
             $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + streak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true;
             const q = $('soloQuestion');
@@ -166,6 +167,39 @@
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
             }
          }
+         function soloExerciseExplanation(){
+            if(!exercise)return 'Lis la consigne, repère les nombres utiles puis choisis ou saisis ta réponse.';
+            if(exercise.mode==='coordinates')return `Un point se lit toujours dans l’ordre (x ; y) : d’abord sa position horizontale, puis sa position verticale. Sur ce repère, chaque carreau vaut 1 unité.`;
+            if(exercise.mode==='percentages'||exercise.type==='percent')return `Un pourcentage signifie « sur 100 ». ${exercise.pct}% correspond à ${exercise.pct}/100 : multiplie ${exercise.base} par ${exercise.pct}, puis divise par 100.`;
+            if(exercise.mode==='common-multiples')return `Le ${exercise.askPpcm?'PPCM':'PGCD'} compare les multiples ou les diviseurs de ${exercise.a} et ${exercise.b}. ${exercise.askPpcm?'Cherche le plus petit nombre présent dans les deux listes de multiples.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.'}`;
+            if(exercise.type==='round')return `Pour arrondir ${exercise.number}, regarde le chiffre juste à droite du rang demandé. S’il vaut 5 ou plus, on arrondit vers le haut ; sinon vers le bas.`;
+            if(exercise.type==='pattern')return `Compare les écarts entre les nombres de la suite. La même règle doit permettre de passer d’un terme au suivant.`;
+            if(exercise.type==='model')return 'Observe de combien le nombre augmente à chaque étape, puis applique exactement le même écart à la dernière case.';
+            if(exercise.type==='factors')return 'Les facteurs sont les nombres que l’on multiplie entre eux. Le produit des facteurs doit rester égal au nombre total.';
+            if(exercise.type==='equation')return `Teste chaque expression en effectuant le calcul : une seule donne exactement ${exercise.target}.`;
+            if(exercise.type==='commonSlider')return `Déplace le curseur vers le ${exercise.label} de ${exercise.a} et ${exercise.b}. Les graduations indiquent l’échelle des valeurs possibles.`;
+            if(exercise.type==='pairmatch')return 'Associe chaque calcul à son résultat. Une paire est validée lorsque les deux cartes correspondent.';
+            if(exercise.op)return `Effectue l’opération ${exercise.a} ${exercise.op} ${exercise.b}. ${exercise.op==='×'?'Tu peux décomposer un facteur ou utiliser les tables.':exercise.op==='−'?'Retire d’abord les dizaines, puis les unités.':'Additionne les dizaines et les unités sans les mélanger.'}`;
+            return 'Repère la règle ou l’opération demandée, puis vérifie ton résultat avant de valider.';
+         }
+         function soloExerciseHint(){
+            if(!exercise)return 'Commence par repérer ce que la consigne te demande.';
+            if(exercise.mode==='coordinates')return `Lis d’abord l’axe horizontal (x), puis l’axe vertical (y). Le point est à ${exercise.x} carreaux vers la droite et ${exercise.y} vers le haut.`;
+            if(exercise.type==='percent'||exercise.mode==='percentages')return `${exercise.pct}% de ${exercise.base} : commence par calculer 10% (= ${exercise.base/10}), puis adapte ce résultat au pourcentage demandé.`;
+            if(exercise.type==='round')return `Le chiffre des unités est ${String(exercise.number).slice(-1)}. Il te dit s’il faut arrondir vers le haut ou vers le bas.`;
+            if(exercise.type==='pattern')return `Regarde l’écart entre ${exercise.seq[0]} et ${exercise.seq[1]} : retrouve cet écart dans la suite.`;
+            if(exercise.type==='model')return `L’écart entre les deux premiers nombres est ${exercise.vals[1]-exercise.vals[0]}. Ajoute le même écart au dernier nombre affiché.`;
+            if(exercise.type==='factors')return `Les facteurs déjà connus sont ${exercise.known.join(' et ')}. Leur produit doit compléter le total affiché.`;
+            if(exercise.type==='equation')return `Cherche une multiplication dont le résultat est ${exercise.target}.`;
+            if(exercise.askPpcm)return `Écris les premiers multiples de ${exercise.a} et de ${exercise.b} : compare les deux listes.`;
+            if(exercise.mode==='common-multiples')return `Liste les diviseurs de ${exercise.a} et de ${exercise.b}, puis cherche le plus grand en commun.`;
+            if(exercise.op==='×')return `Décompose ${exercise.a} ou ${exercise.b} en nombres plus faciles à multiplier.`;
+            if(exercise.op==='−')return `Commence par enlever les dizaines, puis termine avec les unités.`;
+            if(exercise.op==='+')return `Additionne séparément les dizaines et les unités.`;
+            return 'Élimine les réponses impossibles en estimant le résultat avant de calculer précisément.';
+         }
+         $('soloExplain').onclick=()=>{$('soloHelpPanel').textContent=soloExerciseExplanation();$('soloHelpPanel').hidden=false;};
+         $('soloHint').onclick=()=>{$('soloHelpPanel').textContent=soloExerciseHint();$('soloHelpPanel').hidden=false;};
          let soloPairSelection=[],soloPairCount=0;function renderSoloPairs(q){soloPairSelection=[];soloPairCount=0;const deck=shuffle([...exercise.pairs.map((p,i)=>({key:i,kind:'calc',text:p.label})),...exercise.pairs.map((p,i)=>({key:i,kind:'answer',text:String(p.value)}))]);q.innerHTML=`<div class="question"><small>Appuie sur les paires</small>Associe chaque calcul à son résultat</div><div class="pair-grid">${deck.map((c,i)=>`<button class="pair-card" data-key="${c.key}" data-kind="${c.kind}">${c.text}</button>`).join('')}</div><p class="small-note">Observe les multiples : ×5 finit par 0 ou 5, ×10 ajoute un zéro.</p>`;q.querySelectorAll('.pair-card').forEach(b=>b.onclick=()=>{if(locked||b.disabled||b.classList.contains('selected'))return;b.classList.add('selected');soloPairSelection.push(b);if(soloPairSelection.length===2){const [a,c]=soloPairSelection;if(a.dataset.key===c.dataset.key&&a.dataset.kind!==c.dataset.kind){a.classList.add('matched');c.classList.add('matched');a.disabled=c.disabled=true;soloPairCount++;$('soloFeedback').className='feedback show good';$('soloFeedback').textContent=`Bonne paire ! ${soloPairCount}/4`;if(soloPairCount===4){choice=1;exercise.ans=1;$('soloValidate').disabled=false;validateSolo();}}else setTimeout(()=>{a.classList.remove('selected');c.classList.remove('selected');},450);soloPairSelection=[];}});}
          function selectSolo(v, b) { if (locked) return; choice = v; document.querySelectorAll('#soloQuestion .choice').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('soloValidate').disabled = false; }
          function validateSolo() {
@@ -254,7 +288,7 @@
          }
          $('goProfile').onclick=()=>{renderProfile();show('profileScreen');};
          $('toggleAvatarChoices').onclick=()=>{const panel=$('avatarChoicesPanel'),open=panel.hidden;panel.hidden=!open;$('toggleAvatarChoices').textContent=open?'Masquer le choix de l’avatar':'Afficher le choix de l’avatar';$('toggleAvatarChoices').setAttribute('aria-expanded',String(open));};
-         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{gogoLevel=gogoUnlockedLevel();renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);show('duoGogo');renderGogoLevels();resetGogo();};$('goSolo').onclick = () => { renderPath(); show('pathScreen'); }; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); renderSharedMathModeCards('duelMathModes',duelMathMode,id=>{duelMathMode=id;}); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
+         $('goQuests').onclick=()=>{renderQuests();show('questsScreen');};$('pathQuests').onclick=()=>{renderQuests();show('questsScreen');};$('openReview').onclick=()=>{renderReview();show('reviewScreen');};$('goDuoGogo').onclick=()=>{show('duoGogo');if(!restorePausedGogo()){gogoLevel=gogoUnlockedLevel();renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();resetGogo();}};$('goSolo').onclick = () => { renderPath(); show('pathScreen'); }; $('goDuel').onclick = () => { renderDuelIdentity(); updateDuelSetupMode(); renderSharedMathModeCards('duelMathModes',duelMathMode,id=>{duelMathMode=id;}); show('duelSetup'); }; $('seePath').onclick = () => { renderPath(); show('pathScreen'); };
          $('soloValidate').onclick = () => locked ? nextSolo() : validateSolo();
          $('soloSkip').onclick = () => { if (!locked) { if (exIndex < 14) { exIndex++; renderSolo(); } else nextSolo(); } };
          function renderQuests(){const items=[{title:'Termine 3 leçons',n:Math.min(3,soloLessons),goal:3},{title:'Obtiens au moins 90 % dans 3 leçons',n:Math.min(3,highScoreLessons),goal:3},{title:'Trouve 10 paires dans Duo à gogo',n:Math.min(10,Number(localStorage.getItem('mathrush_gogo_best')||0)),goal:10},{title:'Lance une partie avec un ami',n:Math.min(1,friendGames),goal:1}];$('questList').innerHTML=items.map(x=>`<div class="quest-row"><b>${x.title}</b><div class="quest-progress"><i style="width:${x.n/x.goal*100}%"></i></div><small>${x.n}/${x.goal}</small></div>`).join('');$('pathQuestPreview').innerHTML=items.slice(0,2).map(x=>`<div class="quest-preview">${x.title}<b>${x.n}/${x.goal}</b></div>`).join('');}
@@ -262,6 +296,7 @@
          $('reviewBack').onclick=()=>{renderPath();show('pathScreen');};$('reviewPractice').onclick=()=>{if(!errors.length)return;let idx=0;const ask=()=>{const e=errors[idx%errors.length];$('reviewList').innerHTML=`<div class="review-item"><b>${e.question}</b><small>${e.tip}</small></div><input class="field" id="reviewTry" inputmode="numeric" placeholder="Ta réponse"><button class="btn btn-main full" id="reviewCheck">Vérifier</button><p id="reviewResult"></p>`;$('reviewCheck').onclick=()=>{const ok=String($('reviewTry').value).trim()===String(e.answer);$('reviewResult').textContent=ok?'Bravo, tu as corrigé cette erreur !':`Pas encore : la réponse est ${e.answer}. Relis l’astuce puis réessaie.`;$('reviewResult').className=ok?'good':'bad';if(ok){errors.splice(idx%errors.length,1);persist();setTimeout(()=>{if(errors.length){idx++;ask();}else renderReview();},650);}};};ask();};
          let gogoTimer=null,gogoRemaining=90,gogoPairs=0,gogoBusy=false,gogoTarget=24,gogoQueue=[],gogoSelected=[],gogoIntroduced=new Set(),gogoAllPairs=[],gogoLevel=1,gogoStartedAt=0,gogoElapsedMs=0,gogoResumeAt=0,gogoPaused=false,gogoMathMode='quick';
          const GOGO_PROGRESS_KEY='mathrush_gogo_progress_v2';
+         const GOGO_PAUSE_KEY='mathrush_gogo_paused_v1';
          function readGogoProgress(){try{return JSON.parse(localStorage.getItem(GOGO_PROGRESS_KEY)||'{}');}catch(_){return {};}}
          function saveGogoProgress(){const progress=readGogoProgress();progress[gogoMathMode]=Math.max(1,Number(progress[gogoMathMode]||1));localStorage.setItem(GOGO_PROGRESS_KEY,JSON.stringify(progress));}
          function gogoUnlockedLevel(){return Math.max(1,Number(readGogoProgress()[gogoMathMode]||1));}
@@ -269,7 +304,7 @@
          function renderGogoLevels(){const unlocked=gogoUnlockedLevel();$('gogoLevelList').innerHTML=Array.from({length:unlocked},(_,i)=>{const level=i+1;const record=Number(localStorage.getItem(`mathrush_gogo_time_${gogoMathMode}_${level}`)||0);return `<button type="button" class="gogo-level${level===gogoLevel?' selected':''}" data-gogo-level="${level}"><b>Niveau ${level}</b><small>${record?`Record : ${formatGogoTime(record)}`:'À découvrir'}</small></button>`;}).join('');$('gogoLevelList').querySelectorAll('[data-gogo-level]').forEach(button=>button.onclick=()=>{gogoLevel=Number(button.dataset.gogoLevel);renderGogoLevels();resetGogo();});}
          function setGogoMode(mode){gogoMathMode=mode;gogoLevel=gogoUnlockedLevel();renderGogoLevels();resetGogo();}
          function resetGogo(){
-            clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();gogoPaused=false;gogoElapsedMs=0;gogoResumeAt=0;
+            localStorage.removeItem(GOGO_PAUSE_KEY);clearInterval(gogoTimer);gogoTimer=null;gogoRemaining=90;gogoPairs=0;gogoBusy=false;gogoQueue=[];gogoSelected=[];gogoIntroduced=new Set();gogoPaused=false;gogoElapsedMs=0;gogoResumeAt=0;
             const target=24+Math.min(16,(gogoLevel-1)*2),seconds=Math.max(45,90-(gogoLevel-1)*4);gogoRemaining=seconds;gogoTarget=target;$('gogoTime').textContent=String(seconds);$('gogoScore').textContent='0';$('gogoTarget').textContent=String(target);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;
             $('gogoProgressFill').style.width='0%';['gogoStar1','gogoStar2','gogoStar3'].forEach(id=>$(id).classList.remove('earned'));
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';$('gogoStart').style.display='block';$('gogoBoard').innerHTML='';$('gogoSetupControls').hidden=false;$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('duoGogo').classList.remove('gogo-playing');
@@ -396,9 +431,22 @@
          function runGogoClock(){
             clearInterval(gogoTimer);gogoResumeAt=Date.now();gogoTimer=setInterval(()=>{gogoRemaining--;$('gogoTime').textContent=gogoRemaining;if(gogoRemaining<=0)finishGogo(false);},1000);
          }
+         function savePausedGogo(){
+            const board=Array.from($('gogoBoard').children).map(slot=>{const card=slot.querySelector('.gogo-card');return card?{pair:card.dataset.pair,kind:card.dataset.kind,matchValue:card.dataset.matchValue,text:card.textContent,matched:card.classList.contains('matched')}:null;});
+            localStorage.setItem(GOGO_PAUSE_KEY,JSON.stringify({mode:gogoMathMode,level:gogoLevel,remaining:gogoRemaining,pairs:gogoPairs,target:gogoTarget,elapsed:gogoElapsedMs,allPairs:gogoAllPairs,queue:gogoQueue,introduced:[...gogoIntroduced],board}));
+         }
+         function restorePausedGogo(){
+            let state;try{state=JSON.parse(localStorage.getItem(GOGO_PAUSE_KEY)||'null');}catch(_){state=null;}
+            if(!state||!Array.isArray(state.board)||!state.board.length)return false;
+            gogoMathMode=state.mode||'quick';gogoLevel=Number(state.level)||1;gogoRemaining=Number(state.remaining)||1;gogoPairs=Number(state.pairs)||0;gogoTarget=Number(state.target)||24;gogoElapsedMs=Number(state.elapsed)||0;gogoAllPairs=Array.isArray(state.allPairs)?state.allPairs:[];gogoQueue=Array.isArray(state.queue)?state.queue:[];gogoIntroduced=new Set(state.introduced||[]);gogoSelected=[];gogoBusy=false;gogoPaused=true;
+            renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();$('gogoTime').textContent=String(gogoRemaining);$('gogoScore').textContent=String(gogoPairs);$('gogoTarget').textContent=String(gogoTarget);$('gogoDifficulty').textContent=`Niveau ${gogoLevel}`;$('gogoProgressFill').style.width=`${Math.min(100,gogoPairs/gogoTarget*100)}%`;
+            [1,2,3].forEach(n=>$(`gogoStar${n}`).classList.toggle('earned',gogoPairs>=Math.ceil(gogoTarget*n/3)));
+            $('gogoBoard').innerHTML='';state.board.forEach(card=>{const slot=document.createElement('div');slot.className='gogo-slot';if(card){const b=makeGogoCard(card);if(card.matched){b.classList.add('matched');b.disabled=true;}slot.appendChild(b);} $('gogoBoard').appendChild(slot);});
+            $('gogoSetupControls').hidden=true;$('gogoStart').style.display='none';$('gogoGamePanel').hidden=false;$('gogoResultPanel').hidden=true;$('gogoPausePanel').hidden=false;$('gogoBoard').hidden=true;$('gogoPause').hidden=true;$('duoGogo').classList.add('gogo-playing');return true;
+         }
          function pauseGogo(){
             if(gogoPaused||!gogoTimer)return;
-            gogoElapsedMs+=Date.now()-gogoResumeAt;clearInterval(gogoTimer);gogoTimer=null;gogoPaused=true;
+            gogoElapsedMs+=Date.now()-gogoResumeAt;clearInterval(gogoTimer);gogoTimer=null;gogoPaused=true;savePausedGogo();
             $('gogoPausePanel').hidden=false;$('gogoBoard').hidden=true;$('gogoPause').hidden=true;
          }
          function resumeGogo(){
@@ -410,7 +458,7 @@
             gogoAllPairs=makeGogoPairs(gogoTarget);gogoQueue=[...gogoAllPairs];drawGogoBoard();runGogoClock();
          }
          function finishGogo(completed,finishedAt=Date.now()){
-            if(!$('gogoResultPanel').hidden)return;
+            if(!$('gogoResultPanel').hidden)return;localStorage.removeItem(GOGO_PAUSE_KEY);
             if(gogoTimer)gogoElapsedMs+=Math.max(0,finishedAt-gogoResumeAt);
             clearInterval(gogoTimer);gogoTimer=null;gogoPaused=false;gogoBusy=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('gogoBoard').hidden=false;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
             const elapsed=Math.max(0,Math.round(gogoElapsedMs/100)/10);
@@ -442,10 +490,11 @@
          $('gogoStart').onclick=startGogo;
          $('gogoPause').onclick=pauseGogo;
          $('gogoResume').onclick=resumeGogo;
-         $('gogoStopPaused').onclick=()=>{resetGogo();renderGogoLevels();};
+         $('gogoStopPaused').onclick=()=>{resetGogo();gogoLevel=gogoUnlockedLevel();renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();show('duoGogo');};
+         $('gogoChangePaused').onclick=()=>{resetGogo();gogoLevel=gogoUnlockedLevel();renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();};
          $('gogoImprove').onclick=()=>startGogo();
          $('gogoNext').onclick=()=>{gogoLevel=Math.min(gogoUnlockedLevel(),gogoLevel+1);renderGogoLevels();startGogo();};
-         $('gogoQuit').onclick=()=>{resetGogo();show('home');};
+         $('gogoQuit').onclick=()=>{resetGogo();gogoLevel=gogoUnlockedLevel();renderSharedMathModeCards('gogoMathModes',gogoMathMode,setGogoMode);renderGogoLevels();show('duoGogo');};
          /* DUEL : le serveur logique est l'hôte. Le premier joueur qui donne la bonne réponse clôt la manche des deux côtés. */
          /* Réseau : STUN pour la découverte directe + TURN (Open Relay Project, gratuit) en relais de secours.
             Sans TURN, deux smartphones en 4G/5G derrière des NAT stricts ne parviennent souvent pas à se connecter. */

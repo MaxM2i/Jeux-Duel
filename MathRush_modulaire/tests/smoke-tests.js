@@ -23,6 +23,7 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
         assert.ok(Array.isArray(exercise.opts) && exercise.opts.length >= 2, 'au moins deux propositions attendues');
       }
       if (exercise.mode === 'rounding') assert.ok(Number.isFinite(exercise.ans));
+      if (exercise.mode === 'coordinates') { assert.ok(exercise.visual.includes('Échelle : 1 carreau = 1 unité'), 'échelle du repère absente'); assert.ok(exercise.visual.includes('--coord-x:'), 'position horizontale du point absente'); }
     }
   }
 }
@@ -64,4 +65,9 @@ assert.ok(appSource.includes('coord-${exercise.x}-${exercise.y}'), 'correspondan
 assert.ok(appSource.includes('label=`${exercise.pct} % de ${exercise.base}`'), 'énoncé des pourcentages Duo à gogo absent');
 assert.ok(appSource.includes("$('gogoGamePanel').hidden=true"), 'masquage du plateau après la partie absent');
 assert.ok(appSource.includes("$('duoGogo').classList.add('gogo-playing')"), 'mise au point du plateau au lancement absente');
+assert.ok(appSource.includes('function savePausedGogo()') && appSource.includes('function restorePausedGogo()'), 'sauvegarde/restauration de la pause Duo à gogo absente');
+assert.ok(appSource.includes('gogoChangePaused'), 'action de changement d’exercice depuis la pause absente');
+assert.ok(appSource.includes('function soloExerciseExplanation()') && appSource.includes('function soloExerciseHint()'), 'aide et indice du parcours solo absents');
+assert.ok(htmlSource.includes('id="gogoChangePaused"'), 'bouton changer d’exercice en pause absent');
+assert.ok(htmlSource.includes('id="soloExplain"') && htmlSource.includes('id="soloHint"'), 'boutons aide/indice du parcours solo absents');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
