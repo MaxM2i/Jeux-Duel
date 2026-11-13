@@ -12,6 +12,9 @@
 <header><h1>🧪 Laboratoire MathRush</h1><p>Teste chaque générateur indépendamment du jeu, sans modifier ta progression.</p>
 <div class="controls"><label>Type d’exercice<select id="mode"></select></label><label>Difficulté<select id="difficulty"></select></label><button id="generate" type="button">Générer un exercice</button><button id="batch" type="button" class="secondary">Tester 100 générations</button></div></header>
 <section class="panel exercise"><div id="kind" class="status"></div><div id="prompt" class="prompt">Choisis un type puis génère un exercice.</div><div id="visual" class="visual"></div><div id="answers" class="choices"></div><div id="range" class="range-wrap" hidden><output id="rangeValue">—</output><input id="slider" class="lab-range-preview" type="range" min="0" max="100" value="50"><button id="validateRange" type="button" class="controls" style="margin-top:10px">Vérifier cette valeur</button></div><p id="result" class="status" aria-live="polite"></p><div id="customFieldsPreview" class="custom-fields-preview"></div></section>
+
+<section class="panel"><h2>Objet généré (diagnostic)</h2><pre id="raw" class="raw">Aucun exercice généré.</pre><p class="status">Ce laboratoire appelle directement les générateurs partagés de <code>assets/js/exercises.js</code>. Il permet d’isoler un type, un niveau et de répéter les générations.</p></section>
+
 <section class="panel" id="cursorSettings"><h2>🎛️ Apparence et jouabilité du curseur</h2><p class="muted">Ces réglages modifient l’aperçu du laboratoire uniquement : ils ne changent pas le jeu principal.</p>
 <div class="settings-grid">
 <label>Couleur du curseur<input id="cursorColor" type="color" value="#4778ed"></label>
@@ -24,8 +27,8 @@
 <label class="inline-check"><input id="showCursorValue" type="checkbox" checked> Afficher la valeur au-dessus du curseur</label>
 <div class="cursor-demo"><output id="cursorPreviewValue">50</output><input id="cursorPreview" class="lab-range-preview" type="range" min="0" max="100" step="1" value="50"><p class="muted">Déplace le curseur ici pour tester la taille, la couleur et la précision.</p></div>
 </section>
-<section class="panel"><h2>🧩 Champs de texte personnalisés</h2><p class="muted">Ajoute ou retire des champs dans l’aperçu pour tester les informations affichées autour d’un exercice.</p><div id="fieldList" class="field-list"></div><div class="controls"><button id="addTextField" type="button">+ Ajouter un champ</button><button id="resetTextFields" type="button" class="secondary">Réinitialiser les champs</button></div></section>
-<section class="panel"><h2>Objet généré (diagnostic)</h2><pre id="raw" class="raw">Aucun exercice généré.</pre><p class="status">Ce laboratoire appelle directement les générateurs partagés de <code>assets/js/exercises.js</code>. Il permet d’isoler un type, un niveau et de répéter les générations.</p></section>
+
+
 </main>
 <script src="assets/js/config.js"></script><script src="assets/js/exercises.js"></script>
 <script>
