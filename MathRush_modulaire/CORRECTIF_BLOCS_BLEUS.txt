@@ -1,0 +1,20 @@
+CORRECTIF MATHRUSH — MODÈLE DE COMPTAGE DE BLOCS BLEUS
+
+Cette archive contient le projet MathRush complet, avec ses ressources et avatars.
+
+Le modèle « Associer un nombre à ses blocs bleus » fonctionne désormais ainsi :
+- un nombre cible est affiché clairement ;
+- deux cartes proposent chacune une quantité de petits blocs bleus ;
+- le joueur choisit la carte qui contient exactement le nombre demandé ;
+- les cartes ne montrent aucun nombre écrit, aucune décomposition en centaines/dizaines/unités.
+
+Le modèle est disponible en Parcours solo, Défi et Multijoueur, dans Calculs rapides et Calculs arrondis (et dans Tout mélangé). Il n'est pas proposé dans Duo à gogo, qui repose sur des associations textuelles.
+
+Le nombre cible augmente progressivement selon la difficulté (jusqu'à 30 blocs). Le laboratoire montre également le rendu et les deux propositions visuelles.
+
+Installation :
+1. Décompresser l'archive.
+2. Remplacer le dossier du projet actuel par le dossier MathRush_modulaire fourni, ou copier son contenu dans le projet existant en conservant la structure des dossiers.
+3. Ne pas supprimer le dossier assets/avatar : il est inclus dans cette archive complète.
+
+Vérifications réalisées : syntaxe JavaScript, scripts du laboratoire et npm test.

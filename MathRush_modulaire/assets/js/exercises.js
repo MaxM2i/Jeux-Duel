@@ -24,7 +24,7 @@
     return { a, b, op, ans };
   }
 
-  function makeVisualExercise(type, rand, shuffle) {
+  function makeVisualExercise(type, rand, shuffle, rank = 6) {
     if (type === 'percent') {
       const profile = window.MathRushConfig.DIFFICULTY[2];
       const pct = pick(profile.percentages, rand), base = pick(profile.bases, rand), ans = base * pct / 100;
@@ -32,7 +32,7 @@
       return { type, pct, base, ans, opts: shuffle(unique([ans, ans + delta, Math.max(0, ans - delta), ans * 2])) };
     }
     if (type === 'model') {
-      const start = rand(2, 8), step = pick([1, 2, 5], rand);
+      const start = rand(2, 5), step = rank===0?pick([1,2],rand):pick([1, 2, 5], rand);
       const vals = [0, 1, 2].map(i => start + i * step), ans = start + 3 * step;
       return { type, vals, ans, opts: shuffle([ans, ans + step, ans - step, ans + 2 * step].map(String)), displayVals: vals.map(String), displayAns: String(ans) };
     }
@@ -42,7 +42,7 @@
       return { type, a: values[0], b: values[1], c: values[2], missing, known, ans: missing, opts: shuffle(unique([missing, missing + 1, missing + 2, Math.max(2, missing - 1)])) };
     }
     if (type === 'equation') {
-      const target = pick([12, 15, 18, 20, 24, 30, 36], rand), pairs = [];
+      const target = pick(rank===0?[10,12,15,20]:rank<=2?[12,15,18,20,24]:[12, 15, 18, 20, 24, 30, 36], rand), pairs = [];
       for (let a = 2; a <= 9; a++) if (target % a === 0) pairs.push([a, target / a]);
       const pair = pick(pairs, rand), good = `${pair[0]} × ${pair[1]}`;
       return { type, target, ans: good, opts: shuffle([good, `${target} ÷ 2`, `${Math.max(1, pair[0] - 1)} × ${pair[1]}`, `${pair[0]} + ${pair[1]}`]) };
@@ -76,13 +76,22 @@
 
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.
     if (selectedModel?.type === 'commonSlider') {
-      let a=3,b=3,c=2,ans=-18,found=false;
-      for(let attempt=0;attempt<80;attempt++){const sign=modelMax<=0?-1:modelMin>=0?1:(rand(0,1)?-1:1);a=rand(2,6)*sign;b=rand(2,6);c=rand(2,6);ans=a*b*c;if(ans>=modelMin&&ans<=modelMax){found=true;break;}}
-      if(!found){ans=Math.min(modelMax,Math.max(modelMin,modelMin<=-2&&modelMax>=-2?-2:2));a=ans;b=1;c=1;}
-      const bound=Math.min(1000,Math.max(10,Math.abs(ans)*2));
-      const safeMin=-bound,safeMax=bound;
-      const ticks=[safeMin,Math.round(safeMin+(safeMax-safeMin)*.25),Math.round((safeMin+safeMax)/2),Math.round(safeMin+(safeMax-safeMin)*.75),safeMax];
-      return tag({ type:'commonSlider', mode, a, b, c, expression:`${a} × ${b} × ${c}`, label:'résultat', ans, min:safeMin, max:safeMax, cursorStartValue:safeMin, step:1, ticks:[...new Set(ticks)] });
+      let expression, ans, safeMin, safeMax;
+      if (rank === 0) {
+        // Tout premier palier : une opération courte, positive et immédiatement calculable.
+        const examples = [{ expression:'2 × 5', ans:10 }, { expression:'10 + 10', ans:20 }, { expression:'2 × 10', ans:20 }, { expression:'5 + 5', ans:10 }];
+        ({ expression, ans } = pick(examples, rand)); safeMin=0; safeMax=ans===10?20:40;
+      } else if (rank <= 2) {
+        const a=pick([2,3,4,5,10],rand), b=rand(2,5); ans=a*b; expression=`${a} × ${b}`; safeMin=0; safeMax=Math.max(20,Math.ceil(ans/10)*10+10);
+      } else {
+        let a=3,b=3,c=2,found=false;
+        for(let attempt=0;attempt<80;attempt++){const sign=modelMax<=0?-1:modelMin>=0?1:(rand(0,1)?-1:1);a=rand(2,6)*sign;b=rand(2,6);c=rand(2,6);ans=a*b*c;if(ans>=modelMin&&ans<=modelMax){found=true;break;}}
+        if(!found){ans=Math.min(modelMax,Math.max(modelMin,2));a=ans;b=1;c=1;}
+        expression=`${a} × ${b} × ${c}`;const bound=Math.min(1000,Math.max(10,Math.abs(ans)*2));safeMin=-bound;safeMax=bound;
+      }
+      const span=safeMax-safeMin;
+      const ticks=rank===0?[0,1,2,3,4].map(i=>Math.round(safeMax*i/4)):[safeMin,Math.round(safeMin+span*.25),Math.round(safeMin+span*.5),Math.round(safeMin+span*.75),safeMax];
+      return tag({ type:'commonSlider', mode, expression, label:'résultat', ans, min:safeMin, max:safeMax, cursorStartValue:safeMin, step:1, ticks:[...new Set(ticks)] });
     }
     if (selectedModel?.type === 'factorTree') {
       const factors = [2,3,4,5,6,7,8]; let p=4,q=2,r=4,left=8,total=32;
@@ -101,26 +110,36 @@
       return tag({type:'roundingTable',mode,unit,rows,ans:last,opts:shuffle(unique([last,last+1,Math.max(0,last-unit),last+unit])),prompt:`Arrondis chaque résultat à la ${unit===10?'dizaine':'centaine'} près, puis fais l'opération.`});
     }
     if (selectedModel?.type === 'baseTen') {
-      const max = Math.min(999,modelMax), min = Math.max(10,modelMin), ans = rand(Math.min(min,max),max), hundreds=Math.floor(ans/100), tens=Math.floor((ans%100)/10), units=ans%10;
-      return tag({ type:'baseTen', mode, ans, hundreds, tens, units, opts:shuffle(unique([ans,ans+10,Math.max(0,ans-10),ans+100])) });
+      // Association visuelle : le nombre cible est affiché, le joueur choisit
+      // entre deux cartes celle qui contient exactement autant de blocs bleus.
+      const difficultyCap = [10,12,15,18,20,24,30][Math.max(0,Math.min(6,rank))];
+      const min = Math.max(1,Math.ceil(modelMin));
+      const max = Math.max(min,Math.min(difficultyCap,Math.floor(modelMax)));
+      const ans = rand(min,max);
+      const candidates = unique([ans-1,ans+1,ans-2,ans+2,ans===1?3:ans-3]).filter(n=>n>=1&&n<=max+2&&n!==ans);
+      const distractor = candidates.length ? pick(candidates,rand) : (ans===1?2:ans-1);
+      return tag({ type:'baseTen', mode, ans, opts:shuffle([ans,distractor]), numberMin:min, numberMax:max });
     }
     if (selectedModel?.type === 'baseTenRounding') {
       const number=rand(Math.max(101,modelMin),Math.min(999,modelMax)),ans=Math.round(number/100)*100;
       return tag({type:'baseTenRounding',mode,number,ans,opts:shuffle(unique([ans,Math.max(0,ans-100),ans+100]))});
     }
     if (selectedModel?.type === 'missingBox') {
-      let a=pick(profile.tables,rand),b=rand(2,Math.max(3,profile.maxFactor)),ans=a*b;for(let attempt=0;attempt<80&&(ans<modelMin||ans>modelMax);attempt++){a=pick(profile.tables,rand);b=rand(2,Math.max(3,profile.maxFactor));ans=a*b;}
-      return tag({ type:'missingBox', mode, a, b, ans, prompt:`${a} × □ = ${ans}`, opts:shuffle(unique([b,b+1,Math.max(1,b-1),b+2])) });
+      const early = rank===0;
+      let a=early?pick([2,5,10],rand):pick(profile.tables,rand),b=rand(2,early?5:Math.max(3,profile.maxFactor)),product=a*b;
+      for(let attempt=0;attempt<80&&(product<modelMin||product>modelMax);attempt++){a=early?pick([2,5,10],rand):pick(profile.tables,rand);b=rand(2,early?5:Math.max(3,profile.maxFactor));product=a*b;}
+      // La réponse attendue est le facteur caché, jamais le produit affiché à droite.
+      return tag({ type:'missingBox', mode, a, b, ans:b, prompt:`${a} × □ = ${product}`, opts:shuffle(unique([b,b+1,Math.max(1,b-1),b+2])) });
     }
     if (selectedModel?.type === 'model' || selectedModel?.type === 'factors' || selectedModel?.type === 'equation') {
-      return tag({ ...makeVisualExercise(selectedModel.type,rand,shuffle), mode });
+      return tag({ ...makeVisualExercise(selectedModel.type,rand,shuffle,rank), mode });
     }
     if (selectedModel?.type === 'pattern') {
-      const start=rand(2,Math.max(4,Math.min(40,profile.maxAdd))),step=pick([2,3,4,5,10],rand),seq=[start,start+step,start+step*2];
+      const start=rand(2,rank===0?10:Math.max(4,Math.min(40,profile.maxAdd))),step=pick(rank===0?[1,2]:[2,3,4,5,10],rand),seq=[start,start+step,start+step*2];
       const ans=start+step*3;return tag({type:'pattern',mode,seq,ans,opts:shuffle(unique([ans,ans+step,ans+step*2,Math.max(0,ans-step)]))});
     }
     if (selectedModel?.type === 'round') {
-      const unit=pick(profile.roundingUnits,rand),low=Math.max(2,Math.ceil(modelMin/unit)),high=Math.max(low,Math.min(99,Math.floor(modelMax/unit))),base=rand(low,high)*unit;
+      const unit=pick(profile.roundingUnits,rand),levelCap=rank===0?10:rank===1?20:rank===2?50:99,low=Math.max(2,Math.ceil(modelMin/unit)),high=Math.max(low,Math.min(levelCap,Math.floor(modelMax/unit))),base=rand(low,high)*unit;
       let offset=rand(-Math.floor(unit/2)+1,Math.floor(unit/2)-1);if(offset===0)offset=1;
       const number=Math.max(1,base+offset),ans=Math.round(number/unit)*unit;
       return tag({type:'round',mode,number,unit,ans,opts:shuffle(unique([ans,Math.max(0,ans-unit),ans+unit,ans+unit*2])),tip:`Arrondis à la ${unit===10?'dizaine':unit===100?'centaine':'millier'} la plus proche.`});

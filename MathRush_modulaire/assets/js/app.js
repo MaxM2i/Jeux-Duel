@@ -93,7 +93,11 @@
             const d = difficultyRank(); let a, b, op, ans;
             // Progression douce : additions/soustractions sans retenue au début,
             // puis tables familières (2, 3, 4, 5 et 10). Aucun décimal.
-            if (d <= 2) {
+            if (d === 0) {
+               op = Math.random() < .7 ? '+' : '×';
+               if (op === '+') { a = rand(1, 5); b = rand(1, 5); ans = a+b; }
+               else { a = [2,5,10][rand(0,2)]; b = rand(2,5); ans=a*b; }
+            } else if (d <= 2) {
                op = Math.random() < .58 ? '+' : '×';
                if (op === '+') { a = rand(1, 10); b = rand(1, Math.min(10, 20-a)); ans = a+b; }
                else { a = [2,3,4,5,10][rand(0,4)]; b = rand(2,5); ans=a*b; }
@@ -184,6 +188,21 @@
             ex.cursorStartValue=Number.isFinite(Number(model.startValue))?Math.min(ex.max,Math.max(ex.min,Number(model.startValue))):Math.min(ex.max,Math.max(ex.min,Number(ex.ans)||ex.min));
             const wantedStep=Number(model.step)>0?Number(model.step):(ex.step||1);const aligned=Math.abs(((answer-ex.min)/wantedStep)-Math.round((answer-ex.min)/wantedStep))<1e-8;ex.cursorStep=aligned?wantedStep:(ex.step||1);ex.step=ex.cursorStep;ex.cursorModel=model;return ex;
          }
+         function renderCursorScale(range, ticksHost, valueHost, ticks, min, max, currentValue) {
+            if(!range||!ticksHost)return;
+            const span=Math.max(1,Number(max)-Number(min));
+            const thumb=Number(getComputedStyle(range).getPropertyValue('--cursor-thumb-size').replace('px',''))||28;
+            ticksHost.style.position='relative';ticksHost.style.height='24px';ticksHost.innerHTML=(ticks||[]).map(n=>{
+               const ratio=Math.max(0,Math.min(1,(Number(n)-Number(min))/span));
+               const left=`calc(${thumb/2}px + ${ratio*100}% - ${ratio*thumb}px)`;
+               return `<span style="position:absolute;left:${left};transform:translateX(-50%);white-space:nowrap">${n}</span>`;
+            }).join('');
+            if(valueHost){const ratio=Math.max(0,Math.min(1,(Number(currentValue)-Number(min))/span));const travel=Math.max(0,range.clientWidth-thumb);valueHost.style.position='absolute';valueHost.style.left=Math.max(0,Math.min(range.parentElement.clientWidth-valueHost.offsetWidth,range.offsetLeft+thumb/2+ratio*travel-valueHost.offsetWidth/2))+'px';valueHost.style.top='0';}
+         }
+         function bindCursorScale(range,ticksHost,valueHost,ticks,min,max){
+            const update=()=>{if(valueHost)valueHost.textContent=String(range.value);renderCursorScale(range,ticksHost,valueHost,ticks,min,max,range.value)};
+            range.addEventListener('input',update);window.addEventListener('resize',update);requestAnimationFrame(update);return update;
+         }
          function styleSoloCursor(input,model){if(!input||!model)return;input.style.setProperty('--cursor-thumb-size',(Number(model.thumbSize)||28)+'px');input.style.setProperty('--cursor-track-size',(Number(model.trackSize)||10)+'px');input.style.setProperty('--cursor-color',model.color||'#4778ed');const value=input.previousElementSibling;if(value&&value.classList.contains('range-value'))value.hidden=model.showValue===false;}
          function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = currentGlobalStreak; best = currentGlobalStreak; correctCount = 0; rescuePending=false; rescueActive=false; soloSessionStats=createTimingStats(); renderSolo(); }
          function renderSolo() {
@@ -195,16 +214,18 @@
             const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.op){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
             if (exercise.type === 'commonSlider') {
-               q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.expression||`${exercise.a} , ${exercise.b}`}</div></div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.cursorStartValue??exercise.ticks[1]))}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div>`;
-               // Le curseur met à jour la valeur et l'état de validation à chaque mouvement tactile/souris.
-               $('soloRange').addEventListener('input', e => { choice = Number(e.currentTarget.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; }); styleSoloCursor($('soloRange'),exercise.cursorModel);
+               q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.expression||`${exercise.a} , ${exercise.b}`}</div></div><div class="cursor-scale-wrap"><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.cursorStartValue??exercise.ticks[1]))}"><div class="ticks" id="soloTicks"></div></div>`;
+               const range=$('soloRange'),value=$('rangeValue');
+               range.addEventListener('input', e => { choice = Number(e.currentTarget.value); $('soloValidate').disabled = false; updateCursor(); });
+               styleSoloCursor(range,exercise.cursorModel); const updateCursor=bindCursorScale(range,$('soloTicks'),value,exercise.ticks,exercise.min,exercise.max,range.value);
             } else if (['slider', 'line'].includes(exercise.type)) {
-               q.innerHTML = `<div class="question"><small>${exercise.type === 'line' ? 'Place le résultat sur la droite graduée' : 'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||1}" value="${exercise.cursorStartValue??rand(exercise.min, exercise.max)}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
-               // Même gestion pour les estimations : ne pas bloquer les gestes tactiles sur le range.
-               $('soloRange').addEventListener('input', e => { choice = Number(e.currentTarget.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; }); styleSoloCursor($('soloRange'),exercise.cursorModel);
+               q.innerHTML = `<div class="question"><small>${exercise.type === 'line' ? 'Place le résultat sur la droite graduée' : 'Estime le résultat'}</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><div class="cursor-scale-wrap"><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||1}" value="${exercise.cursorStartValue??rand(exercise.min, exercise.max)}"><div class="ticks" id="soloTicks"></div></div><p class="small-note">Le nombre choisi reste caché jusqu'à validation.</p>`;
+               const range=$('soloRange'),value=$('rangeValue');
+               range.addEventListener('input', e => { choice = Number(e.currentTarget.value); $('soloValidate').disabled = false; updateCursor(); });
+               styleSoloCursor(range,exercise.cursorModel); const updateCursor=bindCursorScale(range,$('soloTicks'),value,exercise.ticks,exercise.min,exercise.max,range.value);
             } else if (exercise.type === 'choice') {
                q.innerHTML = `<div class="question"><small>${exercise.subLabel || (exercise.mode==='complex'?'Résous le calcul en respectant les priorités':'Choisis la bonne réponse')}</small>${exercise.prompt||`${exercise.a} ${exercise.op} ${exercise.b} = ?`}</div><div class="choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
-               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
+               q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
             } else if (exercise.type === 'fill') {
                q.innerHTML = `<div class="question"><small>Complète le calcul</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><input class="answer-input" id="fillValue" type="number" inputmode="numeric" placeholder="?">`;
                $('fillValue').oninput = e => { choice = e.target.value === '' ? null : Number(e.target.value); $('soloValidate').disabled = choice === null; };
@@ -247,8 +268,8 @@
                q.innerHTML=`<div class="visual-prompt"><small>Arrondis à la centaine près</small><div class="round-number">${exercise.number}</div></div><div class="choices visual-choices base-ten-rounding-choices">${exercise.opts.map(value=>`<button class="choice base-ten-choice" data-v="${value}">${blocks(value)}<b>${value}</b></button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'baseTen') {
-               const block=(count,kind)=>Array.from({length:Math.min(count,10)},()=>`<i class="base-ten-${kind}"></i>`).join('');
-               q.innerHTML = `<div class="visual-prompt"><small>Quel nombre est représenté ?</small><div class="base-ten-board"><div><strong>${exercise.hundreds}</strong><span>${block(exercise.hundreds,'hundred')}</span><small>centaine(s)</small></div><div><strong>${exercise.tens}</strong><span>${block(exercise.tens,'ten')}</span><small>dizaine(s)</small></div><div><strong>${exercise.units}</strong><span>${block(exercise.units,'unit')}</span><small>unité(s)</small></div></div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               const blocks=count=>`<span class="count-blocks" aria-label="${count} blocs bleus">${Array.from({length:count},()=>'<i class="count-blue-block"></i>').join('')}</span>`;
+               q.innerHTML = `<div class="visual-prompt count-blocks-prompt"><small>Choisis la représentation qui contient ce nombre de blocs bleus</small><strong class="count-target">${exercise.ans}</strong></div><div class="choices visual-choices count-blocks-choices">${exercise.opts.map(n=>`<button class="choice count-block-choice" data-v="${n}">${blocks(n)}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'missingBox') {
                q.innerHTML = `<div class="visual-prompt"><small>Multiplie pour compléter l'espace vide</small><div class="visual-equation">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
@@ -264,7 +285,7 @@
             if(exercise.type==='ppcmChoice')return `Écris les multiples de ${exercise.a} et de ${exercise.b}. Le PPCM est le premier multiple commun aux deux listes.`;
             if(exercise.type==='roundingTable')return `Pour chaque ligne, calcule d'abord la différence, puis arrondis-la à la dizaine ou à la centaine demandée. Sur la dernière ligne, ${exercise.rows[2].expression} donne ${exercise.rows[2].difference} avant arrondi.`;
             if(exercise.type==='baseTenRounding')return `Compare ${Math.floor(exercise.number/100)*100} et ${Math.ceil(exercise.number/100)*100}, puis choisis la centaine la plus proche.`;
-            if(exercise.type==='baseTen')return `Chaque plaque vaut 100, chaque barre vaut 10 et chaque petit cube vaut 1. Additionne les centaines, dizaines et unités.`;
+            if(exercise.type==='baseTen')return `Compte les petits blocs bleus dans chaque proposition. Choisis celle qui en contient exactement ${exercise.ans}.`;
             if(exercise.type==='missingBox')return `Pour trouver le facteur manquant, divise le produit ${exercise.ans} par le facteur connu ${exercise.a}.`;
             if(exercise.type==='round')return `Pour arrondir ${exercise.number}, regarde le chiffre juste à droite du rang demandé. S’il vaut 5 ou plus, on arrondit vers le haut ; sinon vers le bas.`;
             if(exercise.type==='pattern')return `Compare les écarts entre les nombres de la suite. La même règle doit permettre de passer d’un terme au suivant.`;
@@ -284,7 +305,7 @@
             if(exercise.type==='ppcmChoice')return `Commence par écrire les premiers multiples de ${exercise.a} et de ${exercise.b}.`;
             if(exercise.type==='roundingTable')return `Calcule ${exercise.rows[2].expression}, puis arrondis le résultat à la ${exercise.unit===10?'dizaine':'centaine'} la plus proche.`;
             if(exercise.type==='baseTenRounding')return `Regarde les deux derniers chiffres de ${exercise.number} : s'ils sont inférieurs à 50, arrondis vers le bas ; sinon vers le haut.`;
-            if(exercise.type==='baseTen')return `Additionne ${exercise.hundreds} centaines, ${exercise.tens} dizaines et ${exercise.units} unités.`;
+            if(exercise.type==='baseTen')return `Le nombre cible est ${exercise.ans}. Il faut compter les blocs bleus un par un et comparer les deux propositions.`;
             if(exercise.type==='missingBox')return `Cherche quel nombre multiplié par ${exercise.a} donne ${exercise.ans}.`;
             if(exercise.type==='round')return `Le chiffre des unités est ${String(exercise.number).slice(-1)}. Il te dit s’il faut arrondir vers le haut ou vers le bas.`;
             if(exercise.type==='pattern')return `Regarde l’écart entre ${exercise.seq[0]} et ${exercise.seq[1]} : retrouve cet écart dans la suite.`;
@@ -450,7 +471,7 @@
                if(exercise.type==='ppcmChoice')label=`PPCM de ${exercise.a} et ${exercise.b}`;
                if(exercise.type==='roundingTable')label=`Complète le tableau d’arrondis à ${exercise.unit} près`;
                if(exercise.type==='baseTenRounding')label=`Arrondis ${exercise.number} à la centaine près`;
-               if(exercise.type==='baseTen')label=`Quel nombre représentent ${exercise.hundreds} centaines, ${exercise.tens} dizaines et ${exercise.units} unités ?`;
+               if(exercise.type==='baseTen')label=`Trouve la carte qui contient ${exercise.ans} blocs bleus`; 
                if(exercise.type==='missingBox')label=exercise.prompt;
                if(exercise.type==='pattern')label=`Suite : ${exercise.seq.join(' · ')} · ?`;
                if(exercise.type==='model')label=`Complète le modèle ${exercise.displayVals.join(' · ')} · ?`;
@@ -697,8 +718,8 @@
             } else if(generated.type==='ppcmChoice')prompt=`Sélectionne le plus petit commun multiple de ${generated.a} et ${generated.b}.`;
             else if(generated.type==='baseTenRounding'){prompt=`Arrondis ${generated.number} à la centaine près.`;const low=Math.floor(generated.number/100)*100,high=low+100,drawBlocks=value=>`<div class="base-ten-rounding-card"><b>${value}</b><span>${Array.from({length:Math.min(5,value/100)},()=>'<i class="base-ten-hundred"></i>').join('')}</span></div>`;visual=`<div class="base-ten-rounding-preview">${drawBlocks(low)}${drawBlocks(high)}</div>`;}
             else if(generated.type==='baseTen'){
-               prompt='Quel nombre est représenté par les blocs ?';
-               visual=`<div class="base-ten-board"><div><strong>${generated.hundreds}</strong><span>${Array.from({length:Math.min(10,generated.hundreds)},()=>'<i class="base-ten-hundred"></i>').join('')}</span><small>centaines</small></div><div><strong>${generated.tens}</strong><span>${Array.from({length:generated.tens},()=>'<i class="base-ten-ten"></i>').join('')}</span><small>dizaines</small></div><div><strong>${generated.units}</strong><span>${Array.from({length:generated.units},()=>'<i class="base-ten-unit"></i>').join('')}</span><small>unités</small></div></div>`;
+               prompt=`Choisis la représentation qui contient ${generated.ans} blocs bleus.`;
+               visual=`<div class="count-target">${generated.ans}</div>`;
             } else if(generated.type==='missingBox')prompt=generated.prompt;
             else if(generated.type==='pattern')prompt=`Quel nombre vient ensuite ? ${generated.seq.join(' · ')} · ?`;
             else if(generated.type==='model'){prompt='Observe le modèle et trouve la valeur manquante.';visual=`<div class="model-grid"><div>${generated.displayVals[0]}</div><div>${generated.displayVals[1]}</div><div>${generated.displayVals[2]}</div><div class="missing-cell">?</div></div>`;}
@@ -708,6 +729,10 @@
             else if(generated.type==='coordinates'){prompt=generated.prompt;visual+=`<details class="coordinate-help"><summary>? Comprendre</summary><p>Échelle : chaque carreau représente 1 unité. Les axes vont de 0 à ${generated.coordinateMax}. Lis d’abord x (horizontal), puis y (vertical).</p></details>`;}
             else if(!prompt)prompt=`${generated.a??''} ${generated.op??''} ${generated.b??''} = ?`;
             let distractors=(generated.opts||[]).map(String).filter(value=>value!==answer);
+            if(generated.type==='baseTen'){
+               const options=shuffle([answer,...distractors].slice(0,2));
+               return{choiceBased:true,type:generated.type,prompt,visual,opts:options,answerIndex:options.indexOf(answer),ans:answer};
+            }
             const fallbacks=[String(Number(answer)+2),String(Math.max(0,Number(answer)-2)),String(Number(answer)+5),String(Number(answer)+10)];
             for(const value of fallbacks){if(distractors.length>=3)break;if(value!==answer&&!distractors.includes(value))distractors.push(value);}
             return makeDuelChoiceQuestion(type,prompt,answer,distractors,visual);
@@ -743,7 +768,7 @@
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
                : q.choiceBased ? `<div class="question"><small>${(MathRushConfig.MODES.find(mode=>mode.id===q.type)?.label)||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
-            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
+            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : q.type==='baseTen' ? `<button class="choice count-block-choice" data-i="${i}"><span class="count-blocks" aria-label="${Number(n)} blocs bleus">${Array.from({length:Number(n)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
             $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
             updateDuelScore();
          }
@@ -964,7 +989,7 @@
                const player=mathPlayers[mathTurn];if(!player)return;
                $('mathTurn').innerHTML=`Manche ${mathRound}/10 · ${mathAdvanceRule==='turns'?'Au tour de ':''}${mathAdvanceRule==='turns'?`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`:'À vous de répondre'}`;
                $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
-               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
+               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>mathLocalQuestion.type==='baseTen'?`<button class="choice count-block-choice" type="button" data-answer="${index}"><span class="count-blocks" aria-label="${Number(option)} blocs bleus">${Array.from({length:Number(option)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>`:`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
                const canAnswer=mathAdvanceRule==='turns'?player.id===mathOnlineId:!mathAnswers[mathOnlineId];
                $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=!canAnswer||mathLocalLocked;button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});
                $('mathNextLocal').style.display='none';$('mathLocalScores').innerHTML=mathScores();

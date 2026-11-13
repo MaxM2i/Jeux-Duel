@@ -382,28 +382,31 @@
          touch-action: pan-y
       }
 
+      .cursor-scale-wrap { position:relative; padding-top:38px; }
       .ticks {
-         display: grid;
-         grid-auto-flow: column;
-         grid-auto-columns: 1fr;
-         justify-content: space-between;
-         align-items: center;
-         color: var(--muted);
-         font-size: clamp(11px, 3vw, 14px);
-         font-weight: 850;
-         white-space: nowrap;
-         overflow: hidden;
-         padding: 0 10px;
-         box-sizing: border-box
+         position:relative;
+         display:block;
+         height:24px;
+         color:var(--muted);
+         font-size:clamp(11px,3vw,14px);
+         font-weight:850;
+         white-space:nowrap;
+         overflow:visible;
+         padding:0;
+         box-sizing:border-box
       }
 
       .range-value {
-         text-align: center;
-         font-size: 25px;
-         font-weight: 950;
-         color: #aab5c8;
-         min-height: 34px;
-         margin: 8px
+         text-align:center;
+         font-size:25px;
+         font-weight:950;
+         color:#aab5c8;
+         min-height:30px;
+         min-width:32px;
+         margin:0;
+         white-space:nowrap;
+         z-index:1;
+         pointer-events:none
       }
 
       .feedback {
@@ -1551,3 +1554,15 @@
 .base-ten-unit{width:12px;height:12px;border:1px solid #138ac6;background:#27b0ec;border-radius:2px}
 .base-ten-rounding-choices{align-items:stretch}.base-ten-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px}.base-ten-choice-blocks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;min-height:42px}.base-ten-rounding-preview{padding:18px;text-align:center;font-weight:850;color:var(--blue)}
 .base-ten-rounding-preview{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:14px auto}.base-ten-rounding-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border:2px solid #e4e4e4;border-radius:14px;min-width:100px}.base-ten-rounding-card span{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:120px}.base-ten-rounding-card b{font-size:20px}
+
+
+/* Modèle visuel : associer un nombre à la bonne quantité de blocs bleus. */
+.count-blocks-prompt{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;margin:24px auto 30px}
+.count-blocks-prompt small{max-width:560px}
+.count-target{display:grid;place-items:center;min-width:92px;min-height:82px;padding:8px 20px;border:3px solid #dce3f2;border-radius:18px;background:#fff;color:var(--navy,#1d2947);font-size:clamp(38px,7vw,58px);font-weight:950;box-shadow:0 5px 0 #e4e8f0}
+.count-blocks-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:760px;margin:0 auto}
+.count-block-choice{display:flex;align-items:center;justify-content:center;min-height:150px;padding:18px!important;background:#fff!important}
+.count-blocks{display:grid;grid-template-columns:repeat(5, minmax(16px,25px));gap:7px;justify-content:center;align-content:center;max-width:190px;min-height:55px}
+.count-blue-block{display:block;width:clamp(17px,3vw,25px);height:clamp(17px,3vw,25px);border:1px solid #138ac6;border-radius:3px;background:linear-gradient(145deg,#35c2f4,#169fe0);box-shadow:inset 0 1px 0 #8be1ff,0 2px 0 #d5e8f2}
+.count-block-choice.selected{border-color:#4778ed!important;background:#edf3ff!important}
+@media(max-width:520px){.count-block-choice{min-height:118px}.count-blocks{grid-template-columns:repeat(4,minmax(16px,23px));gap:6px}}
