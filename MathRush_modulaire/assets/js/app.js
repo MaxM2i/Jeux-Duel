@@ -173,9 +173,9 @@
          function buildExercise() {
             return makeSoloModeExercise(soloMathMode);
          }
-         // Modèle de curseur exporté depuis exercise-lab.html ; stocké sur le même domaine.
-         function applySavedCursorModel(ex){
-            let model;try{model=JSON.parse(localStorage.getItem('mathrush_cursor_model_v1')||'null');}catch(_){model=null;}
+         // Modèle de curseur intégré au code : coller l'objet exporté dans config.js (CURSOR_MODEL).
+         function applyConfiguredCursorModel(ex){
+            const model=MathRushConfig.CURSOR_MODEL;
             if(!model||!['commonSlider','slider','line'].includes(ex.type))return ex;
             const answer=Number(ex.ans),requestedMin=Number(model.min),requestedMax=Number(model.max);
             if(Number.isFinite(requestedMin)&&Number.isFinite(requestedMax)&&requestedMax>requestedMin){ex.min=Math.min(requestedMin,answer);ex.max=Math.max(requestedMax,answer);}
@@ -187,10 +187,10 @@
          function styleSoloCursor(input,model){if(!input||!model)return;input.style.setProperty('--cursor-thumb-size',(Number(model.thumbSize)||28)+'px');input.style.setProperty('--cursor-track-size',(Number(model.trackSize)||10)+'px');input.style.setProperty('--cursor-color',model.color||'#4778ed');const value=input.previousElementSibling;if(value&&value.classList.contains('range-value'))value.hidden=model.showValue===false;}
          function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = currentGlobalStreak; best = currentGlobalStreak; correctCount = 0; rescuePending=false; rescueActive=false; soloSessionStats=createTimingStats(); renderSolo(); }
          function renderSolo() {
-            locked = false; choice = null; exercise = applySavedCursorModel(buildExercise()); startTime = Date.now();
+            locked = false; choice = null; exercise = applyConfiguredCursorModel(buildExercise()); startTime = Date.now();
             $('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / ${GAME_RULES.EXERCISES_PER_SESSION}`; $('soloProgress').style.width = (exIndex / GAME_RULES.EXERCISES_PER_SESSION * 100) + '%';
-            $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + currentGlobalStreak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true; $('soloValidate').style.display=''; $('soloSkip').style.display='';
+            $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + currentGlobalStreak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloRescuePanel').hidden=true; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true; $('soloValidate').style.display=''; $('soloSkip').style.display='';
             const q = $('soloQuestion');
             const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.a!==undefined){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
@@ -295,24 +295,25 @@
             if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);}
             rescuePending=canRescue; persist();
             const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?speedReward.stars:0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad');
-            fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
-            if(canRescue){fb.innerHTML+=`<div class="streak-rescue"><b>🔥 Série de ${currentGlobalStreak} !</b><p>Tu peux sauver ta série en retentant cet exercice pour <strong>−${GAME_RULES.RESCUE_POINT_COST} points</strong>.</p><button type="button" class="btn btn-main" id="rescueStreakBtn">Rattraper ma réponse</button><button type="button" class="btn btn-soft" id="breakStreakBtn">Continuer sans rattrapage</button><button type="button" class="btn btn-soft" id="rescueAdBtn" disabled>Publicité : bientôt disponible</button></div>`;}
+            // Si un rattrapage est proposé, le feedback reste volontairement neutre : aucune réponse n'est révélée.
+            fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : canRescue ? 'Réponse incorrecte. Ta partie est en pause : choisis comment continuer.' : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
+            if(canRescue){$('soloRescueExplanation').textContent=`Ta série de ${currentGlobalStreak} bonnes réponses est en jeu. Tu peux retenter immédiatement cet exercice pour −${GAME_RULES.RESCUE_POINT_COST} points, ou abandonner la série et découvrir la correction.`;$('soloRescuePanel').hidden=false;}
             if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
             $('soloValidate').disabled = canRescue; $('soloStreak').textContent='🔥 '+currentGlobalStreak; $('soloValidate').textContent = exIndex === GAME_RULES.EXERCISES_PER_SESSION-1 ? 'Terminer le niveau' : 'Continuer';
             // Amener l'action suivante dans la zone visible sans enfermer le contenu dans un scroll interne.
             requestAnimationFrame(() => $('soloValidate').scrollIntoView({block:'nearest',behavior:'smooth'}));
          }
          // Le rattrapage réactive les contrôles de la même question sans regénérer l'exercice.
-         $('soloFeedback').addEventListener('click', event => {
+         $('soloRescuePanel').addEventListener('click', event => {
             if(event.target.closest('#rescueStreakBtn')){
                if(!rescuePending)return;points=Math.max(0,points-GAME_RULES.RESCUE_POINT_COST);rescuePending=false;rescueActive=true;locked=false;choice=null;startTime=Date.now();
-               $('soloFeedback').className='feedback';$('soloFeedback').innerHTML='';$('soloValidate').disabled=true;$('soloValidate').textContent='Valider';
+               $('soloRescuePanel').hidden=true;$('soloFeedback').className='feedback';$('soloFeedback').innerHTML='';$('soloValidate').disabled=true;$('soloValidate').textContent='Valider';
                $('soloQuestion').querySelectorAll('.choice').forEach(button=>{button.disabled=false;button.classList.remove('selected');});
                const range=$('soloRange');if(range){range.disabled=false;$('rangeValue').textContent='?';$('rangeValue').style.color='';choice=null;}
                const fill=$('fillValue');if(fill)fill.value='';
                $('soloStreak').textContent='🔥 '+currentGlobalStreak;rescueCount++;persist();return;
             }
-            if(event.target.closest('#breakStreakBtn')){rescuePending=false;rescueActive=false;streak=0;currentGlobalStreak=0;persist();$('soloStreak').textContent='🔥 0';$('soloFeedback').innerHTML='Série terminée. La bonne réponse était <b>'+String(exercise.ans)+'</b>.';$('soloValidate').disabled=false;$('soloValidate').textContent=exIndex===GAME_RULES.EXERCISES_PER_SESSION-1?'Terminer le niveau':'Continuer';}
+            if(event.target.closest('#breakStreakBtn')){rescuePending=false;rescueActive=false;streak=0;currentGlobalStreak=0;persist();$('soloStreak').textContent='🔥 0';$('soloRescuePanel').hidden=true;$('soloFeedback').innerHTML='Série terminée. La bonne réponse était <b>'+String(exercise.ans)+'</b>.';$('soloValidate').disabled=false;$('soloValidate').textContent=exIndex===GAME_RULES.EXERCISES_PER_SESSION-1?'Terminer le niveau':'Continuer';}
          });
          function nextSolo() {
             if (!locked) return;

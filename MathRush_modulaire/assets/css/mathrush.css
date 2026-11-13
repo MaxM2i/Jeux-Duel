@@ -1524,3 +1524,7 @@
 #solo input[type=range].range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);margin-top:calc((var(--cursor-track-size,10px) - var(--cursor-thumb-size,28px))/2);border:0;border-radius:50%;background:var(--cursor-color,var(--blue));}
 #solo input[type=range].range::-moz-range-track{height:var(--cursor-track-size,10px);background:#dce4f2;border-radius:99px;}
 #solo input[type=range].range::-moz-range-thumb{width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);border:0;border-radius:50%;background:var(--cursor-color,var(--blue));}
+
+/* Le choix de rattrapage est un panneau distinct : il ne pollue jamais la bulle de feedback. */
+.solo-rescue-panel{margin:14px 0;padding:18px;border:2px solid #f0c96b;border-radius:18px;background:#fff8e6;color:#6d5018;box-shadow:0 8px 24px rgba(80,58,15,.08)}
+.solo-rescue-panel[hidden]{display:none!important}.solo-rescue-panel h3{margin:0 0 8px;font-size:clamp(18px,4vw,23px)}.solo-rescue-panel p{margin:0 0 12px;line-height:1.45}.rescue-panel-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.rescue-panel-actions button{min-width:0;white-space:normal}.rescue-panel-actions button:last-child{grid-column:1/-1}@media(max-width:520px){.rescue-panel-actions{grid-template-columns:1fr}.rescue-panel-actions button:last-child{grid-column:auto}}
