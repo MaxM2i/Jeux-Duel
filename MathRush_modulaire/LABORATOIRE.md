@@ -1,15 +1,23 @@
-# Laboratoire d'exercices et intégration du curseur
+# Laboratoire d'exercices MathRush
 
-Ouvre `exercise-lab.html` depuis la racine du projet (ou depuis le site hébergé). Les essais et réglages restent temporaires dans la page : aucun modèle de curseur n'est écrit dans le stockage du navigateur.
+Ouvre `exercise-lab.html` depuis la racine du projet. Le laboratoire utilise les mêmes générateurs que le jeu et permet de choisir le mode de calcul, le niveau et le mode de jeu (solo, Défi, Multijoueur ou Duo à gogo).
 
-## Intégrer un modèle de curseur
+## Catalogue des modèles
 
-1. Dans le laboratoire, règle les bornes, le départ, le pas, l'apparence et les repères.
-2. Clique sur **Générer le code d'intégration**, puis copie le bloc proposé.
-3. Ouvre `assets/js/config.js`.
-4. Remplace `const CURSOR_MODEL = null;` par le bloc généré (`const CURSOR_MODEL = Object.freeze({...});`).
-5. Enregistre et publie le projet. Le parcours solo utilisera alors ce modèle pour les exercices à curseur.
+Le catalogue de `assets/js/config.js` décrit chaque modèle :
+- `modes` : modes de calcul compatibles (calculs rapides, arrondis, PPCM/PGCD, etc.) ;
+- `playModes` : modes de jeu où le modèle peut apparaître (`solo`, `duel`, `multiplayer`, `gogo`) ;
+- `weight` : poids relatif de tirage parmi les modèles compatibles ;
+- `difficultyMin` / `difficultyMax` : niveaux autorisés (0 à 6) ;
+- `numberMin` / `numberMax` : plage de nombres visée par le modèle ;
+- `enabled` : activation globale.
 
-Pour revenir aux curseurs natifs, remets `const CURSOR_MODEL = null;`.
+Le labo affiche une estimation de fréquence relative selon le niveau sélectionné. Modifie un modèle, désactive-le, change ses modes ou duplique-le pour créer une variante. Le champ `type` choisit un générateur déjà pris en charge (`factorTree`, `ppcmChoice`, `pgcdChoice`, `roundingTable`, `baseTen`, `missingBox`, `commonSlider`, etc.). Pour inventer un type d'exercice entièrement nouveau, il faut aussi écrire son générateur dans `assets/js/exercises.js` et son affichage/validation dans `assets/js/app.js`.
 
-Le modèle généré est du code source versionnable : il est donc intégré au projet et non à un navigateur ou à un appareil particulier.
+Clique sur **Générer le code du catalogue**, puis remplace le bloc `const EXERCISE_MODELS = [...]` dans `assets/js/config.js` par le code exporté. Aucun réglage du labo n'est conservé dans le navigateur.
+
+## Curseur
+
+Règle les bornes, la position initiale, le pas, les couleurs, l'épaisseur, la taille et les repères. Les valeurs non nulles et négatives sont acceptées. Le code du curseur s'intègre séparément dans `assets/js/config.js`, à la place de `const CURSOR_MODEL = null;`.
+
+Les essais du laboratoire ne modifient ni les scores ni la progression. Les réglages ne deviennent actifs dans le jeu qu'après intégration du code source et publication du projet.

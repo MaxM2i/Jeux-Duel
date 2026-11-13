@@ -25,6 +25,29 @@
     SPEED_BONUS_PER_SECOND: 5,
     SPEED_STAR_THRESHOLDS_SECONDS: [2, 4, 6, 8, 10]
   });
+  // Catalogue pilotable depuis exercise-lab.html. Les poids sont relatifs entre modèles compatibles.
+  // Les plages de nombres sont des bornes inclusives ; les niveaux vont de 0 à 6.
+  const EXERCISE_MODELS = [
+    { id:'quick-calculation', label:'Calcul mental classique', type:'choice', modes:['quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:7, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:10000, description:'Additions, soustractions et multiplications.' },
+    { id:'complex-calculation', label:'Calcul en plusieurs étapes', type:'choice', modes:['complex','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:10000, description:'Respect des priorités opératoires.' },
+    { id:'cursor-number-line', label:'Curseur sur règle graduée', type:'commonSlider', modes:['quick','rounding','common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:-1000, numberMax:10000, description:'Placer une valeur sur une droite avec bornes et repères.' },
+    { id:'rounding-choice', label:'Arrondi simple', type:'round', modes:['rounding','quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:10, numberMax:100000, description:'Arrondir à la dizaine, centaine ou au millier.' },
+    { id:'rounding-table', label:'Tableau d’arrondis', type:'roundingTable', modes:['rounding','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:10, numberMax:100000, description:'Compléter la dernière case d’un tableau de calculs arrondis.' },
+    { id:'factor-tree', label:'Arbre de décomposition', type:'factorTree', modes:['quick','common-multiples','multiplication-division','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:12, numberMax:5000, description:'Décomposer un nombre en facteurs et sous-facteurs.' },
+    { id:'ppcm-choice', label:'PPCM — choix multiple', type:'ppcmChoice', modes:['common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:4, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:30, description:'Trouver le plus petit commun multiple.' },
+    { id:'base-ten-blocks', label:'Blocs base dix', type:'baseTen', modes:['rounding','quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:5, numberMin:10, numberMax:999, description:'Lire et comparer unités, dizaines et centaines.' },
+    { id:'rounding-blocks', label:'Arrondi à la centaine avec blocs', type:'baseTenRounding', modes:['rounding','quick'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:100, numberMax:999, description:'Arrondir un nombre à la centaine avec une représentation en blocs.' },
+    { id:'missing-boxes', label:'Cases à compléter', type:'missingBox', modes:['quick','multiplication-division','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:10000, description:'Retrouver un facteur ou un terme manquant.' },
+    { id:'coordinates-grid', label:'Repère de coordonnées', type:'coordinates', modes:['coordinates','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:20, description:'Lire les coordonnées d’un point.' },
+    { id:'percent-model', label:'Modèle de pourcentage', type:'percent', modes:['percentages','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:10000, description:'Calculer une fraction d’une quantité.' },
+    { id:'common-divisors', label:'PGCD / diviseurs communs', type:'pgcdChoice', modes:['common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:30, description:'Trouver le plus grand diviseur commun.' },
+    { id:'multiplication-division', label:'Multiplication / division', type:'choice', modes:['multiplication-division','quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Produits et divisions exactes.' },
+    { id:'number-pattern', label:'Suite logique', type:'pattern', modes:['quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:1000, description:'Trouver le terme suivant d’une suite.' },
+    { id:'number-model', label:'Modèle à compléter', type:'model', modes:['quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:1000, description:'Reproduire une transformation numérique.' },
+    { id:'factor-gap', label:'Facteurs manquants', type:'factors', modes:['common-multiples','multiplication-division'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Retrouver un facteur dans un produit.' },
+    { id:'equation-target', label:'Expression équivalente', type:'equation', modes:['complex','quick'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Choisir une expression qui atteint une cible.' }
+  ];
+
   // Modèle de curseur actif : remplace cet objet par le code exporté depuis exercise-lab.html.
   // null = conserver les bornes, repères et couleurs définis par chaque générateur.
   const CURSOR_MODEL = null;
@@ -57,5 +80,5 @@
     { title: 'Défi', description: 'Résoudre des exercices plus exigeants' }
   ];
 
-  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
+  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISE_MODELS, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
 })();

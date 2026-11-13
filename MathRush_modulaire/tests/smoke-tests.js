@@ -28,6 +28,43 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
   }
 }
 
+// Catalogue des modèles : chaque variante visuelle doit être générable et mathématiquement cohérente.
+const modelCatalog = context.window.MathRushConfig.EXERCISE_MODELS;
+assert.ok(Array.isArray(modelCatalog) && modelCatalog.length >= 10, 'catalogue de modèles absent ou incomplet');
+for (const model of modelCatalog) {
+  assert.ok(model.id && model.label && Array.isArray(model.modes) && Array.isArray(model.playModes) && model.weight >= 0, `métadonnées incomplètes : ${model.id}`);
+  assert.ok(model.difficultyMin <= model.difficultyMax && model.numberMin <= model.numberMax, `plage invalide : ${model.id}`);
+}
+const specialModels = [
+  ['cursor-number-line','quick','commonSlider'], ['factor-tree','quick','factorTree'],
+  ['ppcm-choice','common-multiples','ppcmChoice'], ['rounding-table','rounding','roundingTable'],
+  ['base-ten-blocks','rounding','baseTen'], ['rounding-blocks','rounding','baseTenRounding'],
+  ['missing-boxes','quick','missingBox'], ['number-pattern','quick','pattern'],
+  ['number-model','quick','model'], ['factor-gap','common-multiples','factors'], ['equation-target','complex','equation']
+];
+for (const [id,mode,type] of specialModels) {
+  const weights = modelCatalog.map(model => model.weight);
+  modelCatalog.forEach(model => { model.weight = model.id === id ? 1 : 0; });
+  const ex = context.window.MathRushExercises.createSoloExercise(mode, 3, rand, shuffle);
+  assert.equal(ex.type, type, `modèle ${id} non utilisé dans le générateur`);
+  if (type === 'factorTree') { assert.equal(ex.total, ex.ans * ex.right, 'arbre de facteurs incohérent'); assert.equal(ex.ans,ex.lowerA*ex.lowerB,'branche inférieure incohérente'); }
+  if (type === 'ppcmChoice') assert.equal(ex.ans, context.window.MathRushExercises.lcm(ex.a, ex.b), 'PPCM incorrect');
+  if (type === 'roundingTable') { assert.equal(ex.ans, ex.rows[2].rounded, 'tableau d’arrondis incohérent'); assert.ok(ex.rows.every(row=>row.expression&&row.difference===row.number-row.fixed), 'calculs du tableau incohérents'); }
+  if (type === 'baseTen') assert.equal(ex.ans, ex.hundreds*100 + ex.tens*10 + ex.units, 'blocs base dix incohérents');
+  if (type === 'baseTenRounding') assert.equal(ex.ans,Math.round(ex.number/100)*100,'arrondi visuel en blocs incorrect');
+  if (type === 'commonSlider') assert.equal(ex.ans,Number(ex.expression.split(' × ').reduce((a,b)=>Number(a)*Number(b),1)),'expression du curseur incorrecte');
+  if (type === 'missingBox') { const target=Number(ex.prompt.match(/= (\d+)/)[1]); assert.equal(target,ex.ans,'résultat de la case manquante incorrect'); assert.equal(ex.ans/ex.a,ex.b,'facteur manquant incorrect'); }
+  modelCatalog.forEach((model,index) => { model.weight = weights[index]; });
+}
+
+const cursorModel=modelCatalog.find(model=>model.id==='cursor-number-line');
+const previousPlayModes=[...cursorModel.playModes],previousWeights=modelCatalog.map(model=>model.weight);cursorModel.playModes=['solo'];
+modelCatalog.forEach(model=>{model.weight=model.id==='cursor-number-line'?1:0;});
+assert.equal(context.window.MathRushExercises.createSoloExercise('quick',2,rand,shuffle,'solo').type,'commonSlider','modèle curseur absent du parcours solo');
+assert.notEqual(context.window.MathRushExercises.createSoloExercise('quick',2,rand,shuffle,'duel').type,'commonSlider','un modèle interdit est apparu en Défi');
+cursorModel.playModes=previousPlayModes;
+modelCatalog.forEach((model,index)=>{model.weight=previousWeights[index];});
+
 const milestones = context.window.MathRushProgression.getMilestones('quick', {
   section: 1, level: 7, done: ['1-1', '1-2', '1-3', '1-4', '1-5']
 });
@@ -67,6 +104,8 @@ assert.ok(appSource.includes("$('gogoGamePanel').hidden=true"), 'masquage du pla
 assert.ok(appSource.includes("$('duoGogo').classList.add('gogo-playing')"), 'mise au point du plateau au lancement absente');
 assert.ok(appSource.includes('function savePausedGogo()') && appSource.includes('function restorePausedGogo()'), 'sauvegarde/restauration de la pause Duo à gogo absente');
 assert.ok(appSource.includes('gogoChangePaused'), 'action de changement d’exercice depuis la pause absente');
+assert.ok(appSource.includes('createSoloExercise(type,Math.max(0,duelDiff-1),rand,shuffle,gameContext)'), 'catalogue non utilisé dans les Défis et le Multijoueur');
+assert.ok(appSource.includes("type === 'baseTenRounding'") && appSource.includes("type === 'roundingTable'") && appSource.includes("type === 'factorTree'"), 'rendu des nouveaux modèles visuels absent');
 assert.ok(appSource.includes('function soloExerciseExplanation()') && appSource.includes('function soloExerciseHint()'), 'aide et indice du parcours solo absents');
 assert.ok(htmlSource.includes('id="gogoChangePaused"'), 'bouton changer d’exercice en pause absent');
 assert.ok(htmlSource.includes('id="soloExplain"') && htmlSource.includes('id="soloHint"'), 'boutons aide/indice du parcours solo absents');
@@ -107,7 +146,10 @@ const labSource=fs.readFileSync(`${__dirname}/../exercise-lab.html`,'utf8');
 assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="cursorColor"') && labSource.includes('id="cursorStep"'), 'panneau de réglage du curseur absent');
 assert.ok(!labSource.includes('customFieldsPreview') && !labSource.includes('addTextField'), 'ancien panneau de champs de texte encore présent');
 assert.ok(labSource.includes('id="addMarker"') && labSource.includes('id="clearMarkers"') && labSource.includes('id="cursorStart"'), 'édition des repères et de la position initiale absente');
-assert.ok(labSource.includes('localStorage.setItem(MODEL_KEY') && appSource.includes('mathrush_cursor_model_v1'), 'export du modèle de curseur vers le jeu absent');
+assert.ok(labSource.includes('id="catalogPanel"') && labSource.includes('id="modelOverview"') && labSource.includes('id="exportCatalog"') && labSource.includes('id="modelPlayModes"') && labSource.includes('id="testSelectedModel"') && labSource.includes('function syncRuntimeCatalog()'), 'catalogue éditable des modèles absent');
+assert.ok(labSource.includes('id="integrationCode"') && labSource.includes('id="generateCode"') && appSource.includes('MathRushConfig.CURSOR_MODEL'), 'export de code du modèle de curseur absent');
+assert.ok(!labSource.includes('localStorage.setItem') && !labSource.includes('localStorage.getItem'), 'le laboratoire ne doit pas utiliser le stockage navigateur');
+assert.ok(appSource.includes('soloRescuePanel') && appSource.includes('Ta partie est en pause') && !appSource.includes('fb.innerHTML+=`<div class="streak-rescue"'), 'panneau de rattrapage séparé ou feedback neutre absent');
 assert.ok(appSource.includes('RESCUE_MIN_STREAK') && appSource.includes('rescueStreakBtn') && appSource.includes('currentGlobalStreak'), 'rattrapage de série global absent');
 assert.equal(context.window.MathRushConfig.GAME_RULES.RESCUE_MIN_STREAK,20);
 assert.equal(context.window.MathRushConfig.GAME_RULES.EXERCISES_PER_SESSION,15);

@@ -167,7 +167,7 @@
          function makeMath() { return MathRushExercises.makeMath(difficultyRank()); }
          function makeVisualExercise(type) { return MathRushExercises.makeVisualExercise(type, rand, shuffle); }
          function makeSoloModeExercise(selectedMode) {
-            return MathRushExercises.createSoloExercise(selectedMode, difficultyRank(), rand, shuffle);
+            return MathRushExercises.createSoloExercise(selectedMode, difficultyRank(), rand, shuffle, 'solo');
          }
          function mathStrategy(a,b,op){if(op==='×'&&b===5)return `Astuce ×5 : calcule ${a} × 10, puis divise par 2.`;if(op==='×'&&b===9)return `Astuce ×9 : calcule ${a} × 10, puis enlève ${a}.`;if(op==='×'&&b===10)return `Astuce ×10 : ajoute un zéro à ${a}.`;if(op==='+'&&b%10===0)return `Astuce : ajoute les dizaines en premier (${a} + ${b}).`;if(op==='−'&&b%10===0)return `Astuce : enlève les dizaines en premier.`;return 'Astuce : compte par bonds et repère les multiples pour calculer plus vite.';}
          function buildExercise() {
@@ -192,10 +192,10 @@
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / ${GAME_RULES.EXERCISES_PER_SESSION}`; $('soloProgress').style.width = (exIndex / GAME_RULES.EXERCISES_PER_SESSION * 100) + '%';
             $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + currentGlobalStreak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloRescuePanel').hidden=true; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true; $('soloValidate').style.display=''; $('soloSkip').style.display='';
             const q = $('soloQuestion');
-            const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.a!==undefined){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
+            const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.op){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
             if (exercise.type === 'commonSlider') {
-               q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.a} <em>,</em> ${exercise.b}</div></div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.cursorStartValue??exercise.ticks[1]))}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div>`;
+               q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.expression||`${exercise.a} , ${exercise.b}`}</div></div><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.cursorStartValue??exercise.ticks[1]))}"><div class="ticks">${exercise.ticks.map(n => `<span>${n}</span>`).join('')}</div>`;
                // Le curseur met à jour la valeur et l'état de validation à chaque mouvement tactile/souris.
                $('soloRange').addEventListener('input', e => { choice = Number(e.currentTarget.value); $('rangeValue').textContent = choice; $('soloValidate').disabled = false; }); styleSoloCursor($('soloRange'),exercise.cursorModel);
             } else if (['slider', 'line'].includes(exercise.type)) {
@@ -209,7 +209,7 @@
                q.innerHTML = `<div class="question"><small>Complète le calcul</small>${exercise.a} ${exercise.op} ${exercise.b} = ?</div><input class="answer-input" id="fillValue" type="number" inputmode="numeric" placeholder="?">`;
                $('fillValue').oninput = e => { choice = e.target.value === '' ? null : Number(e.target.value); $('soloValidate').disabled = choice === null; };
             } else if (exercise.type === 'pattern') {
-               const options = shuffle([exercise.ans, exercise.ans + 2, exercise.ans + 5, Math.max(0, exercise.ans - 3)]);
+               const options = exercise.opts || shuffle([exercise.ans, exercise.ans + 2, exercise.ans + 5, Math.max(0, exercise.ans - 3)]);
                q.innerHTML = `<div class="question"><small>Quel nombre vient ensuite ?</small>${exercise.seq.join(' · ')} · ?</div><div class="choices">${options.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(Number(b.dataset.v), b));
             } else if (exercise.type === 'round') {
@@ -232,19 +232,46 @@
             } else if (exercise.type === 'equation') {
                q.innerHTML = `<div class="visual-prompt"><small>Complète l'équation</small><div class="visual-equation">${exercise.target} <em>=</em> <strong>?</strong></div><div class="equation-slots">Choisis une expression qui donne ${exercise.target}</div></div><div class="choices visual-choices">${exercise.opts.map(n => `<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
+            } else if (exercise.type === 'factorTree') {
+               const missing = 'left';
+               q.innerHTML = `<div class="visual-prompt"><small>Décompose le nombre en facteurs</small><div class="factor-tree-visual"><div class="factor-node">${exercise.total}</div><div class="factor-tree-branch"></div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${exercise.right}</div></div><div class="factor-tree-branch short"></div><div class="factor-tree-row compact"><div class="factor-node">${exercise.lowerA}</div><div class="factor-node">${exercise.lowerB}</div></div></div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'ppcmChoice') {
+               q.innerHTML = `<div class="visual-prompt"><small>Plus petit commun multiple</small><div class="visual-equation">${exercise.a} et ${exercise.b}</div><p>Quel est leur PPCM ?</p></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'roundingTable') {
+               q.innerHTML = `<div class="visual-prompt"><small>${exercise.prompt}</small><div class="rounding-table"><div><b>Calcul</b><b>Résultat arrondi</b></div>${exercise.rows.map((row,i)=>`<div><span>${row.expression||row.number}</span><span>${i===2?'?':row.rounded}</span></div>`).join('')}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'baseTenRounding') {
+               const blocks=value=>`<span class="base-ten-choice-blocks">${Array.from({length:Math.max(0,Math.min(10,value/100))},()=>'<i class="base-ten-hundred"></i>').join('')}</span>`;
+               q.innerHTML=`<div class="visual-prompt"><small>Arrondis à la centaine près</small><div class="round-number">${exercise.number}</div></div><div class="choices visual-choices base-ten-rounding-choices">${exercise.opts.map(value=>`<button class="choice base-ten-choice" data-v="${value}">${blocks(value)}<b>${value}</b></button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'baseTen') {
+               const block=(count,kind)=>Array.from({length:Math.min(count,10)},()=>`<i class="base-ten-${kind}"></i>`).join('');
+               q.innerHTML = `<div class="visual-prompt"><small>Quel nombre est représenté ?</small><div class="base-ten-board"><div><strong>${exercise.hundreds}</strong><span>${block(exercise.hundreds,'hundred')}</span><small>centaine(s)</small></div><div><strong>${exercise.tens}</strong><span>${block(exercise.tens,'ten')}</span><small>dizaine(s)</small></div><div><strong>${exercise.units}</strong><span>${block(exercise.units,'unit')}</span><small>unité(s)</small></div></div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'missingBox') {
+               q.innerHTML = `<div class="visual-prompt"><small>Multiplie pour compléter l'espace vide</small><div class="visual-equation">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             }
          }
          function soloExerciseExplanation(){
             if(!exercise)return 'Lis la consigne, repère les nombres utiles puis choisis ou saisis ta réponse.';
             if(exercise.mode==='coordinates')return `Un point se lit dans l’ordre (x ; y) : x indique la position horizontale, puis y la position verticale. Échelle : chaque carreau représente 1 unité. Les axes commencent à 0 et vont jusqu’à ${exercise.coordinateMax||'la valeur maximale indiquée'} ; lis d’abord x, puis y.`;
             if(exercise.mode==='percentages'||exercise.type==='percent')return `Un pourcentage signifie « sur 100 ». ${exercise.pct}% correspond à ${exercise.pct}/100 : multiplie ${exercise.base} par ${exercise.pct}, puis divise par 100.`;
-            if(exercise.mode==='common-multiples')return `Le ${exercise.askPpcm?'PPCM':'PGCD'} compare les multiples ou les diviseurs de ${exercise.a} et ${exercise.b}. ${exercise.askPpcm?'Cherche le plus petit nombre présent dans les deux listes de multiples.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.'}`;
+            if(exercise.mode==='common-multiples'&&!['factorTree','ppcmChoice','factors'].includes(exercise.type))return `Le ${exercise.askPpcm?'PPCM':'PGCD'} compare les multiples ou les diviseurs de ${exercise.a} et ${exercise.b}. ${exercise.askPpcm?'Cherche le plus petit nombre présent dans les deux listes de multiples.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.'}`;
+            if(exercise.type==='factorTree')return `Un arbre de facteurs conserve le même produit à chaque branche : ${exercise.left} × ${exercise.right||exercise.lowerA*exercise.lowerB} doit redonner le nombre parent.`;
+            if(exercise.type==='ppcmChoice')return `Écris les multiples de ${exercise.a} et de ${exercise.b}. Le PPCM est le premier multiple commun aux deux listes.`;
+            if(exercise.type==='roundingTable')return `Pour chaque ligne, calcule d'abord la différence, puis arrondis-la à la dizaine ou à la centaine demandée. Sur la dernière ligne, ${exercise.rows[2].expression} donne ${exercise.rows[2].difference} avant arrondi.`;
+            if(exercise.type==='baseTenRounding')return `Compare ${Math.floor(exercise.number/100)*100} et ${Math.ceil(exercise.number/100)*100}, puis choisis la centaine la plus proche.`;
+            if(exercise.type==='baseTen')return `Chaque plaque vaut 100, chaque barre vaut 10 et chaque petit cube vaut 1. Additionne les centaines, dizaines et unités.`;
+            if(exercise.type==='missingBox')return `Pour trouver le facteur manquant, divise le produit ${exercise.ans} par le facteur connu ${exercise.a}.`;
             if(exercise.type==='round')return `Pour arrondir ${exercise.number}, regarde le chiffre juste à droite du rang demandé. S’il vaut 5 ou plus, on arrondit vers le haut ; sinon vers le bas.`;
             if(exercise.type==='pattern')return `Compare les écarts entre les nombres de la suite. La même règle doit permettre de passer d’un terme au suivant.`;
             if(exercise.type==='model')return 'Observe de combien le nombre augmente à chaque étape, puis applique exactement le même écart à la dernière case.';
             if(exercise.type==='factors')return 'Les facteurs sont les nombres que l’on multiplie entre eux. Le produit des facteurs doit rester égal au nombre total.';
             if(exercise.type==='equation')return `Teste chaque expression en effectuant le calcul : une seule donne exactement ${exercise.target}.`;
-            if(exercise.type==='commonSlider')return `Déplace le curseur vers le ${exercise.label} de ${exercise.a} et ${exercise.b}. Les graduations indiquent l’échelle des valeurs possibles.`;
+            if(exercise.type==='commonSlider')return exercise.expression?`Calcule ${exercise.expression}, en faisant attention au signe négatif, puis place le résultat sur la règle.`:`Déplace le curseur vers le ${exercise.label} de ${exercise.a} et ${exercise.b}. Les graduations indiquent l’échelle des valeurs possibles.`;
             if(exercise.type==='pairmatch')return 'Associe chaque calcul à son résultat. Une paire est validée lorsque les deux cartes correspondent.';
             if(exercise.op)return `Effectue l’opération ${exercise.a} ${exercise.op} ${exercise.b}. ${exercise.op==='×'?'Tu peux décomposer un facteur ou utiliser les tables.':exercise.op==='−'?'Retire d’abord les dizaines, puis les unités.':'Additionne les dizaines et les unités sans les mélanger.'}`;
             return 'Repère la règle ou l’opération demandée, puis vérifie ton résultat avant de valider.';
@@ -253,6 +280,12 @@
             if(!exercise)return 'Commence par repérer ce que la consigne te demande.';
             if(exercise.mode==='coordinates')return `Lis d’abord l’axe horizontal (x), puis l’axe vertical (y). Le point est à ${exercise.x} carreaux vers la droite et ${exercise.y} vers le haut.`;
             if(exercise.type==='percent'||exercise.mode==='percentages')return `${exercise.pct}% de ${exercise.base} : commence par calculer 10% (= ${exercise.base/10}), puis adapte ce résultat au pourcentage demandé.`;
+            if(exercise.type==='factorTree')return `Commence par multiplier les deux facteurs du bas : ${exercise.lowerA} × ${exercise.lowerB}.`;
+            if(exercise.type==='ppcmChoice')return `Commence par écrire les premiers multiples de ${exercise.a} et de ${exercise.b}.`;
+            if(exercise.type==='roundingTable')return `Calcule ${exercise.rows[2].expression}, puis arrondis le résultat à la ${exercise.unit===10?'dizaine':'centaine'} la plus proche.`;
+            if(exercise.type==='baseTenRounding')return `Regarde les deux derniers chiffres de ${exercise.number} : s'ils sont inférieurs à 50, arrondis vers le bas ; sinon vers le haut.`;
+            if(exercise.type==='baseTen')return `Additionne ${exercise.hundreds} centaines, ${exercise.tens} dizaines et ${exercise.units} unités.`;
+            if(exercise.type==='missingBox')return `Cherche quel nombre multiplié par ${exercise.a} donne ${exercise.ans}.`;
             if(exercise.type==='round')return `Le chiffre des unités est ${String(exercise.number).slice(-1)}. Il te dit s’il faut arrondir vers le haut ou vers le bas.`;
             if(exercise.type==='pattern')return `Regarde l’écart entre ${exercise.seq[0]} et ${exercise.seq[1]} : retrouve cet écart dans la suite.`;
             if(exercise.type==='model')return `L’écart entre les deux premiers nombres est ${exercise.vals[1]-exercise.vals[0]}. Ajoute le même écart au dernier nombre affiché.`;
@@ -410,14 +443,24 @@
             let attempts=0;
             while(pairs.length<count&&attempts<count*30){
                attempts++;
-               const exercise=window.MathRushExercises.createSoloExercise(gogoMathMode,rank,rand,shuffle);
+               const exercise=window.MathRushExercises.createSoloExercise(gogoMathMode,rank,rand,shuffle,'gogo');
                let label=exercise.prompt;
                let resultText=String(exercise.ans);
+               if(exercise.type==='factorTree')label=`Décompose ${exercise.total} en facteurs`;
+               if(exercise.type==='ppcmChoice')label=`PPCM de ${exercise.a} et ${exercise.b}`;
+               if(exercise.type==='roundingTable')label=`Complète le tableau d’arrondis à ${exercise.unit} près`;
+               if(exercise.type==='baseTenRounding')label=`Arrondis ${exercise.number} à la centaine près`;
+               if(exercise.type==='baseTen')label=`Quel nombre représentent ${exercise.hundreds} centaines, ${exercise.tens} dizaines et ${exercise.units} unités ?`;
+               if(exercise.type==='missingBox')label=exercise.prompt;
+               if(exercise.type==='pattern')label=`Suite : ${exercise.seq.join(' · ')} · ?`;
+               if(exercise.type==='model')label=`Complète le modèle ${exercise.displayVals.join(' · ')} · ?`;
+               if(exercise.type==='factors')label=`Facteurs de ${exercise.a*exercise.b*exercise.c} : ?`;
+               if(exercise.type==='equation')label=`Expression égale à ${exercise.target} : ?`;
                if(exercise.mode==='coordinates' && Number.isFinite(exercise.x) && Number.isFinite(exercise.y)){label=`(${exercise.x} ; ${exercise.y})`;resultText=`x = ${exercise.x} · y = ${exercise.y}`;}
                if(exercise.mode==='percentages'){label=`${exercise.pct} % de ${exercise.base}`;resultText=String(Number(exercise.ans.toFixed(2))); }
                if(!label&&exercise.type==='round')label=`Arrondis ${exercise.number} à la ${exercise.unit===10?'dizaine':exercise.unit===100?'centaine':'millier'} près`;
                if(!label&&exercise.mode==='percentages')label=`${exercise.pct} % de ${exercise.base}`;
-               if(!label&&exercise.type==='commonSlider')label=`${exercise.label} de ${exercise.a} et ${exercise.b}`;
+               if(!label&&exercise.type==='commonSlider')label=exercise.expression?`Place ${exercise.expression} sur la règle graduée`:`${exercise.label} de ${exercise.a} et ${exercise.b}`;
                if(!label)label=`${exercise.mode} : ${exercise.a??''} ${exercise.op??''} ${exercise.b??''} = ?`;
                const result=resultText,key=`${label}|${result}`;
                if(seen.has(key))continue;
@@ -636,40 +679,40 @@
             const options=shuffle([...new Set([answer,...distractors])]).slice(0,4).map(String);
             return{choiceBased:true,type,prompt,visual,opts:options,answerIndex:options.indexOf(String(answer)),ans:String(answer)};
          }
-         function duelQuestion() {
+         function duelQuestion(gameContext='duel') {
             const modes=MathRushConfig.MODES.filter(mode=>mode.id!=='mixed').map(mode=>mode.id);
             const type=duelMathMode==='mixed'?modes[rand(0,modes.length-1)]:duelMathMode;
-            if(type==='quick'){
-               const d=Math.max(0,duelDiff-1),base=[2,3,5,8,12,18][d],a=rand(1+d,4+d)*base,b=rand(1+d,3+d)*base,op=d<=1?'+':(Math.random()<.5?'+':'×'),answer=op==='+'?a+b:a*b,delta=Math.max(2,Math.round(answer*(.15+d*.06)));
-               return makeDuelChoiceQuestion(type,`${a} ${op} ${b} = ?`,answer,[Math.max(0,answer-delta),answer+delta,answer+2*delta]);
-            }
-            if(type==='complex'){
-               const a=rand(3,18),b=rand(2,12),c=rand(2,30),answer=a*b+c;
-               return makeDuelChoiceQuestion(type,`${a} × ${b} + ${c} = ?`,answer,[answer+a,answer-a,answer+a*2]);
-            }
-            if(type==='rounding'){
-               const unit=Math.random()<.5?10:100,number=unit===10?rand(101,989):rand(1010,9890),answer=Math.round(number/unit)*unit;
-               return makeDuelChoiceQuestion(type,`Arrondis ${number} à la ${unit===10?'dizaine':'centaine'} la plus proche.`,answer,[answer-unit,answer+unit,answer+2*unit]);
-            }
-            if(type==='coordinates'){
-               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],visual=`<div class="coordinate-wrap"><div class="coordinate-plane" style="--coord-max:8;--coord-x:${x/8*100}%;--coord-y:${y/8*100}%" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point">${label}</span></div><details class="coordinate-help"><summary>? Comprendre</summary><p>Échelle : chaque carreau représente 1 unité. Les axes vont de 0 à 8. Lis d’abord x (horizontal), puis y (vertical).</p></details></div>`;
-               const answer=`(${x} ; ${y})`;
-               return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
-            }
-            if(type==='common-multiples'||type==='multiplication-division'){
-               const generated=MathRushExercises.createSoloExercise(type,Math.max(0,duelDiff-1),rand,shuffle);
-               const answer=generated.ans;
-               const prompt=generated.prompt || (generated.type==='commonSlider'
-                  ? `Sélectionne le ${generated.label} de ${generated.a} et ${generated.b}.`
-                  : `${generated.a} ${generated.op} ${generated.b} = ?`);
-               const distractors=(generated.opts||[]).filter(value=>String(value)!==String(answer));
-               return makeDuelChoiceQuestion(type,prompt,answer,distractors.length>=3?distractors:[Number(answer)+2,Math.max(0,Number(answer)-2),Number(answer)+5]);
-            }
-            const percent=[5,10,20,25,50,75][rand(0,5)],base=[40,60,80,100,120,200][rand(0,5)],answer=percent*base/100;
-            const delta=Math.max(1,base/10);
-            return makeDuelChoiceQuestion(type,`Combien font ${percent} % de ${base} ?`,answer,[answer+delta,Math.max(0,answer-delta),answer+delta*2]);
+            const generated=MathRushExercises.createSoloExercise(type,Math.max(0,duelDiff-1),rand,shuffle,gameContext);
+            const answer=String(generated.ans);
+            let prompt=generated.prompt||'';
+            let visual=generated.visual||'';
+            if(generated.type==='commonSlider')prompt=generated.expression?`Place le résultat de ${generated.expression} sur la règle graduée.`:`Place le résultat de ${generated.a} + ${generated.b} sur la règle graduée.`;
+            else if(generated.type==='round')prompt=`Arrondis ${generated.number} à la ${generated.unit===10?'dizaine':generated.unit===100?'centaine':'millier'} la plus proche.`;
+            else if(generated.type==='roundingTable'){
+               prompt=generated.prompt;
+               visual=`<div class="rounding-table"><div><b>Calcul</b><b>Résultat arrondi</b></div>${generated.rows.map((row,index)=>`<div><span>${row.expression}</span><span>${index===2?'?':row.rounded}</span></div>`).join('')}</div>`;
+            } else if(generated.type==='factorTree'){
+               prompt=`Complète l'arbre de facteurs de ${generated.total}.`;
+               visual=`<div class="factor-tree-visual"><div class="factor-node">${generated.total}</div><div class="factor-tree-branch"></div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${generated.right}</div></div><div class="factor-tree-branch short"></div><div class="factor-tree-row compact"><div class="factor-node">${generated.lowerA}</div><div class="factor-node">${generated.lowerB}</div></div></div>`;
+            } else if(generated.type==='ppcmChoice')prompt=`Sélectionne le plus petit commun multiple de ${generated.a} et ${generated.b}.`;
+            else if(generated.type==='baseTenRounding'){prompt=`Arrondis ${generated.number} à la centaine près.`;const low=Math.floor(generated.number/100)*100,high=low+100,drawBlocks=value=>`<div class="base-ten-rounding-card"><b>${value}</b><span>${Array.from({length:Math.min(5,value/100)},()=>'<i class="base-ten-hundred"></i>').join('')}</span></div>`;visual=`<div class="base-ten-rounding-preview">${drawBlocks(low)}${drawBlocks(high)}</div>`;}
+            else if(generated.type==='baseTen'){
+               prompt='Quel nombre est représenté par les blocs ?';
+               visual=`<div class="base-ten-board"><div><strong>${generated.hundreds}</strong><span>${Array.from({length:Math.min(10,generated.hundreds)},()=>'<i class="base-ten-hundred"></i>').join('')}</span><small>centaines</small></div><div><strong>${generated.tens}</strong><span>${Array.from({length:generated.tens},()=>'<i class="base-ten-ten"></i>').join('')}</span><small>dizaines</small></div><div><strong>${generated.units}</strong><span>${Array.from({length:generated.units},()=>'<i class="base-ten-unit"></i>').join('')}</span><small>unités</small></div></div>`;
+            } else if(generated.type==='missingBox')prompt=generated.prompt;
+            else if(generated.type==='pattern')prompt=`Quel nombre vient ensuite ? ${generated.seq.join(' · ')} · ?`;
+            else if(generated.type==='model'){prompt='Observe le modèle et trouve la valeur manquante.';visual=`<div class="model-grid"><div>${generated.displayVals[0]}</div><div>${generated.displayVals[1]}</div><div>${generated.displayVals[2]}</div><div class="missing-cell">?</div></div>`;}
+            else if(generated.type==='factors'){prompt=`Complète les facteurs de ${generated.a*generated.b*generated.c}.`;visual=`<div class="factor-tree-visual"><div class="factor-node">${generated.a*generated.b*generated.c}</div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${generated.known[0]} × ${generated.known[1]}</div></div></div>`;}
+            else if(generated.type==='equation'){prompt=`Quelle expression donne ${generated.target} ?`;}
+            else if(generated.type==='percent')prompt=`Combien font ${generated.pct} % de ${generated.base} ?`;
+            else if(generated.type==='coordinates'){prompt=generated.prompt;visual+=`<details class="coordinate-help"><summary>? Comprendre</summary><p>Échelle : chaque carreau représente 1 unité. Les axes vont de 0 à ${generated.coordinateMax}. Lis d’abord x (horizontal), puis y (vertical).</p></details>`;}
+            else if(!prompt)prompt=`${generated.a??''} ${generated.op??''} ${generated.b??''} = ?`;
+            let distractors=(generated.opts||[]).map(String).filter(value=>value!==answer);
+            const fallbacks=[String(Number(answer)+2),String(Math.max(0,Number(answer)-2)),String(Number(answer)+5),String(Number(answer)+10)];
+            for(const value of fallbacks){if(distractors.length>=3)break;if(value!==answer&&!distractors.includes(value))distractors.push(value);}
+            return makeDuelChoiceQuestion(type,prompt,answer,distractors,visual);
          }
-         
+
          let duelMode = 'calc', burgerDeck = [], hostWrong = false, guestWrong = false;
          let localDuelMode=false,localDuelRound=0,localDuelTurn=0,localDuelPlayers=[],localDuelAnswers=[],localDuelRule='firstCorrect',localDuelHandoff=false,duelTurnSide='host',duelAnsweredSides=[],duelSessionStats=createTimingStats(),localDuelSessionStats=createTimingStats(),duelQuestionStartedAt=0;
          function updateDuelSetupMode(){
@@ -914,7 +957,7 @@
                $('mathHostStart').style.display=mathHost?'block':'none';$('mathHostStart').disabled=mathPlayers.length<3||mathGameStarted;
             }
             function broadcastMath(message){mathConnections.forEach(connection=>{if(connection.open)connection.send(message);});}
-            function makeMathQuestion(){duelMathMode=mathQuestionMode;return duelQuestion();}
+            function makeMathQuestion(){duelMathMode=mathQuestionMode;return duelQuestion('multiplayer');}
             function mathScores(){return mathPlayers.map(x=>`${$('mathTeamMode').value==='teams'?`Équipe ${x.team+1} · `:''}<img class="local-math-avatar" src="${profileAvatarUrl(x)}" alt=""> ${escapeHtml(x.name)} : <b>${x.score}</b> pts`).join(' · ');}
             function renderMathQuestion(){
                mathQuestionStartedAt=Date.now();
