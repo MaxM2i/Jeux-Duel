@@ -1507,3 +1507,20 @@
 
 /* Aide d’échelle intégrée aux repères du Défi et du Multijoueur. */
 .coordinate-help{margin:8px auto 0;max-width:100%;font-size:12px;color:#405574;text-align:left}.coordinate-help summary{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:999px;background:#eef3fb;font-weight:900;cursor:pointer;list-style:none}.coordinate-help summary::-webkit-details-marker{display:none}.coordinate-help p{margin:7px 0 0;padding:9px 11px;border-radius:12px;background:#eef6ff;border:1px solid #c8ddf8;line-height:1.4}
+
+
+/* Réglages facultatifs du curseur conçus dans le laboratoire d'exercices. */
+#solo input[type=range].range{accent-color:var(--cursor-color,var(--blue));}
+#solo input[type=range].range::-webkit-slider-thumb{width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);}
+#solo input[type=range].range::-moz-range-thumb{width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);}
+#solo input[type=range].range::-webkit-slider-runnable-track{height:var(--cursor-track-size,10px);}
+#solo input[type=range].range::-moz-range-track{height:var(--cursor-track-size,10px);}
+.streak-rescue,.streak-finish-summary{margin:14px 0;padding:14px;border-radius:16px;background:#fff7df;border:1px solid #f3d48b;color:#6d5018;}
+.streak-rescue p,.streak-finish-summary p{margin:6px 0;}
+.streak-rescue button{margin:6px 6px 0 0;}
+
+#solo input[type=range].range{-webkit-appearance:none;appearance:none;background:transparent;}
+#solo input[type=range].range::-webkit-slider-runnable-track{height:var(--cursor-track-size,10px);background:#dce4f2;border-radius:99px;}
+#solo input[type=range].range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);margin-top:calc((var(--cursor-track-size,10px) - var(--cursor-thumb-size,28px))/2);border:0;border-radius:50%;background:var(--cursor-color,var(--blue));}
+#solo input[type=range].range::-moz-range-track{height:var(--cursor-track-size,10px);background:#dce4f2;border-radius:99px;}
+#solo input[type=range].range::-moz-range-thumb{width:var(--cursor-thumb-size,28px);height:var(--cursor-thumb-size,28px);border:0;border-radius:50%;background:var(--cursor-color,var(--blue));}

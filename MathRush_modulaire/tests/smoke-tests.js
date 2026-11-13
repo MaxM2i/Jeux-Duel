@@ -75,15 +75,15 @@ assert.ok(htmlSource.includes('id="profileSpeed"'), 'rapidité moyenne absente d
 assert.ok(appSource.includes('function recordTiming(') && appSource.includes('function timingSummaryHtml('), 'statistiques de rapidité communes absentes');
 assert.ok(appSource.includes('function showAnswerToast(') && appSource.includes('answerFeedbackObserver'), 'feedback central des réponses absent');
 assert.ok(appSource.includes('toast-points') && appSource.includes('toast-stars'), 'détail des points et étoiles du feedback absent');
-assert.ok(appSource.includes('seconds<2?5:seconds<4?4:seconds<6?3:seconds<8?2:seconds<10?1:0'), 'seuils des cinq étoiles de rapidité absents');
-assert.ok(appSource.includes('50-seconds*5'), 'calcul continu des points bonus de rapidité absent');
+assert.ok(appSource.includes('SPEED_STAR_THRESHOLDS_SECONDS') && appSource.includes('thresholds.findIndex'), 'seuils des cinq étoiles configurables absents');
+assert.ok(appSource.includes('SPEED_BONUS_MAX-seconds*GAME_RULES.SPEED_BONUS_PER_SECOND'), 'calcul continu des points bonus de rapidité absent');
 const speedRewardMatch=appSource.match(/function getSpeedReward\(elapsedMs\)\{[^\n]+/);
 assert.ok(speedRewardMatch,'fonction de calcul des étoiles et du bonus absente');
-const getSpeedReward=vm.runInNewContext('('+speedRewardMatch[0]+')');
+const getSpeedReward=vm.runInNewContext('(function(){const GAME_RULES={SPEED_STAR_THRESHOLDS_SECONDS:[2,4,6,8,10],SPEED_BONUS_MAX:50,SPEED_BONUS_PER_SECOND:5};return ('+speedRewardMatch[0]+')})()');
 for (const [seconds,stars,bonus] of [[0,5,50],[1,5,45],[2,4,40],[3,4,35],[4,3,30],[5,3,25],[6,2,20],[7,2,15],[8,1,10],[9,1,5],[10,0,0]]) { const actual=getSpeedReward(seconds*1000); assert.equal(actual.stars,stars,`étoiles incorrectes à ${seconds}s`); assert.equal(actual.bonus,bonus,`bonus incorrect à ${seconds}s`); }
 assert.ok(appSource.includes('Échelle : chaque carreau représente 1 unité'), 'explication de l’échelle dans la bulle Comprendre absente');
 assert.ok(appSource.includes('class=\"coordinate-help\"') && appSource.includes('? Comprendre'), 'aide d’échelle pour Défi et Multijoueur absente');
-assert.ok(appSource.includes('remainingTimeBonus=completed?Math.max(0,gogoRemaining)*10:0'), 'bonus de points lié au temps restant dans Duo à gogo absent');
+assert.ok(appSource.includes('remainingTimeBonus=completed?Math.max(0,gogoRemaining)*GAME_RULES.GOGO_REMAINING_SECOND_BONUS:0'), 'bonus de points lié au temps restant dans Duo à gogo absent');
 assert.ok(appSource.includes('Bonus grâce au temps restant'), 'affichage du bonus de temps restant absent');
 assert.ok(appSource.includes('answerToastAnimationTimer') && appSource.includes('1050ms cubic-bezier'), 'animation du feedback vers la jauge absente');
 assert.ok(appSource.includes('soloBackHome') && appSource.includes('duelBackHome') && appSource.includes('mathBackHome'), 'boutons retour à l’accueil des modes absents');
@@ -105,5 +105,14 @@ assert(appSource.includes('1050ms cubic-bezier'), 'animation feedback prolongée
 assert.ok(fs.existsSync(`${__dirname}/../exercise-lab.html`), 'laboratoire indépendant des exercices absent');
 const labSource=fs.readFileSync(`${__dirname}/../exercise-lab.html`,'utf8');
 assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="cursorColor"') && labSource.includes('id="cursorStep"'), 'panneau de réglage du curseur absent');
-assert.ok(labSource.includes('id="addTextField"') && labSource.includes('id="resetTextFields"'), 'ajout/suppression des champs de texte absent');
+assert.ok(!labSource.includes('customFieldsPreview') && !labSource.includes('addTextField'), 'ancien panneau de champs de texte encore présent');
+assert.ok(labSource.includes('id="addMarker"') && labSource.includes('id="clearMarkers"') && labSource.includes('id="cursorStart"'), 'édition des repères et de la position initiale absente');
+assert.ok(labSource.includes('localStorage.setItem(MODEL_KEY') && appSource.includes('mathrush_cursor_model_v1'), 'export du modèle de curseur vers le jeu absent');
+assert.ok(appSource.includes('RESCUE_MIN_STREAK') && appSource.includes('rescueStreakBtn') && appSource.includes('currentGlobalStreak'), 'rattrapage de série global absent');
+assert.equal(context.window.MathRushConfig.GAME_RULES.RESCUE_MIN_STREAK,20);
+assert.equal(context.window.MathRushConfig.GAME_RULES.EXERCISES_PER_SESSION,15);
+assert.equal(context.window.MathRushConfig.GAME_RULES.POINTS_CORRECT_ANSWER,100);
+assert.equal(context.window.MathRushConfig.GAME_RULES.NEAR_ANSWER_BASE_POINTS,60);
+assert.equal(context.window.MathRushConfig.GAME_RULES.RESCUE_POINT_COST,50);
+assert.equal(context.window.MathRushConfig.GAME_RULES.SPEED_BONUS_MAX,50);
 assert.ok(cssSource.includes('max-width:205px') && cssSource.includes('width:min(100%,130px)'), 'réduction du graphique de coordonnées absente');

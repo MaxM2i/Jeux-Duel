@@ -2,6 +2,29 @@
    Pour ajouter un mode : ajouter une entrée à MODES, puis son générateur dans exercises.js. */
 (() => {
   'use strict';
+
+  // Règles du jeu regroupées ici : modifie ces valeurs pour équilibrer MathRush sans fouiller app.js.
+  const GAME_RULES = Object.freeze({
+    EXERCISES_PER_SESSION: 15,
+    LEVELS_PER_SECTION: 15,
+    SECTIONS: 15,
+    HIGH_SCORE_MIN_CORRECT: 14,
+    POINTS_CORRECT_ANSWER: 100,
+    NEAR_ANSWER_BASE_POINTS: 60,
+    NEAR_ANSWER_BONUS_MAX: 25,
+    POINTS_FIRST_CORRECT_BONUS: 50,
+    DUEL_ROUNDS: 10,
+    MULTIPLAYER_ROUNDS: 10,
+    GOGO_REMAINING_SECOND_BONUS: 10,
+    STREAK_BONUS_PER_ANSWER: 5,
+    STREAK_BONUS_CAP: 40,
+    RESCUE_MIN_STREAK: 20,
+    RESCUE_POINT_COST: 50,
+    RESCUE_AD_ENABLED: false,
+    SPEED_BONUS_MAX: 50,
+    SPEED_BONUS_PER_SECOND: 5,
+    SPEED_STAR_THRESHOLDS_SECONDS: [2, 4, 6, 8, 10]
+  });
   const MODES = [
     { id: 'quick', label: 'Calculs rapides', mark: '+', description: 'Additions, soustractions et multiplications', family: 'calcul' },
     { id: 'complex', label: 'Calculs complexes', mark: '×+', description: 'Opérations en plusieurs étapes', family: 'calcul' },
@@ -30,5 +53,5 @@
     { title: 'Défi', description: 'Résoudre des exercices plus exigeants' }
   ];
 
-  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, EXERCISES_PER_LEVEL: 15, LEVELS_PER_SECTION: 15, SECTIONS: 15 });
+  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
 })();
