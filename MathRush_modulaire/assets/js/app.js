@@ -52,6 +52,8 @@
          let saved = JSON.parse(localStorage.getItem('mathrush_app_save') || '{}');
          let section = saved.section || 1, level = saved.level || 1, points = saved.points || 0, done = saved.done || [], errors = saved.errors || [], soloLessons=saved.soloLessons||0, highScoreLessons=saved.highScoreLessons||0,friendGames=saved.friendGames||0,soloModeStats=saved.soloModeStats||{}, lifetimeBestStreak=saved.lifetimeBestStreak||0, rapidityStats=saved.rapidityStats||{totalMs:0,count:0,fastestMs:0,slowestMs:0,bonusPoints:0};
          function createTimingStats(){return{totalMs:0,count:0,fastestMs:0,slowestMs:0,bonusPoints:0};}
+         // Récompense continue : 50 points à 0 s, puis 5 points de moins par seconde. Les étoiles suivent des seuils stricts.
+         function getSpeedReward(elapsedMs){const seconds=Math.max(0,Number(elapsedMs)||0)/1000;const stars=seconds<2?5:seconds<4?4:seconds<6?3:seconds<8?2:seconds<10?1:0;const bonus=stars?Math.max(0,Math.min(50,Math.round(50-seconds*5))):0;return{stars,bonus};}
          function recordTiming(stats,elapsedMs,bonus=0){if(!stats)return;const ms=Math.max(0,Number(elapsedMs)||0),priorCount=stats.count||0;stats.totalMs=(stats.totalMs||0)+ms;stats.count=priorCount+1;stats.fastestMs=priorCount?Math.min(stats.fastestMs,ms):ms;stats.slowestMs=priorCount?Math.max(stats.slowestMs||0,ms):ms;stats.bonusPoints=(stats.bonusPoints||0)+Math.max(0,Number(bonus)||0);}
          function formatDurationMs(ms){if(!Number.isFinite(ms)||ms<=0)return '—';return `${(ms/1000).toFixed(1).replace('.',',')} s`;}
          function timingSummaryHtml(stats,label='Temps de réponse'){const count=stats?.count||0,avg=count?stats.totalMs/count:0;return `<section class="timing-summary"><h3>${label}</h3><div class="timing-summary-grid"><div><small>Moyenne / réponse</small><b>${count?formatDurationMs(avg):'—'}</b></div><div><small>Plus rapide</small><b>${count?formatDurationMs(stats.fastestMs):'—'}</b></div><div><small>Plus lente</small><b>${count?formatDurationMs(stats.slowestMs):'—'}</b></div><div><small>Bonus de rapidité cumulé</small><b>+${stats?.bonusPoints||0} pts</b></div></div></section>`;}
@@ -221,7 +223,7 @@
          }
          function soloExerciseExplanation(){
             if(!exercise)return 'Lis la consigne, repère les nombres utiles puis choisis ou saisis ta réponse.';
-            if(exercise.mode==='coordinates')return `Un point se lit toujours dans l’ordre (x ; y) : d’abord sa position horizontale, puis sa position verticale. Sur ce repère, chaque carreau vaut 1 unité.`;
+            if(exercise.mode==='coordinates')return `Un point se lit dans l’ordre (x ; y) : x indique la position horizontale, puis y la position verticale. Échelle : chaque carreau représente 1 unité. Les axes commencent à 0 et vont jusqu’à ${exercise.coordinateMax||'la valeur maximale indiquée'} ; lis d’abord x, puis y.`;
             if(exercise.mode==='percentages'||exercise.type==='percent')return `Un pourcentage signifie « sur 100 ». ${exercise.pct}% correspond à ${exercise.pct}/100 : multiplie ${exercise.base} par ${exercise.pct}, puis divise par 100.`;
             if(exercise.mode==='common-multiples')return `Le ${exercise.askPpcm?'PPCM':'PGCD'} compare les multiples ou les diviseurs de ${exercise.a} et ${exercise.b}. ${exercise.askPpcm?'Cherche le plus petit nombre présent dans les deux listes de multiples.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.'}`;
             if(exercise.type==='round')return `Pour arrondir ${exercise.number}, regarde le chiffre juste à droite du rang demandé. S’il vaut 5 ou plus, on arrondit vers le haut ; sinon vers le bas.`;
@@ -264,12 +266,12 @@
                const parsed = Number(String(choice).replace(/[\s\u00a0]/g, '').replace(',', '.'));
                diff = isNaN(parsed) ? 1 : Math.abs(parsed - target);
             } else diff = String(choice) === String(target) ? 0 : 1;
-            const elapsedMs=Math.max(0,Date.now()-startTime), slider = ['slider', 'line', 'commonSlider'].includes(exercise.type), exact = diff === 0, near = ['slider', 'line'].includes(exercise.type) && diff > 0 && diff <= Math.max(1, target * .1), speed = Math.max(0, Math.round(20 - Math.max(0, elapsedMs / 1000 - 4) * 2));
+            const elapsedMs=Math.max(0,Date.now()-startTime), slider = ['slider', 'line', 'commonSlider'].includes(exercise.type), exact = diff === 0, near = ['slider', 'line'].includes(exercise.type) && diff > 0 && diff <= Math.max(1, target * .1), speedReward=getSpeedReward(elapsedMs), speed=speedReward.bonus;
             recordTiming(soloSessionStats,elapsedMs,exact?speed:0);recordTiming(rapidityStats,elapsedMs,exact?speed:0);
             const recordedModes=soloMathMode==='mixed'?[exercise.mode,'mixed']:[exercise.mode];recordedModes.forEach(mode=>{const modeStats=soloModeStats[mode]||(soloModeStats[mode]={played:0,correct:0,totalMs:0,responses:0,fastestMs:0,slowestMs:0,bonusPoints:0});modeStats.played++;if(exact)modeStats.correct++;recordTiming(modeStats,elapsedMs,exact?speed:0);});
             let gain = 0, answerPoints = 0, speedPoints = 0; if (exact) { answerPoints = 100 + Math.min(40, streak * 5); speedPoints = speed; gain = answerPoints + speedPoints; streak++; correctCount++; } else if (near) { gain = 60 + Math.round(25 * (1 - diff / Math.max(1, target * .1))); answerPoints=gain; streak = 0; } else streak = 0;
             points += gain; best = Math.max(best, streak); lifetimeBestStreak = Math.max(lifetimeBestStreak, best); if(!exact&&!near){errors.unshift({question:exercise.a!==undefined?`${exercise.a} ${exercise.op} ${exercise.b}`:exercise.type==='round'?`Arrondir ${exercise.number} à la dizaine/centaine la plus proche`:'Associer les calculs et leurs résultats',answer:target,tip:exercise.type==='round'?exercise.tip:exercise.a!==undefined?mathStrategy(exercise.a,exercise.b,exercise.op):'Revois les tables et les multiples pas à pas.'});errors=errors.slice(0,40);} persist();
-            const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?(elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0):0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b>` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
+            const fb = $('soloFeedback'); fb.dataset.points=String(answerPoints); fb.dataset.speedPoints=String(speedPoints); fb.dataset.stars=String(exact?speedReward.stars:0); fb.className = 'feedback show ' + (exact ? 'good' : near ? 'near' : 'bad'); fb.innerHTML = exact ? `Bravo ! Réponse exacte : ${target}. <b>+${gain} points</b> ⭐` : near ? `Tout près ! La bonne réponse était ${target}. <b>+${gain} points</b> 🟠` : `Pas tout à fait. La bonne réponse était <b>${target}</b>.`;
             if (slider) { $('rangeValue').textContent = `Ta réponse : ${choice}`; $('rangeValue').style.color = exact ? 'var(--green)' : near ? 'var(--orange)' : 'var(--red)'; $('soloRange').disabled = true; }
             $('soloValidate').disabled = false; $('soloValidate').textContent = exIndex === 14 ? 'Terminer le niveau' : 'Continuer';
             // Amener l'action suivante dans la zone visible sans enfermer le contenu dans un scroll interne.
@@ -519,6 +521,9 @@
             if(gogoTimer)gogoElapsedMs+=Math.max(0,finishedAt-gogoResumeAt);
             clearInterval(gogoTimer);gogoTimer=null;gogoPaused=false;gogoBusy=true;$('gogoPausePanel').hidden=true;$('gogoPause').hidden=true;$('gogoBoard').hidden=false;$('gogoBoard').querySelectorAll('button').forEach(b=>b.disabled=true);
             const elapsed=Math.max(0,Math.round(gogoElapsedMs/100)/10);
+            // Le temps non consommé devient un bonus de fin de niveau (10 points par seconde restante).
+            const remainingTimeBonus=completed?Math.max(0,gogoRemaining)*10:0;
+            if(remainingTimeBonus){points+=remainingTimeBonus;}
             const best=Math.max(gogoPairs,Number(localStorage.getItem('mathrush_gogo_best')||0));localStorage.setItem('mathrush_gogo_best',best);
             const timeKey=`mathrush_gogo_time_${gogoMathMode}_${gogoLevel}`;const previousTime=Number(localStorage.getItem(timeKey)||0);
             const improved=completed&&(!previousTime||elapsed<previousTime);
@@ -539,7 +544,7 @@
             $('gogoFeedback').className='feedback';$('gogoFeedback').textContent='';
             $('gogoGamePanel').hidden=true;
             $('gogoResultPanel').hidden=false;
-            $('gogoResultContent').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p>${timingSummaryHtml(gogoTimingStats,'Rapidité des associations')}</div>`;
+            $('gogoResultContent').innerHTML=`<div class="gogo-result-card ${completed?'success':'retry'}"><div class="gogo-result-icon">${completed?'🏆':'💪'}</div><h3>${resultTitle}</h3><p>${resultDetails}</p>${unlockMessage}<p class="gogo-time-result">${timeMessage}</p><div class="gogo-time-bonus"><small>Bonus grâce au temps restant</small><strong>+${remainingTimeBonus} points</strong><p>${completed?`${gogoRemaining} seconde(s) restantes × 10 points`:'Bonus accordé uniquement en cas de réussite'}</p></div></div>`;
             $('gogoImprove').style.display='block';$('gogoImprove').textContent=completed?'Rejouer pour améliorer mon temps':'Réessayer ce niveau';
             $('gogoNext').style.display=completed?'block':'none';$('gogoNext').textContent=`Niveau ${unlockedLevel} : plus difficile`;
             persist();renderGogoLevels();renderQuests();
@@ -609,7 +614,7 @@
                return makeDuelChoiceQuestion(type,`Arrondis ${number} à la ${unit===10?'dizaine':'centaine'} la plus proche.`,answer,[answer-unit,answer+unit,answer+2*unit]);
             }
             if(type==='coordinates'){
-               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],visual=`<div class="coordinate-plane" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point" style="left:${x*10}%;bottom:${y*10}%">${label}</span></div>`;
+               const x=rand(1,8),y=rand(1,8),label=['A','B','C','D'][rand(0,3)],visual=`<div class="coordinate-wrap"><div class="coordinate-plane" style="--coord-max:8;--coord-x:${x/8*100}%;--coord-y:${y/8*100}%" role="img" aria-label="Repère quadrillé, point ${label} placé en ${x}, ${y}"><span class="coordinate-point">${label}</span></div><details class="coordinate-help"><summary>? Comprendre</summary><p>Échelle : chaque carreau représente 1 unité. Les axes vont de 0 à 8. Lis d’abord x (horizontal), puis y (vertical).</p></details></div>`;
                const answer=`(${x} ; ${y})`;
                return makeDuelChoiceQuestion(type,`Quelles sont les coordonnées du point ${label} ?`,answer,[`(${x-1} ; ${y})`,`(${x+1} ; ${y})`,`(${x} ; ${y+1})`],visual);
             }

@@ -23,7 +23,7 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
         assert.ok(Array.isArray(exercise.opts) && exercise.opts.length >= 2, 'au moins deux propositions attendues');
       }
       if (exercise.mode === 'rounding') assert.ok(Number.isFinite(exercise.ans));
-      if (exercise.mode === 'coordinates') { assert.ok(exercise.visual.includes('Échelle : 1 carreau = 1 unité'), 'échelle du repère absente'); assert.ok(exercise.visual.includes('--coord-x:'), 'position horizontale du point absente'); }
+      if (exercise.mode === 'coordinates') { assert.ok(!exercise.visual.includes('Échelle : 1 carreau = 1 unité'), 'l’échelle ne doit plus encombrer le graphique'); assert.ok(exercise.visual.includes('--coord-x:'), 'position horizontale du point absente'); }
     }
   }
 }
@@ -75,7 +75,16 @@ assert.ok(htmlSource.includes('id="profileSpeed"'), 'rapidité moyenne absente d
 assert.ok(appSource.includes('function recordTiming(') && appSource.includes('function timingSummaryHtml('), 'statistiques de rapidité communes absentes');
 assert.ok(appSource.includes('function showAnswerToast(') && appSource.includes('answerFeedbackObserver'), 'feedback central des réponses absent');
 assert.ok(appSource.includes('toast-points') && appSource.includes('toast-stars'), 'détail des points et étoiles du feedback absent');
-assert.ok(appSource.includes('elapsedMs<3000?3:elapsedMs<5000?2:elapsedMs<8000?1:0'), 'seuils des étoiles de rapidité absents');
+assert.ok(appSource.includes('seconds<2?5:seconds<4?4:seconds<6?3:seconds<8?2:seconds<10?1:0'), 'seuils des cinq étoiles de rapidité absents');
+assert.ok(appSource.includes('50-seconds*5'), 'calcul continu des points bonus de rapidité absent');
+const speedRewardMatch=appSource.match(/function getSpeedReward\(elapsedMs\)\{[^\n]+/);
+assert.ok(speedRewardMatch,'fonction de calcul des étoiles et du bonus absente');
+const getSpeedReward=vm.runInNewContext('('+speedRewardMatch[0]+')');
+for (const [seconds,stars,bonus] of [[0,5,50],[1,5,45],[2,4,40],[3,4,35],[4,3,30],[5,3,25],[6,2,20],[7,2,15],[8,1,10],[9,1,5],[10,0,0]]) { const actual=getSpeedReward(seconds*1000); assert.equal(actual.stars,stars,`étoiles incorrectes à ${seconds}s`); assert.equal(actual.bonus,bonus,`bonus incorrect à ${seconds}s`); }
+assert.ok(appSource.includes('Échelle : chaque carreau représente 1 unité'), 'explication de l’échelle dans la bulle Comprendre absente');
+assert.ok(appSource.includes('class=\"coordinate-help\"') && appSource.includes('? Comprendre'), 'aide d’échelle pour Défi et Multijoueur absente');
+assert.ok(appSource.includes('remainingTimeBonus=completed?Math.max(0,gogoRemaining)*10:0'), 'bonus de points lié au temps restant dans Duo à gogo absent');
+assert.ok(appSource.includes('Bonus grâce au temps restant'), 'affichage du bonus de temps restant absent');
 assert.ok(appSource.includes('answerToastAnimationTimer') && appSource.includes('1050ms cubic-bezier'), 'animation du feedback vers la jauge absente');
 assert.ok(appSource.includes('soloBackHome') && appSource.includes('duelBackHome') && appSource.includes('mathBackHome'), 'boutons retour à l’accueil des modes absents');
 assert.ok(appSource.includes("a.classList.add('answer-wrong')") && appSource.includes("'answer-correct'"), 'coloration des cartes Duo à gogo absente');
@@ -83,7 +92,7 @@ assert.ok(fs.readFileSync(`${__dirname}/../assets/css/mathrush.css`, 'utf8').inc
 assert.ok(appSource.includes('Moyenne / réponse') && appSource.includes('Plus rapide') && appSource.includes('Plus lente') && appSource.includes('Bonus de rapidité cumulé'), 'détails des statistiques de rapidité absents');
 assert.ok(appSource.includes('timingSummaryHtml(soloSessionStats)'), 'statistiques de rapidité solo absentes');
 assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)'), 'statistiques de rapidité défi absentes');
-assert.ok(appSource.includes('timingSummaryHtml(gogoTimingStats'), 'statistiques de rapidité Duo à gogo absentes');
+assert.ok(appSource.includes('Bonus grâce au temps restant'), 'bonus du temps restant Duo à gogo absent');
 assert.ok(appSource.includes('mathPlayerTiming[player.id]'), 'statistiques de rapidité multijoueur absentes');
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
 
@@ -94,3 +103,7 @@ assert(appSource.includes('answerToastTimer=setTimeout(travel,3000)'), 'feedback
 assert(appSource.includes('1050ms cubic-bezier'), 'animation feedback prolongée');
 
 assert.ok(fs.existsSync(`${__dirname}/../exercise-lab.html`), 'laboratoire indépendant des exercices absent');
+const labSource=fs.readFileSync(`${__dirname}/../exercise-lab.html`,'utf8');
+assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="cursorColor"') && labSource.includes('id="cursorStep"'), 'panneau de réglage du curseur absent');
+assert.ok(labSource.includes('id="addTextField"') && labSource.includes('id="resetTextFields"'), 'ajout/suppression des champs de texte absent');
+assert.ok(cssSource.includes('max-width:205px') && cssSource.includes('width:min(100%,130px)'), 'réduction du graphique de coordonnées absente');

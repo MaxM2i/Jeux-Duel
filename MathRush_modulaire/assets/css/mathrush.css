@@ -1370,13 +1370,13 @@
 .solo-help-panel[hidden]{display:none!important}
 
 /* Repère de coordonnées gradué : une ligne = une unité */
-.coordinate-wrap{width:100%;max-width:340px;margin:14px auto 20px;padding:8px 20px 20px 28px;box-sizing:border-box}
+.coordinate-wrap{width:100%;max-width:205px;margin:12px auto 16px;padding:8px 16px 18px 22px;box-sizing:border-box}
 .coordinate-plane{width:100%;max-width:none;margin:0;aspect-ratio:1;background-size:calc(100% / var(--coord-max)) calc(100% / var(--coord-max));overflow:visible}
 .coordinate-plane .coordinate-point{left:var(--coord-x);bottom:var(--coord-y);transform:translate(-50%,50%);z-index:2}
-.coordinate-tick{position:absolute;font-size:10px;font-weight:700;color:#64748b;line-height:1}
+.coordinate-tick{position:absolute;font-size:9px;font-weight:800;color:#64748b;line-height:1}
 .coord-x-tick{bottom:-17px;transform:translateX(-50%)}
 .coord-y-tick{left:-20px;transform:translateY(50%)}
-.coordinate-scale{display:block;text-align:center;margin-top:22px;color:#64748b;font-size:11px;font-weight:700}
+.coordinate-scale{display:none!important}
 
 .coordinate-plane:before{content:none}
 .coord-axis-x{position:absolute;right:-14px;bottom:-17px;font-size:11px;font-weight:900;color:#45536d}.coord-axis-y{position:absolute;left:-18px;top:-14px;font-size:11px;font-weight:900;color:#45536d}
@@ -1495,3 +1495,15 @@
 /* Correctif curseur : le rail occupe toute la largeur utile et reste manipulable au doigt. */
 #solo input[type=range].range{display:block;width:100%;max-width:100%;min-width:0;padding:0!important;margin:12px 0 4px;box-sizing:border-box;pointer-events:auto;touch-action:pan-y;position:relative;z-index:2;cursor:pointer}
 #soloQuestion{min-width:0}
+
+/* Duo à gogo : mise en évidence du bonus lié au temps restant. */
+.gogo-time-bonus{margin:14px 0;padding:14px;border-radius:14px;background:#fff7df;border:1px solid #f5d98b;text-align:center}.gogo-time-bonus small{display:block;color:#80601b;font-weight:800}.gogo-time-bonus strong{display:block;margin:5px 0;font-size:clamp(22px,6vw,30px);color:#a56b00}.gogo-time-bonus p{margin:0;font-size:12px;color:#80601b}
+/* Laboratoire : aperçu configurable du curseur. */
+.lab-range-preview{--lab-thumb:28px;--lab-track:10px;--lab-color:#4778ed;accent-color:var(--lab-color);width:100%;touch-action:pan-y}.lab-range-preview::-webkit-slider-runnable-track{height:var(--lab-track)}.lab-range-preview::-webkit-slider-thumb{width:var(--lab-thumb);height:var(--lab-thumb)}.lab-range-preview::-moz-range-track{height:var(--lab-track)}.lab-range-preview::-moz-range-thumb{width:var(--lab-thumb);height:var(--lab-thumb)}
+
+/* Tous les repères (solo et Défi) restent compacts sur mobile. */
+.coordinate-plane{width:min(100%,130px);max-width:130px}.coordinate-wrap .coordinate-plane{width:100%;max-width:none}
+.lab-range-preview{-webkit-appearance:none;appearance:none;background:transparent}.lab-range-preview::-webkit-slider-runnable-track{background:#dce4f2;border-radius:99px}.lab-range-preview::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;border:0;border-radius:50%;background:var(--lab-color);margin-top:calc((var(--lab-track) - var(--lab-thumb))/2)}.lab-range-preview::-moz-range-track{background:#dce4f2;border-radius:99px}.lab-range-preview::-moz-range-thumb{border:0;border-radius:50%;background:var(--lab-color)}
+
+/* Aide d’échelle intégrée aux repères du Défi et du Multijoueur. */
+.coordinate-help{margin:8px auto 0;max-width:100%;font-size:12px;color:#405574;text-align:left}.coordinate-help summary{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:999px;background:#eef3fb;font-weight:900;cursor:pointer;list-style:none}.coordinate-help summary::-webkit-details-marker{display:none}.coordinate-help p{margin:7px 0 0;padding:9px 11px;border-radius:12px;background:#eef6ff;border:1px solid #c8ddf8;line-height:1.4}

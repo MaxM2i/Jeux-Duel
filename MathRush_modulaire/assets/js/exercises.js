@@ -86,7 +86,7 @@
       const x = rand(1, coordinateMax), y = rand(1, coordinateMax), label = ['A', 'B', 'C', 'D'][rand(0, 3)], answer = `(${x} ; ${y})`;
       const ticks = Array.from(new Set([0, Math.ceil(coordinateMax / 2), coordinateMax]));
       const tickMarkup = ticks.map(value => `<span class="coord-tick coord-x-tick" style="left:${value / coordinateMax * 100}%">${value}</span>${value ? `<span class="coord-tick coord-y-tick" style="bottom:${value / coordinateMax * 100}%">${value}</span>` : ''}`).join('') + '<span class="coord-axis-x">x</span><span class="coord-axis-y">y</span>';
-      const visual = `<div class="coordinate-wrap"><div class="coordinate-plane" style="--coord-max:${coordinateMax};--coord-x:${x / coordinateMax * 100}%;--coord-y:${y / coordinateMax * 100}%" role="img" aria-label="Repère gradué de 0 à ${coordinateMax}, chaque carreau vaut 1 unité. Point ${label} placé en ${x}, ${y}"><span class="coordinate-point">${label}</span>${tickMarkup}</div><small class="coordinate-scale">Échelle : 1 carreau = 1 unité · axes de 0 à ${coordinateMax}</small></div>`;
+      const visual = `<div class="coordinate-wrap"><div class="coordinate-plane" style="--coord-max:${coordinateMax};--coord-x:${x / coordinateMax * 100}%;--coord-y:${y / coordinateMax * 100}%" role="img" aria-label="Repère gradué de 0 à ${coordinateMax}, chaque carreau vaut 1 unité. Point ${label} placé en ${x}, ${y}"><span class="coordinate-point">${label}</span>${tickMarkup}</div></div>`;
       return { type: 'coordinates', mode, x, y, coordinateMax, prompt: `Quelles sont les coordonnées du point ${label} ?`, visual, ans: answer,
         opts: shuffle(unique([answer, `(${Math.max(0, x - 1)} ; ${y})`, `(${x + 1} ; ${y})`, `(${x} ; ${y + 1})`])) };
     }
