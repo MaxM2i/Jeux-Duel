@@ -50,10 +50,11 @@ for (const [id,mode,type] of specialModels) {
   if (type === 'factorTree') { assert.equal(ex.total, ex.ans * ex.right, 'arbre de facteurs incohérent'); assert.equal(ex.ans,ex.lowerA*ex.lowerB,'branche inférieure incohérente'); }
   if (type === 'ppcmChoice') assert.equal(ex.ans, context.window.MathRushExercises.lcm(ex.a, ex.b), 'PPCM incorrect');
   if (type === 'roundingTable') { assert.equal(ex.ans, ex.rows[2].rounded, 'tableau d’arrondis incohérent'); assert.ok(ex.rows.every(row=>row.expression&&row.difference===row.number-row.fixed), 'calculs du tableau incohérents'); }
-  if (type === 'baseTen') assert.equal(ex.ans, ex.hundreds*100 + ex.tens*10 + ex.units, 'blocs base dix incohérents');
+  if (type === 'baseTen') { assert.ok(Number.isInteger(ex.ans)&&ex.ans>=0&&ex.ans<=300,'nombre cible des blocs invalide'); assert.equal(ex.opts.length,2,'le modèle doit proposer exactement deux cartes'); assert.ok(ex.opts.includes(ex.ans),'la bonne quantité doit être proposée'); assert.equal(new Set(ex.opts).size,2,'les deux quantités doivent être différentes'); assert.ok(ex.opts.every(n=>Number.isInteger(n)&&n>=0&&n<=300),'quantité de blocs invalide'); }
+  if (type === 'baseTen') { for(let rank=0;rank<=6;rank++){const sample=context.window.MathRushExercises.createSoloExercise('rounding',rank,rand,shuffle,'solo');assert.equal(sample.type,'baseTen');assert.equal(sample.opts.length,2);assert.ok(sample.opts.includes(sample.ans));assert.ok(sample.ans>=0&&sample.ans<=300);} }
   if (type === 'baseTenRounding') assert.equal(ex.ans,Math.round(ex.number/100)*100,'arrondi visuel en blocs incorrect');
   if (type === 'commonSlider') assert.equal(ex.ans,Number(ex.expression.split(' × ').reduce((a,b)=>Number(a)*Number(b),1)),'expression du curseur incorrecte');
-  if (type === 'missingBox') { const target=Number(ex.prompt.match(/= (\d+)/)[1]); assert.equal(target,ex.ans,'résultat de la case manquante incorrect'); assert.equal(ex.ans/ex.a,ex.b,'facteur manquant incorrect'); }
+  if (type === 'missingBox') { const target=Number(ex.prompt.match(/= (\d+)/)[1]); assert.equal(target,ex.a*ex.ans,'produit affiché incohérent'); assert.equal(ex.ans,ex.b,'facteur manquant incorrect'); }
   modelCatalog.forEach((model,index) => { model.weight = weights[index]; });
 }
 
@@ -106,6 +107,7 @@ assert.ok(appSource.includes('function savePausedGogo()') && appSource.includes(
 assert.ok(appSource.includes('gogoChangePaused'), 'action de changement d’exercice depuis la pause absente');
 assert.ok(appSource.includes('createSoloExercise(type,Math.max(0,duelDiff-1),rand,shuffle,gameContext)'), 'catalogue non utilisé dans les Défis et le Multijoueur');
 assert.ok(appSource.includes("type === 'baseTenRounding'") && appSource.includes("type === 'roundingTable'") && appSource.includes("type === 'factorTree'"), 'rendu des nouveaux modèles visuels absent');
+assert.ok(appSource.includes('renderBaseTenBlocks') && appSource.includes("generated.type==='baseTen'"), 'rendu du modèle de comptage de blocs absent');
 assert.ok(appSource.includes('function soloExerciseExplanation()') && appSource.includes('function soloExerciseHint()'), 'aide et indice du parcours solo absents');
 assert.ok(htmlSource.includes('id="gogoChangePaused"'), 'bouton changer d’exercice en pause absent');
 assert.ok(htmlSource.includes('id="soloExplain"') && htmlSource.includes('id="soloHint"'), 'boutons aide/indice du parcours solo absents');
@@ -133,6 +135,43 @@ assert.ok(appSource.includes('timingSummaryHtml(soloSessionStats)'), 'statistiqu
 assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionStats:duelSessionStats)'), 'statistiques de rapidité défi absentes');
 assert.ok(appSource.includes('Bonus grâce au temps restant'), 'bonus du temps restant Duo à gogo absent');
 assert.ok(appSource.includes('mathPlayerTiming[player.id]'), 'statistiques de rapidité multijoueur absentes');
+
+// Régressions : les cases manquantes attendent le facteur, pas le produit ; le curseur du niveau 1 reste simple.
+for(let i=0;i<300;i++){
+  const missing=context.window.MathRushExercises.createSoloExercise('quick',0,rand,shuffle,'solo');
+  if(missing.type==='missingBox'){
+    assert.equal(missing.ans,missing.b,'la case vide doit être le facteur manquant');
+    assert.equal(missing.a*missing.ans,Number(missing.prompt.match(/= (\d+)$/)?.[1]),'le produit affiché doit correspondre au facteur manquant');
+  }
+  if(missing.type==='commonSlider'){
+    assert.ok(missing.ans>=0&&missing.ans<=20,'le curseur du premier palier doit rester dans une petite plage positive');
+    assert.ok(!missing.expression.includes('×')||missing.expression.split('×').length===2,'le premier palier ne doit pas proposer trois facteurs');
+  }
+}
+
+// Représentation en base 10 : unités jusqu'à 10, dizaines au-delà, centaines au-delà de 100.
+const renderBlocks=context.window.MathRushExercises.renderBaseTenBlocks;
+for(const value of [0,1,9,10,11,99,100,109,199,200,201,268,300]){
+  const html=renderBlocks(value);
+  assert.ok(html.includes(`aria-label="${value} blocs`),`libellé des blocs absent pour ${value}`);
+  assert.equal((html.match(/base-ten-hundred-tile/g)||[]).length,Math.floor(value/100),`centaines incorrectes pour ${value}`);
+  assert.equal((html.match(/base-ten-ten-rod/g)||[]).length,Math.floor((value%100)/10),`dizaines incorrectes pour ${value}`);
+  assert.equal((html.match(/base-ten-unit-cube/g)||[]).length,value%10,`unités incorrectes pour ${value}`);
+}
+assert.ok(renderBlocks(268).includes('count-hundreds stacked'),'superposition des centaines au-dessus de 200 absente');assert.ok(!renderBlocks(200).includes('stacked'),'les centaines ne doivent pas être superposées à 200 pile');
+const tree=context.window.MathRushExercises.renderFactorTree({total:120,left:12,right:10,lowerA:3,lowerB:4});
+assert.ok(tree.includes('factor-tree-bracket')&&tree.includes('factor-subtree'),'arbre et crochets horizontaux absents');
+const flexible=modelCatalog.find(model=>model.id==='flexible-template');
+assert.ok(flexible&&flexible.type==='flexTemplate','modèle polyvalent absent du catalogue');
+const patternCases=[['calculation','quick','choice'],['rounding','rounding','round'],['percentage','percentages','percent'],['missingBox','multiplication-division','missingBox'],['equivalent','complex','equation'],['numberModel','quick','model']];
+const originalPatterns=[...flexible.contentPatterns];
+for(const [pattern,mode,type] of patternCases){
+  const weights=modelCatalog.map(m=>m.weight);modelCatalog.forEach(m=>m.weight=m.id===flexible.id?1:0);flexible.contentPatterns=[pattern];
+  const ex=context.window.MathRushExercises.createSoloExercise(mode,2,rand,shuffle,'solo');
+  assert.equal(ex.type,type,`contenu polyvalent ${pattern} incorrect`);
+  modelCatalog.forEach((m,i)=>m.weight=weights[i]);
+}
+flexible.contentPatterns=originalPatterns;
 console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
 
 // Régression curseur mobile : aucun padding horizontal ne doit écraser le rail tactile.
@@ -147,6 +186,10 @@ assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="c
 assert.ok(!labSource.includes('customFieldsPreview') && !labSource.includes('addTextField'), 'ancien panneau de champs de texte encore présent');
 assert.ok(labSource.includes('id="addMarker"') && labSource.includes('id="clearMarkers"') && labSource.includes('id="cursorStart"'), 'édition des repères et de la position initiale absente');
 assert.ok(labSource.includes('id="catalogPanel"') && labSource.includes('id="modelOverview"') && labSource.includes('id="exportCatalog"') && labSource.includes('id="modelPlayModes"') && labSource.includes('id="testSelectedModel"') && labSource.includes('function syncRuntimeCatalog()'), 'catalogue éditable des modèles absent');
+assert.ok(labSource.includes('id="modelPatterns"') && labSource.includes('flexTemplate') && labSource.includes('contentPatterns'), 'choix des familles de contenu du modèle polyvalent absent');
+assert.ok(labSource.includes('id="visualSettings"') && labSource.includes('id="exportVisualCss"') && labSource.includes('treeThickness'), 'éditeur CSS visuel du laboratoire absent');
+assert.ok(labSource.includes('id="selectedModelPreview"') && labSource.includes('function renderSelectedModelPreview()') && labSource.includes('refreshModelPreview'), 'aperçu visuel vivant du modèle sélectionné absent');
+assert.ok(appSource.includes('function renderCursorScale(') && appSource.includes('left:${left}'), 'graduations du curseur non positionnées proportionnellement');
 assert.ok(labSource.includes('id="integrationCode"') && labSource.includes('id="generateCode"') && appSource.includes('MathRushConfig.CURSOR_MODEL'), 'export de code du modèle de curseur absent');
 assert.ok(!labSource.includes('localStorage.setItem') && !labSource.includes('localStorage.getItem'), 'le laboratoire ne doit pas utiliser le stockage navigateur');
 assert.ok(appSource.includes('soloRescuePanel') && appSource.includes('Ta partie est en pause') && !appSource.includes('fb.innerHTML+=`<div class="streak-rescue"'), 'panneau de rattrapage séparé ou feedback neutre absent');

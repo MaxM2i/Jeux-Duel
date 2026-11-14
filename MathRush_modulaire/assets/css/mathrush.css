@@ -1533,11 +1533,16 @@
 .solo-rescue-panel[hidden]{display:none!important}.solo-rescue-panel h3{margin:0 0 8px;font-size:clamp(18px,4vw,23px)}.solo-rescue-panel p{margin:0 0 12px;line-height:1.45}.rescue-panel-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.rescue-panel-actions button{min-width:0;white-space:normal}.rescue-panel-actions button:last-child{grid-column:1/-1}@media(max-width:520px){.rescue-panel-actions{grid-template-columns:1fr}.rescue-panel-actions button:last-child{grid-column:auto}}
 
 /* Nouveaux modèles visuels du catalogue d'exercices */
-.factor-tree-visual{display:flex;flex-direction:column;align-items:center;gap:7px;margin:18px auto;max-width:280px}
-.factor-tree-row{display:flex;justify-content:center;gap:54px;width:100%}
-.factor-tree-row.compact{gap:38px}
-.factor-tree-branch{width:56%;height:20px;border-left:4px solid #e2e2e2;border-right:4px solid #e2e2e2;border-top:4px solid #e2e2e2;border-radius:10px 10px 0 0}
-.factor-tree-branch.short{width:30%;height:16px}
+.factor-tree-visual{display:flex;flex-direction:column;align-items:center;gap:5px;margin:18px auto;max-width:340px;padding:4px 12px}
+.factor-tree-row{display:flex;justify-content:center;align-items:flex-start;gap:var(--mathrush-tree-gap,42px);width:100%}
+.factor-tree-row.compact{gap:var(--mathrush-tree-gap,42px);width:100%}
+.factor-tree-visual .factor-node{min-width:var(--mathrush-tree-node-size,62px);min-height:var(--mathrush-tree-node-size,62px);box-sizing:border-box}
+.factor-tree-bracket{height:var(--mathrush-tree-offset,18px);border-top:var(--mathrush-tree-bracket-thickness,3px) solid #cbd5e1;position:relative;box-sizing:border-box}
+.factor-bracket-root{width:var(--mathrush-tree-bracket-width,58%);border-left:var(--mathrush-tree-bracket-thickness,3px) solid #cbd5e1;border-right:var(--mathrush-tree-bracket-thickness,3px) solid #cbd5e1;border-radius:0 0 8px 8px}
+.factor-subtree{display:flex;flex-direction:column;align-items:center;position:relative;transform:translateX(calc(var(--mathrush-tree-gap,42px) * -0.08))}
+.factor-bracket-child{width:70%;border-left:var(--mathrush-tree-bracket-thickness,3px) solid #cbd5e1;border-right:var(--mathrush-tree-bracket-thickness,3px) solid #cbd5e1;border-radius:0 0 7px 7px}
+.factor-leaf{margin-top:0}
+
 .factor-node{min-width:66px;min-height:62px;display:grid;place-items:center;padding:4px 12px;border:3px solid #e4e4e4;border-radius:17px;background:#fff;font-size:26px;font-weight:900;box-shadow:0 5px 0 #e4e4e4}
 .factor-node.missing-cell{border-style:dashed;background:#f7f8fa;color:#239fdf;box-shadow:none}
 .rounding-table{width:min(100%,420px);margin:16px auto;border:2px solid #e2e2e2;border-radius:16px;overflow:hidden}
@@ -1556,13 +1561,23 @@
 .base-ten-rounding-preview{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:14px auto}.base-ten-rounding-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border:2px solid #e4e4e4;border-radius:14px;min-width:100px}.base-ten-rounding-card span{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:120px}.base-ten-rounding-card b{font-size:20px}
 
 
-/* Modèle visuel : associer un nombre à la bonne quantité de blocs bleus. */
+/* Représentation base 10 compacte : unités, barres de dizaines et centaines superposées. */
 .count-blocks-prompt{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;margin:24px auto 30px}
 .count-blocks-prompt small{max-width:560px}
 .count-target{display:grid;place-items:center;min-width:92px;min-height:82px;padding:8px 20px;border:3px solid #dce3f2;border-radius:18px;background:#fff;color:var(--navy,#1d2947);font-size:clamp(38px,7vw,58px);font-weight:950;box-shadow:0 5px 0 #e4e8f0}
 .count-blocks-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:760px;margin:0 auto}
-.count-block-choice{display:flex;align-items:center;justify-content:center;min-height:150px;padding:18px!important;background:#fff!important}
-.count-blocks{display:grid;grid-template-columns:repeat(5, minmax(16px,25px));gap:7px;justify-content:center;align-content:center;max-width:190px;min-height:55px}
-.count-blue-block{display:block;width:clamp(17px,3vw,25px);height:clamp(17px,3vw,25px);border:1px solid #138ac6;border-radius:3px;background:linear-gradient(145deg,#35c2f4,#169fe0);box-shadow:inset 0 1px 0 #8be1ff,0 2px 0 #d5e8f2}
+.count-block-choice{display:flex;align-items:center;justify-content:center;min-height:150px;padding:12px!important;background:#fff!important;overflow:hidden}
+.count-blocks{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--mathrush-block-gap,4px);max-width:100%;min-height:62px}
+.count-hundreds,.count-tens,.count-units{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--mathrush-block-gap,4px);max-width:100%}
+.count-hundreds{min-height:0;padding:2px 0}
+.base-ten-hundred-tile{display:block;width:var(--mathrush-block-size,30px);height:var(--mathrush-block-size,30px);border:1.5px solid #138ac6;border-radius:3px;background:repeating-linear-gradient(0deg,transparent 0 5px,#138ac6 6px 6.8px),repeating-linear-gradient(90deg,#22a9e8 0 5px,#138ac6 6px 6.8px);box-shadow:0 1px 0 #b8d9e9;transform:translate(calc(var(--stack-index,0) * -2px),calc(var(--stack-index,0) * 2px))}
+.count-hundreds.stacked{display:grid;grid-template-columns:1fr;gap:0;position:relative;padding:0 7px 5px 0}.count-hundreds.stacked .base-ten-hundred-tile{grid-area:1/1}
+.count-tens{gap:4px}
+.base-ten-ten-rod{display:block;width:calc(var(--mathrush-block-size,30px) * .23);height:calc(var(--mathrush-block-size,30px) * 1.03);border:1px solid #138ac6;border-radius:2px;background:repeating-linear-gradient(0deg,#27b0ec 0 5px,#138ac6 6px 7px)}
+.count-units{gap:var(--mathrush-block-gap,4px);max-width:160px}
+.base-ten-unit-cube{display:block;width:calc(var(--mathrush-block-size,30px) * .23);height:calc(var(--mathrush-block-size,30px) * .23);border:1px solid #138ac6;border-radius:2px;background:#27b0ec}
+.count-empty{font-size:13px;color:#718096;font-weight:800}
 .count-block-choice.selected{border-color:#4778ed!important;background:#edf3ff!important}
-@media(max-width:520px){.count-block-choice{min-height:118px}.count-blocks{grid-template-columns:repeat(4,minmax(16px,23px));gap:6px}}
+@media(max-width:520px){.count-block-choice{min-height:118px}.base-ten-hundred-tile{width:var(--mathrush-block-size,22px);height:var(--mathrush-block-size,22px)}.base-ten-ten-rod{height:calc(var(--mathrush-block-size,22px) * 1.03)}.base-ten-unit-cube{width:calc(var(--mathrush-block-size,22px) * .23);height:calc(var(--mathrush-block-size,22px) * .23)}}
+/* Variables exportables depuis le laboratoire visuel. */
+:root{--mathrush-block-size:22px;--mathrush-block-gap:4px;--mathrush-tree-node-size:62px;--mathrush-tree-gap:42px;--mathrush-tree-offset:18px;--mathrush-tree-bracket-width:58%;--mathrush-tree-bracket-thickness:3px}
