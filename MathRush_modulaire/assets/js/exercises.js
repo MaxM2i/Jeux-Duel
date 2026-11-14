@@ -4,19 +4,6 @@
   const pick = (items, rand) => items[rand(0, items.length - 1)];
   const unique = values => [...new Set(values)];
 
-
-  function renderBaseTenBlocks(value) {
-    const n = Math.max(0, Math.min(300, Math.floor(Number(value) || 0)));
-    const hundreds = Math.floor(n / 100), tens = Math.floor((n % 100) / 10), units = n % 10;
-    const hundredMarkup = Array.from({length:hundreds},(_,i)=>`<i class="base-ten-hundred-tile" style="--stack-index:${i}"></i>`).join('');
-    const tensMarkup = Array.from({length:tens},()=>'<i class="base-ten-ten-rod"></i>').join('');
-    const unitsMarkup = Array.from({length:units},()=>'<i class="base-ten-unit-cube"></i>').join('');
-    return `<span class="count-blocks" role="img" aria-label="${n} blocs : ${hundreds} centaine(s), ${tens} dizaine(s), ${units} unité(s)"><span class="count-hundreds${n>200?' stacked':''}">${hundredMarkup}</span><span class="count-tens">${tensMarkup}</span><span class="count-units">${unitsMarkup}</span>${n===0?'<span class="count-empty">0 bloc</span>':''}</span>`;
-  }
-  function renderFactorTree(exercise) {
-    return `<div class="factor-tree-visual"><div class="factor-node factor-root">${exercise.total}</div><div class="factor-tree-bracket factor-bracket-root"></div><div class="factor-tree-row"><div class="factor-subtree"><div class="factor-node missing-cell">?</div><div class="factor-tree-bracket factor-bracket-child"></div><div class="factor-tree-row compact"><div class="factor-node">${exercise.lowerA}</div><div class="factor-node">${exercise.lowerB}</div></div></div><div class="factor-node factor-leaf">${exercise.right}</div></div></div>`;
-  }
-
   function makeMath(difficultyRank, rand) {
     const d = window.MathRushConfig.DIFFICULTY[Math.max(0, Math.min(6, difficultyRank))];
     const op = pick(d.operations, rand);
@@ -75,8 +62,7 @@
     const rank = Math.max(0, Math.min(6, difficultyRank));
     const profile = window.MathRushConfig.DIFFICULTY[rank];
     const catalog = window.MathRushConfig.EXERCISE_MODELS || [];
-    const patternModes={calculation:['quick','complex','multiplication-division'],rounding:['quick','rounding'],percentage:['percentages'],missingBox:['quick','multiplication-division'],equivalent:['quick','complex'],numberModel:['quick']};
-    const eligible = catalog.filter(model => model.enabled !== false && model.modes.includes(mode) && (model.type !== 'flexTemplate' || (model.contentPatterns||[]).some(pattern=>(patternModes[pattern]||[]).includes(mode))) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0);
+    const eligible = catalog.filter(model => model.enabled !== false && model.modes.includes(mode) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0);
     const totalWeight = eligible.reduce((sum, model) => sum + model.weight, 0);
     let selectedModel = null;
     if (totalWeight > 0) {
@@ -88,37 +74,6 @@
     const modelMax = Number.isFinite(Number(selectedModel?.numberMax)) ? Number(selectedModel.numberMax) : 10000;
     const tag = exercise => ({ ...exercise, modelId });
 
-    // Modèle générique : sa structure visuelle reste stable, son contenu varie selon les catégories autorisées.
-    if (selectedModel?.type === 'flexTemplate') {
-      const allowed=(selectedModel.contentPatterns||['calculation']).filter(pattern=>(patternModes[pattern]||[]).includes(mode));
-      const pattern=pick(allowed.length?allowed:['calculation'],rand);
-      if(pattern==='rounding'){
-        const unit=pick(profile.roundingUnits,rand),cap=rank===0?10:rank===1?20:rank===2?50:99,low=Math.max(2,Math.ceil(modelMin/unit)),high=Math.max(low,Math.min(cap,Math.floor(modelMax/unit))),base=rand(low,high)*unit;
-        let offset=rand(-Math.floor(unit/2)+1,Math.floor(unit/2)-1);if(offset===0)offset=1;
-        const number=Math.max(1,base+offset),ans=Math.round(number/unit)*unit;
-        return tag({type:'round',mode,number,unit,ans,opts:shuffle(unique([ans,Math.max(0,ans-unit),ans+unit,ans+unit*2])),tip:`Arrondis à la ${unit===10?'dizaine':unit===100?'centaine':'millier'} la plus proche.`,contentPattern:pattern});
-      }
-      if(pattern==='percentage'){
-        const pct=pick(profile.percentages,rand),eligibleBases=profile.bases.filter(v=>v>=modelMin&&v<=modelMax),base=eligibleBases.length?pick(eligibleBases,rand):Math.max(modelMin,Math.min(modelMax,profile.bases[0])),ans=base*pct/100,delta=Math.max(1,base/20);
-        return tag({type:'percent',mode,pct,base,ans,opts:shuffle(unique([ans,ans+delta,Math.max(0,ans-delta),ans*2])),contentPattern:pattern});
-      }
-      if(pattern==='missingBox'){
-        let a=rank===0?pick([2,5,10],rand):pick(profile.tables,rand),b=rand(2,rank===0?5:Math.max(3,profile.maxFactor)),product=a*b;for(let attempt=0;attempt<80&&(product<modelMin||product>modelMax);attempt++){a=rank===0?pick([2,5,10],rand):pick(profile.tables,rand);b=rand(2,rank===0?5:Math.max(3,profile.maxFactor));product=a*b;}
-        return tag({type:'missingBox',mode,a,b,ans:b,prompt:`${a} × □ = ${product}`,opts:shuffle(unique([b,b+1,Math.max(1,b-1),b+2])),contentPattern:pattern});
-      }
-      if(pattern==='equivalent'){
-        const targets=(rank===0?[10,12,15,20]:rank<=2?[12,15,18,20,24]:[12,15,18,20,24,30,36]).filter(v=>v>=modelMin&&v<=modelMax),target=targets.length?pick(targets,rand):Math.max(2,Math.min(modelMax,Math.max(modelMin,12))),pairs=[];
-        for(let a=2;a<=9;a++)if(target%a===0&&target/a>=2)pairs.push([a,target/a]);
-        const pair=pairs.length?pick(pairs,rand):[2,Math.max(1,Math.round(target/2))],good=`${pair[0]} × ${pair[1]}`;
-        return tag({type:'equation',mode,target,ans:good,opts:shuffle(unique([good,`${target} ÷ 2`,`${Math.max(1,pair[0]-1)} × ${pair[1]}`,`${pair[0]} + ${pair[1]}`])),contentPattern:pattern});
-      }
-      if(pattern==='numberModel'){
-        const start=Math.max(2,Math.ceil(modelMin)),maxStart=Math.max(start,Math.min(rank===0?10:40,modelMax-3)),base=rand(start,maxStart),step=pick(rank===0?[1,2]:[2,3,4,5,10],rand),vals=[base,base+step,base+step*2],ans=base+step*3;
-        return tag({type:'model',mode,vals,ans,opts:shuffle(unique([ans,ans+step,Math.max(0,ans-step),ans+step*2].map(String))),displayVals:vals.map(String),displayAns:String(ans),contentPattern:pattern});
-      }
-      let calc=makeMath(rank,rand);for(let attempt=0;attempt<80&&(calc.ans<modelMin||calc.ans>modelMax);attempt++)calc=makeMath(rank,rand);if(calc.ans<modelMin||calc.ans>modelMax){const value=Math.max(0,Math.min(modelMax,Math.max(modelMin,2)));calc={a:value,b:0,op:'+',ans:value}}const delta=Math.max(1,Math.ceil(Math.abs(calc.ans)*.2));
-      return tag({type:'choice',mode,...calc,ans:calc.ans,prompt:`${calc.a} ${calc.op} ${calc.b} = ?`,opts:shuffle(unique([calc.ans,calc.ans+delta,Math.max(0,calc.ans-delta),calc.ans+delta*2])),contentPattern:pattern});
-    }
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.
     if (selectedModel?.type === 'commonSlider') {
       let expression, ans, safeMin, safeMax;
@@ -157,11 +112,12 @@
     if (selectedModel?.type === 'baseTen') {
       // Association visuelle : le nombre cible est affiché, le joueur choisit
       // entre deux cartes celle qui contient exactement autant de blocs bleus.
-      const min = Math.max(0,Math.ceil(modelMin));
-      const max = Math.max(min,Math.min(300,Math.floor(modelMax)));
+      const difficultyCap = [10,12,15,18,20,24,30][Math.max(0,Math.min(6,rank))];
+      const min = Math.max(1,Math.ceil(modelMin));
+      const max = Math.max(min,Math.min(difficultyCap,Math.floor(modelMax)));
       const ans = rand(min,max);
-      const candidates = unique([ans-1,ans+1,ans-10,ans+10,ans-100,ans+100,ans===0?2:ans-2]).filter(n=>n>=min&&n<=max&&n!==ans);
-      const distractor = candidates.length ? pick(candidates,rand) : (ans===max?Math.max(min,ans-1):ans+1);
+      const candidates = unique([ans-1,ans+1,ans-2,ans+2,ans===1?3:ans-3]).filter(n=>n>=1&&n<=max+2&&n!==ans);
+      const distractor = candidates.length ? pick(candidates,rand) : (ans===1?2:ans-1);
       return tag({ type:'baseTen', mode, ans, opts:shuffle([ans,distractor]), numberMin:min, numberMax:max });
     }
     if (selectedModel?.type === 'baseTenRounding') {
@@ -270,5 +226,5 @@
     throw new Error(`Mode solo inconnu : ${mode}`);
   }
 
-  window.MathRushExercises = Object.freeze({ makeMath, makeVisualExercise, createSoloExercise, renderBaseTenBlocks, renderFactorTree, gcd, lcm });
+  window.MathRushExercises = Object.freeze({ makeMath, makeVisualExercise, createSoloExercise, gcd, lcm });
 })();

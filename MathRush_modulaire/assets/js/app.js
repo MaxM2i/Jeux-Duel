@@ -79,6 +79,12 @@
          }
          loadModeTrack();
          let exIndex = 0, streak = currentGlobalStreak, best = currentGlobalStreak, correctCount = 0, exercise = null, choice = null, locked = false, startTime = 0, soloSessionStats=createTimingStats(), rescuePending=false, rescueActive=false;
+         let soloSeenQuestionKeys = new Set();
+         function soloQuestionKey(ex) {
+            // Empêche de reproposer visuellement le même exercice dans une même leçon,
+            // même si l'ordre des réponses change.
+            return JSON.stringify([ex.type,ex.mode,ex.prompt,ex.a,ex.b,ex.op,ex.type==='baseTen'?ex.ans:null,ex.number,ex.unit,ex.expression,ex.pct,ex.base,ex.seq,ex.vals,ex.x,ex.y,ex.total,ex.left,ex.right,ex.lowerA,ex.lowerB,ex.rows]);
+         }
          function persist() {
             modeProgress[soloMathMode] = { section, level, done: [...done] };
             localStorage.setItem('mathrush_app_save', JSON.stringify({
@@ -86,6 +92,10 @@
                friendGames, soloMathMode, soloModeStats, modeProgress, lifetimeBestStreak, currentGlobalStreak, rescueCount, rapidityStats
             }));
             $('totalPoints').textContent = points;
+            // Le bandeau supérieur est la référence globale : il doit suivre la série
+            // persistée, même lorsque le joueur quitte le parcours solo.
+            const topStreak = $('topStreak');
+            if (topStreak) topStreak.textContent = String(currentGlobalStreak);
             $('homeProgress').textContent = `Section ${section} · Niveau ${level} · ${MathRushConfig.MODES.find(mode => mode.id === soloMathMode)?.label || 'Parcours'}`;
          }
          function difficultyRank() { return MathRushProgression.difficultyFor(section, level); }
@@ -204,9 +214,15 @@
             range.addEventListener('input',update);window.addEventListener('resize',update);requestAnimationFrame(update);return update;
          }
          function styleSoloCursor(input,model){if(!input||!model)return;input.style.setProperty('--cursor-thumb-size',(Number(model.thumbSize)||28)+'px');input.style.setProperty('--cursor-track-size',(Number(model.trackSize)||10)+'px');input.style.setProperty('--cursor-color',model.color||'#4778ed');const value=input.previousElementSibling;if(value&&value.classList.contains('range-value'))value.hidden=model.showValue===false;}
-         function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = currentGlobalStreak; best = currentGlobalStreak; correctCount = 0; rescuePending=false; rescueActive=false; soloSessionStats=createTimingStats(); renderSolo(); }
+         function startSolo() { loadModeTrack(); show('solo'); exIndex = 0; streak = currentGlobalStreak; best = currentGlobalStreak; correctCount = 0; rescuePending=false; rescueActive=false; soloSessionStats=createTimingStats(); soloSeenQuestionKeys=new Set(); renderSolo(); }
          function renderSolo() {
-            locked = false; choice = null; exercise = applyConfiguredCursorModel(buildExercise()); startTime = Date.now();
+            locked = false; choice = null;
+            let candidate=null, candidateKey='';
+            for(let attempt=0;attempt<35;attempt++){
+               candidate=applyConfiguredCursorModel(buildExercise());candidateKey=soloQuestionKey(candidate);
+               if(!soloSeenQuestionKeys.has(candidateKey))break;
+            }
+            exercise=candidate;soloSeenQuestionKeys.add(candidateKey);startTime = Date.now();
             $('soloHelpPanel').hidden=true;$('soloHelpText').textContent='';
             $('soloLabel').textContent = `Section ${section} · Niveau ${level}`; $('soloCount').textContent = `Exercice ${exIndex + 1} / ${GAME_RULES.EXERCISES_PER_SESSION}`; $('soloProgress').style.width = (exIndex / GAME_RULES.EXERCISES_PER_SESSION * 100) + '%';
             $('soloPoints').textContent = '⭐ ' + points; $('soloStreak').textContent = '🔥 ' + currentGlobalStreak; $('soloFeedback').className = 'feedback'; $('soloFeedback').innerHTML = ''; $('soloRescuePanel').hidden=true; $('soloValidate').textContent = 'Valider'; $('soloValidate').disabled = true; $('soloValidate').style.display=''; $('soloSkip').style.display='';
@@ -255,7 +271,7 @@
                q.querySelectorAll('button').forEach(b => b.onclick = () => selectSolo(b.dataset.v, b));
             } else if (exercise.type === 'factorTree') {
                const missing = 'left';
-               q.innerHTML = `<div class="visual-prompt"><small>Décompose le nombre en facteurs</small>${MathRushExercises.renderFactorTree(exercise)}</div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.innerHTML = `<div class="visual-prompt"><small>Décompose le nombre en facteurs</small><div class="factor-tree-visual"><div class="factor-node">${exercise.total}</div><div class="factor-tree-branch"></div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${exercise.right}</div></div><div class="factor-tree-branch short"></div><div class="factor-tree-row compact"><div class="factor-node">${exercise.lowerA}</div><div class="factor-node">${exercise.lowerB}</div></div></div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'ppcmChoice') {
                q.innerHTML = `<div class="visual-prompt"><small>Plus petit commun multiple</small><div class="visual-equation">${exercise.a} et ${exercise.b}</div><p>Quel est leur PPCM ?</p></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
@@ -268,7 +284,7 @@
                q.innerHTML=`<div class="visual-prompt"><small>Arrondis à la centaine près</small><div class="round-number">${exercise.number}</div></div><div class="choices visual-choices base-ten-rounding-choices">${exercise.opts.map(value=>`<button class="choice base-ten-choice" data-v="${value}">${blocks(value)}<b>${value}</b></button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'baseTen') {
-               
+               const blocks=count=>`<span class="count-blocks" aria-label="${count} blocs bleus">${Array.from({length:count},()=>'<i class="count-blue-block"></i>').join('')}</span>`;
                q.innerHTML = `<div class="visual-prompt count-blocks-prompt"><small>Choisis la représentation qui contient ce nombre de blocs bleus</small><strong class="count-target">${exercise.ans}</strong></div><div class="choices visual-choices count-blocks-choices">${exercise.opts.map(n=>`<button class="choice count-block-choice" data-v="${n}">${blocks(n)}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'missingBox') {
@@ -360,7 +376,7 @@
          // Le rattrapage réactive les contrôles de la même question sans regénérer l'exercice.
          $('soloRescuePanel').addEventListener('click', event => {
             if(event.target.closest('#rescueStreakBtn')){
-               if(!rescuePending)return;points=Math.max(0,points-GAME_RULES.RESCUE_POINT_COST);rescuePending=false;rescueActive=true;locked=false;choice=null;startTime=Date.now();
+               if(!rescuePending)return;points=Math.max(0,points-GAME_RULES.RESCUE_POINT_COST);$('soloPoints').textContent='⭐ '+points;rescuePending=false;rescueActive=true;locked=false;choice=null;startTime=Date.now();
                $('soloRescuePanel').hidden=true;$('soloFeedback').className='feedback';$('soloFeedback').innerHTML='';$('soloValidate').disabled=true;$('soloValidate').textContent='Valider';
                $('soloQuestion').querySelectorAll('.choice').forEach(button=>{button.disabled=false;button.classList.remove('selected');});
                const range=$('soloRange');if(range){range.disabled=false;$('rangeValue').textContent='?';$('rangeValue').style.color='';choice=null;}
@@ -382,7 +398,7 @@
             loadModeTrack();
             $('journeyStars').textContent = points;
             $('journeyLevel').textContent = level;
-            $('journeyStreak').textContent = streak;
+            $('journeyStreak').textContent = currentGlobalStreak;
             $('levelList').innerHTML = '';
             $('soloMathModes').innerHTML = SOLO_MATH_MODES.map(mode =>
                `<button class="mode-card math-mode-card ${mode.id===soloMathMode?'selected':''}" type="button" data-solo-math-mode="${mode.id}">
@@ -485,7 +501,10 @@
                if(!label)label=`${exercise.mode} : ${exercise.a??''} ${exercise.op??''} ${exercise.b??''} = ?`;
                const result=resultText,key=`${label}|${result}`;
                if(seen.has(key))continue;
-               seen.add(key);pairs.push({id:pairs.length,label,result,matchValue:exercise.mode==='coordinates'?`coord-${exercise.x}-${exercise.y}`:String(exercise.ans),mode:exercise.mode,visual:''});
+               // La clé de correspondance suit la réponse réellement affichée,
+               // notamment après formatage des pourcentages et des coordonnées.
+               const matchValue=exercise.mode==='coordinates'?`coord-${exercise.x}-${exercise.y}`:resultText;
+               seen.add(key);pairs.push({id:pairs.length,label,result,matchValue,mode:exercise.mode,visual:''});
             }
             // Repli sûr si un mode produit trop peu d'énoncés distincts.
             while(pairs.length<count){const a=rand(2,12),b=rand(2,12),label=`${a} × ${b} = ?`,result=String(a*b),key=`${label}|${result}`;if(!seen.has(key)){seen.add(key);pairs.push({id:pairs.length,label,result,matchValue:result,mode:'quick',visual:''});}}
@@ -568,7 +587,11 @@
             const valueA=String(a.dataset.matchValue),valueC=String(c.dataset.matchValue);
             const numericA=Number(valueA),numericC=Number(valueC);
             const sameValue=Number.isFinite(numericA)&&Number.isFinite(numericC)?numericA===numericC:valueA===valueC;
-            const isCalcResult=a.dataset.kind!==c.dataset.kind&&sameValue;
+            // Les deux cartes d'un même duo partagent un identifiant immuable.
+            // On l'accepte directement (même si le résultat est formaté ou non numérique) ;
+            // entre deux duos différents, on autorise aussi les résultats mathématiques égaux.
+            const samePair=String(a.dataset.pair)===String(c.dataset.pair);
+            const isCalcResult=a.dataset.kind!==c.dataset.kind&&(samePair||sameValue);
             if(isCalcResult){
                const pairElapsed=Date.now()-(gogoLastPairAt||Date.now());recordTiming(gogoTimingStats,pairElapsed,0);recordTiming(rapidityStats,pairElapsed,0);gogoLastPairAt=Date.now();
                a.classList.add('matched');c.classList.add('matched');
@@ -714,12 +737,12 @@
                visual=`<div class="rounding-table"><div><b>Calcul</b><b>Résultat arrondi</b></div>${generated.rows.map((row,index)=>`<div><span>${row.expression}</span><span>${index===2?'?':row.rounded}</span></div>`).join('')}</div>`;
             } else if(generated.type==='factorTree'){
                prompt=`Complète l'arbre de facteurs de ${generated.total}.`;
-               visual=MathRushExercises.renderFactorTree(generated);
+               visual=`<div class="factor-tree-visual"><div class="factor-node">${generated.total}</div><div class="factor-tree-branch"></div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${generated.right}</div></div><div class="factor-tree-branch short"></div><div class="factor-tree-row compact"><div class="factor-node">${generated.lowerA}</div><div class="factor-node">${generated.lowerB}</div></div></div>`;
             } else if(generated.type==='ppcmChoice')prompt=`Sélectionne le plus petit commun multiple de ${generated.a} et ${generated.b}.`;
             else if(generated.type==='baseTenRounding'){prompt=`Arrondis ${generated.number} à la centaine près.`;const low=Math.floor(generated.number/100)*100,high=low+100,drawBlocks=value=>`<div class="base-ten-rounding-card"><b>${value}</b><span>${Array.from({length:Math.min(5,value/100)},()=>'<i class="base-ten-hundred"></i>').join('')}</span></div>`;visual=`<div class="base-ten-rounding-preview">${drawBlocks(low)}${drawBlocks(high)}</div>`;}
             else if(generated.type==='baseTen'){
                prompt=`Choisis la représentation qui contient ${generated.ans} blocs bleus.`;
-               visual=`<div class="count-target">${generated.ans}</div><div class="count-blocks-choices">${generated.opts.map(n=>`<span class="count-block-choice">${MathRushExercises.renderBaseTenBlocks(n)}</span>`).join('')}</div>`;
+               visual=`<div class="count-target">${generated.ans}</div>`;
             } else if(generated.type==='missingBox')prompt=generated.prompt;
             else if(generated.type==='pattern')prompt=`Quel nombre vient ensuite ? ${generated.seq.join(' · ')} · ?`;
             else if(generated.type==='model'){prompt='Observe le modèle et trouve la valeur manquante.';visual=`<div class="model-grid"><div>${generated.displayVals[0]}</div><div>${generated.displayVals[1]}</div><div>${generated.displayVals[2]}</div><div class="missing-cell">?</div></div>`;}
@@ -768,7 +791,7 @@
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
                : q.choiceBased ? `<div class="question"><small>${(MathRushConfig.MODES.find(mode=>mode.id===q.type)?.label)||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
-            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : q.type==='baseTen' ? `<button class="choice count-block-choice" data-i="${i}">${MathRushExercises.renderBaseTenBlocks(n)}</button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
+            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : q.type==='baseTen' ? `<button class="choice count-block-choice" data-i="${i}"><span class="count-blocks" aria-label="${Number(n)} blocs bleus">${Array.from({length:Number(n)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
             $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
             updateDuelScore();
          }
@@ -989,7 +1012,7 @@
                const player=mathPlayers[mathTurn];if(!player)return;
                $('mathTurn').innerHTML=`Manche ${mathRound}/10 · ${mathAdvanceRule==='turns'?'Au tour de ':''}${mathAdvanceRule==='turns'?`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`:'À vous de répondre'}`;
                $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
-               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>mathLocalQuestion.type==='baseTen'?`<button class="choice count-block-choice" type="button" data-answer="${index}">${MathRushExercises.renderBaseTenBlocks(option)}</button>`:`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
+               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>mathLocalQuestion.type==='baseTen'?`<button class="choice count-block-choice" type="button" data-answer="${index}"><span class="count-blocks" aria-label="${Number(option)} blocs bleus">${Array.from({length:Number(option)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>`:`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
                const canAnswer=mathAdvanceRule==='turns'?player.id===mathOnlineId:!mathAnswers[mathOnlineId];
                $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=!canAnswer||mathLocalLocked;button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});
                $('mathNextLocal').style.display='none';$('mathLocalScores').innerHTML=mathScores();
