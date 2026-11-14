@@ -29,11 +29,17 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
 }
 
 // Catalogue des modèles : chaque variante visuelle doit être générable et mathématiquement cohérente.
+const cfgArchitecture=context.window.MathRushConfig;
+assert.equal(cfgArchitecture.MATH_CATEGORIES.length,7,'les sept catégories mathématiques doivent être distinctes');
+assert.ok(cfgArchitecture.CONTENT_GENERATORS.length>=12,'catalogue des générateurs de contenu incomplet');
+assert.ok(cfgArchitecture.PRESENTATION_MODELS.length>=10,'catalogue des présentations incomplet');
+assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['percentage-of'].includes('blue-white-grid'),'compatibilité pourcentages/grille absente');
 const modelCatalog = context.window.MathRushConfig.EXERCISE_MODELS;
 assert.ok(Array.isArray(modelCatalog) && modelCatalog.length >= 10, 'catalogue de modèles absent ou incomplet');
 for (const model of modelCatalog) {
   assert.ok(model.id && model.label && Array.isArray(model.modes) && Array.isArray(model.playModes) && model.weight >= 0, `métadonnées incomplètes : ${model.id}`);
   assert.ok(model.difficultyMin <= model.difficultyMax && model.numberMin <= model.numberMax, `plage invalide : ${model.id}`);
+  assert.ok(Array.isArray(model.categoryIds) && Array.isArray(model.contentIds) && Array.isArray(model.presentationIds), `axes indépendants absents : ${model.id}`);
 }
 const specialModels = [
   ['cursor-number-line','quick','commonSlider'], ['factor-tree','quick','factorTree'],

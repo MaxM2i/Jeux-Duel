@@ -62,7 +62,7 @@
     const rank = Math.max(0, Math.min(6, difficultyRank));
     const profile = window.MathRushConfig.DIFFICULTY[rank];
     const catalog = window.MathRushConfig.EXERCISE_MODELS || [];
-    const eligible = catalog.filter(model => model.enabled !== false && model.modes.includes(mode) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0);
+    const eligible = catalog.filter(model => model.enabled !== false && (model.categoryIds || model.modes).includes(mode) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0);
     const totalWeight = eligible.reduce((sum, model) => sum + model.weight, 0);
     let selectedModel = null;
     if (totalWeight > 0) {
@@ -70,9 +70,20 @@
       for (const model of eligible) { roll -= model.weight; if (roll <= 0) { selectedModel = model; break; } }
     }
     const modelId = selectedModel?.id || null;
+    // Sélection des trois axes indépendants. Le type technique legacy reste le renderer
+    // compatible actuel ; les métadonnées indépendantes pilotent désormais le catalogue.
+    const categoryId = mode;
+    const compatibleContents = (selectedModel?.contentIds || []).filter(id => {
+      const item = (window.MathRushConfig.CONTENT_GENERATORS || []).find(x => x.id === id);
+      return item && item.categories.includes(categoryId);
+    });
+    const contentId = compatibleContents.length ? pick(compatibleContents, rand) : null;
+    const compatiblePresentations = (selectedModel?.presentationIds || []).filter(id =>
+      (window.MathRushConfig.PRESENTATION_COMPATIBILITY?.[contentId] || selectedModel?.presentationIds || []).includes(id));
+    const presentationId = compatiblePresentations.length ? pick(compatiblePresentations, rand) : (selectedModel?.presentationIds || [])[0] || null;
     const modelMin = Number.isFinite(Number(selectedModel?.numberMin)) ? Number(selectedModel.numberMin) : 1;
     const modelMax = Number.isFinite(Number(selectedModel?.numberMax)) ? Number(selectedModel.numberMax) : 10000;
-    const tag = exercise => ({ ...exercise, modelId });
+    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId });
 
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.
     if (selectedModel?.type === 'commonSlider') {
