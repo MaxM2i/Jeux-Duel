@@ -288,7 +288,7 @@
                q.innerHTML = `<div class="visual-prompt count-blocks-prompt"><small>Choisis la représentation qui contient ce nombre de blocs bleus</small><strong class="count-target">${exercise.ans}</strong></div><div class="choices visual-choices count-blocks-choices">${exercise.opts.map(n=>`<button class="choice count-block-choice" data-v="${n}">${blocks(n)}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             } else if (exercise.type === 'missingBox') {
-               q.innerHTML = `<div class="visual-prompt"><small>Multiplie pour compléter l'espace vide</small><div class="visual-equation">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.innerHTML = `<div class="visual-prompt"><small>Complète le calcul</small><div class="visual-equation">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
                q.querySelectorAll('button').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
             }
          }
@@ -302,7 +302,7 @@
             if(exercise.type==='roundingTable')return `Pour chaque ligne, calcule d'abord la différence, puis arrondis-la à la dizaine ou à la centaine demandée. Sur la dernière ligne, ${exercise.rows[2].expression} donne ${exercise.rows[2].difference} avant arrondi.`;
             if(exercise.type==='baseTenRounding')return `Compare ${Math.floor(exercise.number/100)*100} et ${Math.ceil(exercise.number/100)*100}, puis choisis la centaine la plus proche.`;
             if(exercise.type==='baseTen')return `Compte les petits blocs bleus dans chaque proposition. Choisis celle qui en contient exactement ${exercise.ans}.`;
-            if(exercise.type==='missingBox')return `Pour trouver le facteur manquant, divise le produit ${exercise.ans} par le facteur connu ${exercise.a}.`;
+            if(exercise.type==='missingBox')return exercise.hint||'Utilise le calcul inverse pour retrouver la valeur manquante.';
             if(exercise.type==='round')return `Pour arrondir ${exercise.number}, regarde le chiffre juste à droite du rang demandé. S’il vaut 5 ou plus, on arrondit vers le haut ; sinon vers le bas.`;
             if(exercise.type==='pattern')return `Compare les écarts entre les nombres de la suite. La même règle doit permettre de passer d’un terme au suivant.`;
             if(exercise.type==='model')return 'Observe de combien le nombre augmente à chaque étape, puis applique exactement le même écart à la dernière case.';
@@ -322,7 +322,7 @@
             if(exercise.type==='roundingTable')return `Calcule ${exercise.rows[2].expression}, puis arrondis le résultat à la ${exercise.unit===10?'dizaine':'centaine'} la plus proche.`;
             if(exercise.type==='baseTenRounding')return `Regarde les deux derniers chiffres de ${exercise.number} : s'ils sont inférieurs à 50, arrondis vers le bas ; sinon vers le haut.`;
             if(exercise.type==='baseTen')return `Le nombre cible est ${exercise.ans}. Il faut compter les blocs bleus un par un et comparer les deux propositions.`;
-            if(exercise.type==='missingBox')return `Cherche quel nombre multiplié par ${exercise.a} donne ${exercise.ans}.`;
+            if(exercise.type==='missingBox')return exercise.hint||'Repère l’opération et utilise le calcul inverse pour retrouver la valeur manquante.';
             if(exercise.type==='round')return `Le chiffre des unités est ${String(exercise.number).slice(-1)}. Il te dit s’il faut arrondir vers le haut ou vers le bas.`;
             if(exercise.type==='pattern')return `Regarde l’écart entre ${exercise.seq[0]} et ${exercise.seq[1]} : retrouve cet écart dans la suite.`;
             if(exercise.type==='model')return `L’écart entre les deux premiers nombres est ${exercise.vals[1]-exercise.vals[0]}. Ajoute le même écart au dernier nombre affiché.`;

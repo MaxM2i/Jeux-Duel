@@ -31,8 +31,9 @@
   const MATH_CATEGORIES = [
     {id:'quick',label:'Calculs rapides'}, {id:'complex',label:'Calculs complexes'},
     {id:'rounding',label:'Arrondis'}, {id:'coordinates',label:'Coordonnées'},
-    {id:'percentages',label:'Pourcentages'}, {id:'common-multiples',label:'PPCM / PGCD'},
-    {id:'multiplication-division',label:'Multiplication et division'}
+    {id:'percentages',label:'Pourcentages'}, {id:'common-multiples',label:'Plus petit / plus grand multiple ou diviseur commun (PPCM / PGCD)'},
+    {id:'multiplication-division',label:'Multiplication et division'},
+    {id:'mixed',label:'Tout mélangé',composite:true,includes:['quick','complex','rounding','coordinates','percentages','common-multiples','multiplication-division']}
   ];
   const CONTENT_GENERATORS = [
     {id:'basic-operation',label:'Opération simple',categories:['quick','multiplication-division']},
@@ -89,7 +90,7 @@
     { id:'ppcm-choice', label:'PPCM — choix multiple', type:'ppcmChoice', modes:['common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:4, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:30, description:'Trouver le plus petit commun multiple.' , categoryIds:["common-multiples"], contentIds:["common-multiple"], presentationIds:["choice"]},
     { id:'base-ten-blocks', label:'Associer un nombre à ses blocs bleus', type:'baseTen', modes:['quick','rounding','mixed'], playModes:['solo','duel','multiplayer'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:30, description:'Un nombre cible et deux propositions visuelles : choisir celle qui contient exactement autant de blocs bleus.' , categoryIds:["quick", "rounding", "percentages"], contentIds:["basic-operation", "ratio-proportion"], presentationIds:["blue-blocks", "blue-white-grid"]},
     { id:'rounding-blocks', label:'Arrondi à la centaine avec blocs', type:'baseTenRounding', modes:['rounding','quick'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:100, numberMax:999, description:'Arrondir un nombre à la centaine avec une représentation en blocs.' , categoryIds:["rounding"], contentIds:["rounded-number"], presentationIds:["blue-blocks"]},
-    { id:'missing-boxes', label:'Cases à compléter', type:'missingBox', modes:['quick','multiplication-division','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:10000, description:'Retrouver un facteur ou un terme manquant.' , categoryIds:["quick", "complex", "rounding", "percentages", "multiplication-division"], contentIds:["missing-elements"], presentationIds:["boxes", "missing-boxes"]},
+    { id:'missing-boxes', label:'Cases à compléter', type:'missingBox', modes:['quick','complex','rounding','percentages','multiplication-division','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:10000, description:'Retrouver un nombre ou le résultat manquant dans une opération, un calcul complexe, un arrondi ou un pourcentage.' , categoryIds:["quick", "complex", "rounding", "percentages", "common-multiples", "multiplication-division"], contentIds:["missing-elements"], presentationIds:["boxes", "missing-boxes"]},
     { id:'coordinates-grid', label:'Repère de coordonnées', type:'coordinates', modes:['coordinates','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:20, description:'Lire les coordonnées d’un point.' , categoryIds:["coordinates"], contentIds:["point-read", "point-place", "segment-distance"], presentationIds:["coordinate-grid"]},
     { id:'percent-model', label:'Modèle de pourcentage', type:'percent', modes:['percentages','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:10000, description:'Calculer une fraction d’une quantité.' , categoryIds:["percentages"], contentIds:["percentage-of", "ratio-proportion"], presentationIds:["choice", "table", "blue-blocks", "blue-white-grid", "symbols"]},
     { id:'common-divisors', label:'PGCD / diviseurs communs', type:'pgcdChoice', modes:['common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:30, description:'Trouver le plus grand diviseur commun.' , categoryIds:["common-multiples"], contentIds:["common-divisor"], presentationIds:["choice", "factor-tree"]},
@@ -107,12 +108,12 @@
   const MODES = [
     { id: 'quick', label: 'Calculs rapides', mark: '+', description: 'Additions, soustractions et multiplications', family: 'calcul' },
     { id: 'complex', label: 'Calculs complexes', mark: '×+', description: 'Opérations en plusieurs étapes', family: 'calcul' },
-    { id: 'rounding', label: 'Calculs arrondis', mark: '≈', description: 'Dizaines et centaines', family: 'nombres' },
-    { id: 'coordinates', label: 'Placer les coordonnées', mark: 'x,y', description: 'Lire un point sur un repère', family: 'géométrie' },
+    { id: 'rounding', label: 'Arrondis', mark: '≈', description: 'Arrondir un nombre ou un calcul à la dizaine ou à la centaine près', family: 'nombres' },
+    { id: 'coordinates', label: 'Coordonnées', mark: 'x,y', description: 'Lire ou placer des points, construire des segments et calculer leurs distances', family: 'géométrie' },
     { id: 'percentages', label: 'Pourcentages', mark: '%', description: 'Calculer une part', family: 'proportionnalité' },
-    { id: 'common-multiples', label: 'PPCM / PGCD', mark: '÷', description: 'Multiples et diviseurs communs', family: 'arithmétique' },
-    { id: 'multiplication-division', label: 'Multiplication / division', mark: '×÷', description: 'Maîtriser les produits et les partages', family: 'calcul' },
-    { id: 'mixed', label: 'Tout mélangé', mark: '?', description: 'Un exercice différent à chaque question', family: 'mixte' }
+    { id: 'common-multiples', label: 'PPCM / PGCD', mark: '÷', description: 'Plus petit commun multiple et plus grand commun diviseur', family: 'arithmétique' },
+    { id: 'multiplication-division', label: 'Multiplication et division', mark: '×÷', description: 'Produits, divisions exactes et facteurs manquants', family: 'calcul' },
+    { id: 'mixed', label: 'Tout mélangé', mark: '?', description: 'Un tirage parmi les sept catégories précédentes', family: 'mixte' }
   ];
 
   // Un profil par palier. Les bornes sont volontairement lisibles et modifiables.

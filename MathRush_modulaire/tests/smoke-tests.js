@@ -30,7 +30,9 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
 
 // Catalogue des modèles : chaque variante visuelle doit être générable et mathématiquement cohérente.
 const cfgArchitecture=context.window.MathRushConfig;
-assert.equal(cfgArchitecture.MATH_CATEGORIES.length,7,'les sept catégories mathématiques doivent être distinctes');
+assert.equal(cfgArchitecture.MATH_CATEGORIES.length,8,'les huit catégories doivent être listées, tout mélangé inclus');
+assert.ok(cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed')?.composite,'Tout mélangé doit être identifié comme catégorie composite');
+assert.deepEqual([...cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed').includes].sort(),['common-multiples','complex','coordinates','multiplication-division','percentages','quick','rounding'].sort(),'Tout mélangé doit reprendre les sept catégories');
 assert.ok(cfgArchitecture.CONTENT_GENERATORS.length>=12,'catalogue des générateurs de contenu incomplet');
 assert.ok(cfgArchitecture.PRESENTATION_MODELS.length>=10,'catalogue des présentations incomplet');
 assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['percentage-of'].includes('blue-white-grid'),'compatibilité pourcentages/grille absente');
@@ -60,8 +62,23 @@ for (const [id,mode,type] of specialModels) {
   if (type === 'baseTen') { for(let rank=0;rank<=6;rank++){const sample=context.window.MathRushExercises.createSoloExercise('rounding',rank,rand,shuffle,'solo');assert.equal(sample.type,'baseTen');assert.equal(sample.opts.length,2);assert.ok(sample.opts.includes(sample.ans));} }
   if (type === 'baseTenRounding') assert.equal(ex.ans,Math.round(ex.number/100)*100,'arrondi visuel en blocs incorrect');
   if (type === 'commonSlider') assert.equal(ex.ans,Number(ex.expression.split(' × ').reduce((a,b)=>Number(a)*Number(b),1)),'expression du curseur incorrecte');
-  if (type === 'missingBox') { const target=Number(ex.prompt.match(/= (\d+)/)[1]); assert.equal(target,ex.a*ex.ans,'produit affiché incohérent'); assert.equal(ex.ans,ex.b,'facteur manquant incorrect'); }
+  if (type === 'missingBox') { assert.ok(ex.prompt.includes('□'),'case manquante absente'); assert.ok(Number.isFinite(ex.ans),'réponse manquante invalide'); assert.ok(ex.opts.includes(ex.ans),'la bonne réponse doit être proposée'); }
   modelCatalog.forEach((model,index) => { model.weight = weights[index]; });
+}
+
+// Les cases à compléter doivent produire une question adaptée à chaque catégorie compatible.
+{
+  const weights=modelCatalog.map(model=>model.weight);
+  const missing=modelCatalog.find(model=>model.id==='missing-boxes');
+  modelCatalog.forEach(model=>{model.weight=model.id==='missing-boxes'?1:0;});
+  for(const category of ['quick','complex','rounding','percentages','common-multiples','multiplication-division']){
+    const ex=context.window.MathRushExercises.createSoloExercise(category,3,rand,shuffle,'solo');
+    assert.equal(ex.type,'missingBox',`case à compléter absente pour ${category}`);
+    assert.ok(ex.prompt.includes('□'),`élément manquant absent pour ${category}`);
+    assert.ok(Number.isFinite(ex.ans),`réponse non numérique pour ${category}`);
+    assert.ok(ex.opts.includes(ex.ans),`bonne réponse absente des choix pour ${category}`);
+  }
+  modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
 }
 
 const cursorModel=modelCatalog.find(model=>model.id==='cursor-number-line');
@@ -149,12 +166,12 @@ assert.ok(appSource.includes('timingSummaryHtml(localDuelMode?localDuelSessionSt
 assert.ok(appSource.includes('Bonus grâce au temps restant'), 'bonus du temps restant Duo à gogo absent');
 assert.ok(appSource.includes('mathPlayerTiming[player.id]'), 'statistiques de rapidité multijoueur absentes');
 
-// Régressions : les cases manquantes attendent le facteur, pas le produit ; le curseur du niveau 1 reste simple.
+// Régressions : une case à compléter propose toujours la bonne valeur ; le curseur du niveau 1 reste simple.
 for(let i=0;i<300;i++){
   const missing=context.window.MathRushExercises.createSoloExercise('quick',0,rand,shuffle,'solo');
   if(missing.type==='missingBox'){
-    assert.equal(missing.ans,missing.b,'la case vide doit être le facteur manquant');
-    assert.equal(missing.a*missing.ans,Number(missing.prompt.match(/= (\d+)$/)?.[1]),'le produit affiché doit correspondre au facteur manquant');
+    assert.ok(missing.prompt.includes('□'),'la case vide doit être visible');
+    assert.ok(missing.opts.includes(missing.ans),'la valeur manquante doit être proposée');
   }
   if(missing.type==='commonSlider'){
     assert.ok(missing.ans>=0&&missing.ans<=20,'le curseur du premier palier doit rester dans une petite plage positive');

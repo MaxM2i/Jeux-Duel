@@ -136,11 +136,49 @@
       return tag({type:'baseTenRounding',mode,number,ans,opts:shuffle(unique([ans,Math.max(0,ans-100),ans+100]))});
     }
     if (selectedModel?.type === 'missingBox') {
-      const early = rank===0;
-      let a=early?pick([2,5,10],rand):pick(profile.tables,rand),b=rand(2,early?5:Math.max(3,profile.maxFactor)),product=a*b;
-      for(let attempt=0;attempt<80&&(product<modelMin||product>modelMax);attempt++){a=early?pick([2,5,10],rand):pick(profile.tables,rand);b=rand(2,early?5:Math.max(3,profile.maxFactor));product=a*b;}
-      // La réponse attendue est le facteur caché, jamais le produit affiché à droite.
-      return tag({ type:'missingBox', mode, a, b, ans:b, prompt:`${a} × □ = ${product}`, opts:shuffle(unique([b,b+1,Math.max(1,b-1),b+2])) });
+      // Même composant « case à compléter », mais contenu adapté à la catégorie.
+      // Une seule valeur numérique est masquée par exercice ; le moteur historique
+      // de validation du jeu attend encore une réponse unique.
+      let prompt, ans, hint;
+      if (mode === 'complex') {
+        const a=rand(2,rank<3?6:12), b=rand(2,rank<3?5:10), c=rand(1,rank<3?8:20);
+        const total=a*b+c;
+        if (rand(0,1)===0) { prompt=`${a} × □ + ${c} = ${total}`; ans=b; hint=`Trouve d'abord le nombre qui, multiplié par ${a}, donne ${total-c}.`; }
+        else { prompt=`${a} × ${b} + ${c} = □`; ans=total; hint=`Respecte les priorités : commence par ${a} × ${b}, puis ajoute ${c}.`; }
+      } else if (mode === 'rounding') {
+        const unit=pick(profile.roundingUnits,rand), number=rand(10,99)*unit+rand(1,Math.max(1,Math.floor(unit/2)));
+        ans=Math.round(number/unit)*unit; prompt=`${number} arrondi à la ${unit===10?'dizaine':unit===100?'centaine':'millier'} = □`;
+        hint=`Repère le chiffre juste après le rang des ${unit===10?'dizaines':unit===100?'centaines':'milliers'}.`;
+      } else if (mode === 'percentages') {
+        const pct=pick([10,20,25,50],rand), base=100, value=base*pct/100;
+        if(rand(0,1)===0){prompt=`${pct}% de ${base} = □`;ans=value;hint=`${pct}% signifie ${pct} sur 100.`;}
+        else {prompt=`□% de ${base} = ${value}`;ans=pct;hint=`Sur une base de 100, le pourcentage correspond directement à la part.`;}
+      } else if (mode === 'common-multiples') {
+        const a=rand(2,rank<3?9:15), b=rand(2,rank<3?9:15), askPpcm=rand(0,1)===0;
+        ans=askPpcm?lcm(a,b):gcd(a,b);
+        prompt=`${askPpcm?'PPCM':'PGCD'} de ${a} et ${b} = □`;
+        hint=askPpcm?'Cherche le plus petit multiple présent dans les deux listes.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.';
+      } else if (mode === 'multiplication-division') {
+        const a=pick(profile.tables,rand), b=rand(2,Math.max(3,profile.maxFactor)), product=a*b;
+        if(rand(0,1)===0){prompt=`${a} × □ = ${product}`;ans=b;}
+        else {prompt=`${product} ÷ ${a} = □`;ans=b;}
+        hint=`Utilise l'opération inverse pour retrouver le nombre manquant.`;
+      } else {
+        const op=pick(['+','−','×'],rand);
+        let a,b,result;
+        if(op==='+'){a=rand(2,Math.min(30,profile.maxAdd));b=rand(2,Math.min(20,profile.maxAdd));result=a+b;}
+        else if(op==='−'){a=rand(4,Math.min(50,profile.maxAdd));b=rand(1,a-1);result=a-b;}
+        else {a=pick(profile.tables,rand);b=rand(2,Math.max(3,profile.maxFactor));result=a*b;}
+        const target=rand(0,1);
+        if(target===0){prompt=`${a} ${op} ${b} = □`;ans=result;}
+        else if(op==='+'){prompt=`${a} + □ = ${result}`;ans=b;}
+        else if(op==='−'){prompt=`${a} − □ = ${result}`;ans=b;}
+        else {prompt=`□ × ${b} = ${result}`;ans=a;}
+        hint=`Repère l'opération et utilise le calcul inverse si un nombre manque.`;
+      }
+      const opts=shuffle(unique([ans,ans+1,Math.max(0,ans-1),ans+2]).filter(Number.isFinite));
+      while(opts.length<4)opts.push(ans+opts.length+2);
+      return tag({type:'missingBox',mode,ans,prompt,opts,hint,missingKind:'number-or-result'});
     }
     if (selectedModel?.type === 'model' || selectedModel?.type === 'factors' || selectedModel?.type === 'equation') {
       return tag({ ...makeVisualExercise(selectedModel.type,rand,shuffle,rank), mode });
