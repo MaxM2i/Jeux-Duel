@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+   <meta name="theme-color" content="#21134b">
+   <title>Drôle de Quizz</title>
+   <link rel="stylesheet" href="assets/css/player-profile.css">
+   <link rel="stylesheet" href="assets/css/style.css">
+   <style>
+      :root[data-theme="dark"] {
+         --ink: #f4efff;
+         --muted: #b9adcf;
+         --line: #443957;
+         color-scheme: dark
+      }
+
+      :root[data-theme="dark"] .logo {
+         color: #ffffff
+      }
+
+      :root[data-theme="dark"] body {
+         background: #171326;
+         color: var(--ink)
+      }
+
+      :root[data-theme="dark"] .panel,
+      :root[data-theme="dark"] .menu-card,
+      :root[data-theme="dark"] .topic-card,
+      :root[data-theme="dark"] .field {
+         background: #29213b;
+         color: var(--ink);
+         border-color: #493d5d
+      }
+
+      .choice.voice-locked {
+         opacity: .35;
+         filter: grayscale(1);
+         pointer-events: none
+      }
+
+      .choice.voice-unlocked {
+         animation: quiz-pop .24s ease-out
+      }
+
+      @keyframes quiz-pop {
+         from {
+            transform: scale(.96);
+            filter: brightness(1.25)
+         }
+
+         to {
+            transform: scale(1);
+            filter: none
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="app">
+      <header class="topbar">
+         <div class="logo">Drôle de <span>Quizz</span> 🎉</div><button class="btn soft" id="openSettings"
+            type="button">⚙️</button>
+      </header>
+      <section class="screen active" id="home">
+         <div class="hero">
+            <div class="kicker">Culture pop · humour · souvenirs</div>
+            <h1>À toi de jouer !</h1>
+            <p>En solo, en duel ou en groupe : teste ta culture et défie tes proches.</p>
+         </div>
+         <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
+                  solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card"
+               id="challengeBtn"><span class="emoji">⚔️</span><strong>Défi à deux</strong><small>Affrontez-vous sur le
+                  même appareil.</small></button><button class="menu-card" id="multiBtn"><span
+                  class="emoji">🌐</span><strong>Multijoueur en ligne</strong><small>Crée un salon et joue avec jusqu’à
+                  7 amis.</small></button><button class="menu-card" id="goProfile"><span class="emoji"
+                  id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg"
+                     alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records
+                  solo.</small></button></div>
+      </section>
+      <section class="screen" id="settingsScreen">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Paramètres</span>
+         </div>
+         <div class="panel">
+            <h2>Apparence et règles</h2>
+            <label class="small" for="themeMode">Thème</label><select class="field" id="themeMode">
+               <option value="system">Automatique</option>
+               <option value="light">Clair</option>
+               <option value="dark">Sombre</option>
+            </select>
+            <label class="small" for="defaultQuestionCount">Questions par partie</label><input class="field"
+               id="defaultQuestionCount" type="number" min="5" max="50">
+            <label class="small" for="defaultTimeLimit">Temps de réponse en secondes (0 = illimité)</label><input
+               class="field" id="defaultTimeLimit" type="number" min="0" max="180">
+            <label class="small" for="defaultPoints">Points par bonne réponse</label><input class="field"
+               id="defaultPoints" type="number" min="1" max="1000">
+            <label class="small"><input id="voiceEnabled" type="checkbox"> Lecture vocale des
+               questions</label><br><label class="small"><input id="topSignalEnabled" type="checkbox"> Annoncer « Top »
+               / « Top chrono »</label>
+            <button class="btn full" id="saveSettings">Enregistrer</button>
+            <p class="small" id="settingsStatus"></p>
+         </div>
+         <div class="panel">
+            <h2>Questions générées par IA</h2><textarea class="field" id="aiPrompt" rows="3" maxlength="1200"
+               placeholder="Thème, ambiance, mots-clés…"></textarea><label class="small" for="aiQuestionCount">Nombre de
+               questions</label><input class="field" id="aiQuestionCount" class="field" type="number" min="5" max="30"
+               value="15"><button class="btn full" id="generateAiQuestions">Générer les questions</button>
+            <p class="small" id="aiStatus"></p>
+         </div>
+         <div class="panel">
+            <h2>Ma voix</h2>
+            <p class="small">Enregistre uniquement ta propre voix ou une voix dont tu as l'autorisation. Prévois 30 à 60
+               secondes d'échantillon.</p><button class="btn soft full" id="recordVoice">● Enregistrer ma
+               voix</button><button class="btn full" id="stopVoice" disabled>Terminer et créer ma voix</button>
+            <p class="small" id="voiceStatus"></p>
+         </div>
+         <div class="panel">
+            <h2>Compte joueur</h2><label class="small" for="accountEmail">E-mail</label><input class="field"
+               id="accountEmail" type="email" autocomplete="email"><label class="small" for="accountPassword">Mot de
+               passe</label><input class="field" id="accountPassword" type="password"
+               autocomplete="current-password"><button class="btn full" id="signIn">Se connecter</button><button
+               class="btn soft full" id="signUp">Créer mon compte</button><button class="btn soft full" id="signOut"
+               hidden>Se déconnecter</button>
+            <p class="small" id="accountStatus"></p>
+         </div>
+      </section>
+      <section class="screen" id="profileScreen">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Espace
+               joueur</span></div>
+         <div class="panel profile-hero">
+            <div class="profile-avatar-large" id="profileAvatarPreview"><img
+                  src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg" alt="Avatar"></div>
+            <div>
+               <div class="kicker">MON PROFIL DRÔLE DE QUIZZ</div>
+               <h2 id="profileDisplayName">Super joueur</h2>
+               <p class="small">Personnalise ton avatar et retrouve tes records.</p>
+            </div>
+         </div>
+         <div class="panel">
+            <h2>Choisis ton avatar</h2>
+            <button class="btn soft full" id="chooseAvatar" type="button">Ajouter mon avatar perso</button>
+            <input id="avatarFile" type="file" accept="image/*" hidden>
+            <p class="small avatar-upload-status" id="avatarStatus" role="status"></p>
+            <div class="avatar-grid" id="avatarGrid"></div>
+            <label class="small" for="profileName">Ton pseudo</label>
+            <input class="field" id="profileName" maxlength="18" placeholder="Ex. Champion du quiz">
+            <button class="btn full" id="saveProfile" type="button">Enregistrer mon profil</button>
+         </div>
+         <div class="panel">
+            <h2>Mes records</h2>
+            <div class="profile-stats">
+               <div><b id="quizProfileScore">0</b><small>Meilleur score solo</small></div>
+               <div><b id="quizProfileStreak">0</b><small>Meilleure série</small></div>
+            </div>
+         </div>
+      </section>
+      <section class="screen" id="soloSetup">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Parcours
+               solo</span></div>
+         <div class="hero solo-hero">
+            <div class="kicker">À ton rythme</div>
+            <h1>Choisis ton défi</h1>
+            <p>Choisis librement parmi les 5 thèmes, ou mélange tout. Les questions « Sel ou poivre » viendront
+               régulièrement pimenter ta partie !</p>
+         </div>
+         <div id="soloThemeChoices" class="topic-grid"></div>
+         <div class="panel">
+            <label class="small" for="soloQuestionCount">Nombre de questions</label><select class="field"
+               id="soloQuestionCount">
+               <option>10</option>
+               <option selected>15</option>
+               <option>20</option>
+               <option>25</option>
+               <option>30</option>
+            </select>
+            <div class="small">Thématique choisie : <b id="soloThemeChosen">Aucune</b></div><button class="btn full"
+               id="startSoloGame" disabled>Commencer mon quiz</button>
+         </div>
+      </section>
+      <section class="screen" id="setup">
+         <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Préparer la
+               partie</span></div>
+         <div class="panel">
+            <div class="kicker" id="setupModeLabel">Multijoueur en ligne</div>
+            <div id="challengeModeWrap" style="display:none"><label class="small" for="challengePlayMode">Mode de
+                  jeu</label><select class="field" id="challengePlayMode">
+                  <option value="online">En ligne</option>
+                  <option value="local">Même appareil</option>
+               </select></div>
+            <h2>Choisis une thématique</h2>
+            <p class="small">Choisissez parmi les six thèmes pour cette partie.</p>
+            <div id="themeChoices" class="topic-grid"></div>
+            <div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div>
+         </div>
+         <div class="panel">
+            <h2>Quiz sélectionné</h2>
+            <input type="hidden" id="quizType" value="all">
+            <div class="panel quiz-selected"><strong>🤪 Décalé qui fait réfléchir</strong>
+               <p class="small">Des questions surprenantes, amusantes et parfois étonnantes pour tester ta culture
+                  générale.</p>
+            </div>
+            <div id="playerCountWrap"><label class="small">Nombre de joueurs</label><select class="field"
+                  id="playerCount">
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                  <option>6</option>
+                  <option>7</option>
+                  <option>8</option>
+               </select></div>
+            <div id="teamConfigWrap"><label class="small">Organisation</label><select class="field" id="teamMode">
+                  <option value="free">Chacun pour soi</option>
+                  <option value="teams">En équipes</option>
+               </select></div>
+            <label class="small" for="advanceRule">Fin des réponses</label><select class="field" id="advanceRule">
+               <option value="firstCorrect">Dès la première bonne réponse</option>
+               <option value="allAnswered">Après la réponse de tous</option>
+            </select>
+            <div id="teamScoreWrap" style="display:none"><label class="small" for="teamScoreRule">Points
+                  d’équipe</label><select class="field" id="teamScoreRule">
+                  <option value="firstCorrect">1 point pour la première bonne réponse</option>
+                  <option value="eachCorrect">1 point par coéquipier qui répond juste</option>
+               </select>
+               <p class="small" id="teamRuleNote">Chaque coéquipier doit répondre avant le changement de question.</p>
+            </div>
+            <label class="small">Nombre de questions</label><select class="field" id="questionCount">
+               <option>10</option>
+               <option>15</option>
+               <option selected>20</option>
+               <option>25</option>
+               <option>30</option>
+            </select>
+            <div id="names"></div>
+            <div id="onlineNameWrap" style="display:none"><label class="small" for="onlinePlayerName">Ton
+                  pseudo</label><input class="field" id="onlinePlayerName" maxlength="18"
+                  placeholder="Choisis ton pseudo"><label class="small">Avatar du profil</label>
+               <div class="avatar-row" id="onlineAvatarRow"></div>
+            </div>
+            <div id="teamNameWrap" style="display:none"><label class="small">Nom des équipes</label><input class="field"
+                  id="teamA" value="Les Ketchup"><input class="field" id="teamB" value="Les Moutardes"></div>
+            <button class="btn full" id="startLocal">Lancer le défi</button>
+            <button class="btn soft full" id="createOnline">Créer un salon en ligne</button>
+            <div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field"
+                  id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full"
+                  id="joinOnline">Rejoindre un salon</button></div>
+            <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
+            <div id="onlineRoster" class="status" style="display:none"></div>
+            <button class="btn full" id="hostStart" style="display:none">Démarrer le quiz</button>
+         </div>
+      </section>
+      <section class="screen" id="soloGame">
+         <div class="backline"><button class="btn soft" id="soloQuit">← Quitter</button><span class="kicker"
+               id="soloRoundLabel">Question 1 / 15</span></div>
+         <div class="solo-progress">
+            <div id="soloProgressFill"></div>
+         </div>
+         <div class="solo-head"><span class="solo-chip" id="soloThemeLabel">Thématique</span><span class="solo-chip">🧠
+               Mode solo</span></div>
+         <div class="solo-question-card">
+            <div class="solo-count" id="soloCount">01</div>
+            <div class="solo-question" id="soloQuestion"></div>
+            <div class="solo-answers" id="soloAnswers"></div>
+            <div id="soloFeedback"></div><button class="btn full" id="soloNext" style="display:none">Continuer</button>
+         </div>
+         <div class="solo-bottom"><span>⭐ <b id="soloScore">0</b> points</span><span>🔥 Série : <b
+                  id="soloStreak">0</b></span></div>
+      </section>
+      <section class="screen" id="game">
+         <div class="backline"><button class="btn soft" id="quit">Quitter</button><span class="kicker"
+               id="roundLabel"></span></div>
+         <div class="panel">
+            <div class="score" id="scores"></div>
+            <div class="kicker" id="turnLabel"></div>
+            <div class="question" id="question"></div>
+            <div class="choice-grid" id="answers"></div>
+            <div id="feedback"></div><button class="btn full" id="next" style="display:none">Question suivante</button>
+         </div>
+      </section>
+   </div>
+
+
+
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+   <script src="assets/js/config.js"></script>
+   <script src="assets/js/game-config.js"></script>
+   <script src="assets/js/player-profile.js"></script>
+   <script src="assets/js/settings.js"></script>
+   <script src="assets/js/ai-questions.js"></script>
+   <script src="assets/js/voice.js"></script>
+   <script src="assets/js/auth.js"></script>
+   <script src="assets/js/game.js"></script>
+</body>
+
+</html>
