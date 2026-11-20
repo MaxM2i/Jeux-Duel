@@ -114,6 +114,21 @@
          });
       }
 
+      // Le choix de l'avatar est replié par défaut ; le joueur peut l'afficher à la demande.
+      if (elements.avatarToggle && elements.avatarChoicesPanel) {
+         elements.avatarChoicesPanel.hidden = true;
+         elements.avatarToggle.setAttribute('aria-expanded', 'false');
+         elements.avatarToggle.textContent = 'Afficher le choix de l’avatar';
+         elements.avatarToggle.onclick = () => {
+            const willShow = elements.avatarChoicesPanel.hidden;
+            elements.avatarChoicesPanel.hidden = !willShow;
+            elements.avatarToggle.setAttribute('aria-expanded', String(willShow));
+            elements.avatarToggle.textContent = willShow
+               ? 'Masquer le choix de l’avatar'
+               : 'Afficher le choix de l’avatar';
+         };
+      }
+
       elements.uploadButton.onclick = () => elements.fileInput.click();
       elements.fileInput.onchange = async () => {
          const [file] = elements.fileInput.files || [];

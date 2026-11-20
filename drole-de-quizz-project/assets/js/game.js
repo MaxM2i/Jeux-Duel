@@ -3,9 +3,17 @@
       (() => {
          // ===== Utilitaires DOM et état général du jeu =====
          const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
-         const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen']; function show(id) { screens.forEach(s => $(s).classList.toggle('active', s === id)); window.scrollTo(0, 0) }
-         document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
-         const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile')});
+         const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen', 'settingsScreen'];
+         function show(id) {
+            screens.forEach(s => $(s).classList.toggle('active', s === id));
+            window.scrollTo(0, 0);
+         }
+         // Avant de quitter les paramètres, demander confirmation si des changements sont en attente.
+         document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => {
+            if (window.QuizSettings && !window.QuizSettings.beforeHome()) return;
+            show('home');
+         });
+         const playerProfile=window.PlayerProfile.mount({homeAvatar:$('homeAvatar'),preview:$('profileAvatarPreview'),displayName:$('profileDisplayName'),nameInput:$('profileName'),grid:$('avatarGrid'),uploadButton:$('chooseAvatar'),fileInput:$('avatarFile'),uploadStatus:$('avatarStatus'),saveButton:$('saveProfile'),avatarToggle:$('toggleAvatarChoices'),avatarChoicesPanel:$('avatarChoicesPanel')});
             /* Identité multijoueur partagée avec l’espace profil. */
             const AVATARS = window.PlayerProfile.getAvatarOptions().slice(0, 10);
          const multiNameKey = 'drole_quizz_multi_name';

@@ -102,7 +102,7 @@
             <button class="btn full" id="saveSettings">Enregistrer</button>
             <p class="small" id="settingsStatus"></p>
          </div>
-         <div class="panel">
+         <div class="panel" hidden>
             <h2>Questions générées par IA</h2><textarea class="field" id="aiPrompt" rows="3" maxlength="1200"
                placeholder="Thème, ambiance, mots-clés…"></textarea><label class="small" for="aiQuestionCount">Nombre de
                questions</label><input class="field" id="aiQuestionCount" class="field" type="number" min="5" max="30"
@@ -140,10 +140,14 @@
          </div>
          <div class="panel">
             <h2>Choisis ton avatar</h2>
-            <button class="btn soft full" id="chooseAvatar" type="button">Ajouter mon avatar perso</button>
-            <input id="avatarFile" type="file" accept="image/*" hidden>
-            <p class="small avatar-upload-status" id="avatarStatus" role="status"></p>
-            <div class="avatar-grid" id="avatarGrid"></div>
+            <button class="btn soft full" id="toggleAvatarChoices" type="button"
+               aria-controls="avatarChoicesPanel" aria-expanded="false">Afficher le choix de l’avatar</button>
+            <div id="avatarChoicesPanel" hidden>
+               <button class="btn soft full" id="chooseAvatar" type="button">Ajouter mon avatar perso</button>
+               <input id="avatarFile" type="file" accept="image/*" hidden>
+               <p class="small avatar-upload-status" id="avatarStatus" role="status"></p>
+               <div class="avatar-grid" id="avatarGrid"></div>
+            </div>
             <label class="small" for="profileName">Ton pseudo</label>
             <input class="field" id="profileName" maxlength="18" placeholder="Ex. Champion du quiz">
             <button class="btn full" id="saveProfile" type="button">Enregistrer mon profil</button>
@@ -191,7 +195,7 @@
                </select></div>
             <h2>Choisis une thématique</h2>
             <p class="small">Choisissez parmi les six thèmes pour cette partie.</p>
-            <div id="themeChoices" class="topic-grid"></div>
+            <div id="themeChoices" class="topic-grid"></div><br>
             <div class="small">Thématique choisie : <b id="themeChosen">Aucune</b></div>
          </div>
          <div class="panel">
