@@ -137,7 +137,9 @@
 
       .btn.soft {
          background: #fff;
-         color: #5035a1
+         color: #5035a1;
+         border: 1px solid var(--purple);
+         box-shadow: 0 5px 0 var(--ombre);
       }
 
       .btn.full {
@@ -541,3 +543,29 @@
       #createOnline:disabled {
          opacity: .42
       }
+
+/* Podium de fin de partie : le vainqueur est immédiatement identifiable. */
+.quiz-podium-wrap{position:relative;z-index:2;margin:18px auto 8px;max-width:680px;text-align:center}
+.quiz-winner-banner{display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 18px;margin-bottom:12px;border-radius:18px;background:linear-gradient(135deg,#fff2b8,#ffe08a);color:#573d00;box-shadow:0 8px 24px #0002}
+.quiz-winner-banner strong{font-size:1.12rem;letter-spacing:.06em}
+.winner-crown{font-size:2rem;animation:winner-bounce 1.2s ease-in-out infinite}
+.quiz-podium{display:flex;align-items:flex-end;justify-content:center;gap:9px;min-height:190px;padding:10px 4px 0}
+.podium-place{position:relative;display:flex;flex:1;max-width:175px;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 0;border-radius:14px 14px 0 0;background:var(--card, #fff);box-shadow:0 5px 18px #0002;overflow:hidden}
+.podium-place.place-1{min-height:180px;background:linear-gradient(180deg,#fff3c4,#f5ce58)}
+.podium-place.place-2{min-height:145px;background:linear-gradient(180deg,#f4f6f8,#cbd3dc)}
+.podium-place.place-3{min-height:125px;background:linear-gradient(180deg,#f8e2cf,#dba77e)}
+.podium-medal{font-size:1.8rem}
+.podium-avatar{font-size:1.65rem;max-width:100%;overflow:hidden}
+.podium-avatar img{width:44px;height:44px;object-fit:cover;border-radius:50%}
+.podium-place strong{font-size:.9rem;max-width:100%;overflow-wrap:anywhere}
+.podium-place b{font-size:.78rem}
+.podium-step{margin-top:auto;width:100%;padding:6px;font-size:1.15rem;font-weight:900;background:#00000012}
+.podium-rest{margin-top:12px;font-size:.9rem;line-height:1.8}
+.winner-confetti{position:absolute;z-index:5;top:-14px;width:9px;height:15px;pointer-events:none;border-radius:2px;background:hsl(calc(var(--confetti-hue, 1)*1deg),85%,58%);animation:confetti-fall var(--fall-duration,3s) linear var(--fall-delay,0s) forwards;--confetti-hue:calc(360 * var(--random, .5))}
+.winner-confetti:nth-child(3n){background:#f5c542}.winner-confetti:nth-child(3n+1){background:#ef6685}.winner-confetti:nth-child(3n+2){background:#4ca9e8}
+@keyframes confetti-fall{0%{transform:translateY(-15px) rotate(0);opacity:1}100%{transform:translateY(85vh) rotate(var(--spin,360deg));opacity:0}}
+@keyframes winner-bounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-5px) rotate(5deg)}}
+.voice-locked{opacity:.42!important;filter:grayscale(1);cursor:not-allowed!important}
+.voice-unlocked{animation:voice-unlock .26s ease-out}
+@keyframes voice-unlock{0%{transform:scale(.97);filter:brightness(1.15)}100%{transform:scale(1);filter:none}}
+@media(max-width:420px){.quiz-podium{gap:5px}.podium-place{padding-left:3px;padding-right:3px}.podium-place strong{font-size:.75rem}.podium-place b{font-size:.68rem}}

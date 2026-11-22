@@ -6,6 +6,22 @@
  async function upload(){const f=new FormData();f.append("audio",new Blob(chunks,{type:rec.mimeType||"audio/webm"}),"voice-sample.webm");$("voiceStatus").textContent="Création de la voix…";try{const r=await fetch(`${API_BASE_URL}/api/voice/clone`,{method:"POST",body:f}),d=await r.json();if(!r.ok)throw Error(d.error||"Échec création voix");localStorage.setItem(KEY,d.voiceId);$("voiceStatus").textContent="Voix personnalisée enregistrée."}catch(e){$("voiceStatus").textContent=e.message}}
  async function speak(text,id=""){if(!QuizConfig.voiceEnabled)return;id=id||localStorage.getItem(KEY)||"";if(id){try{const r=await fetch(`${API_BASE_URL}/api/voice/speech`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voiceId:id})});if(r.ok){const u=URL.createObjectURL(await r.blob());await new Promise(resolve=>{const a=new Audio(u);a.onended=resolve;a.onerror=resolve;a.play().catch(resolve)});URL.revokeObjectURL(u);return}}catch(_){}}
  if("speechSynthesis"in window)await new Promise(resolve=>{const u=new SpeechSynthesisUtterance(text);u.lang="fr-FR";u.onend=resolve;u.onerror=resolve;speechSynthesis.cancel();speechSynthesis.speak(u)})}
- async function activate(text,buttons,id="",onTimeout=null){buttons.forEach(b=>{b.disabled=true;b.classList.add("voice-locked")});await speak(text,id);if(QuizConfig.topSignalEnabled)await speak(/chrono/i.test(text)?"Top chrono !":"Top !");buttons.forEach(b=>{b.disabled=false;b.classList.remove("voice-locked");b.classList.add("voice-unlocked")});setTimeout(()=>buttons.forEach(b=>b.classList.remove("voice-unlocked")),260);if(QuizConfig.answerTimeSeconds>0&&typeof onTimeout==="function"){clearTimeout(window.__quizAnswerTimer);window.__quizAnswerTimer=setTimeout(()=>{if(buttons.some(b=>!b.disabled))onTimeout()},QuizConfig.answerTimeSeconds*1000)}}
- window.QuizVoice={speak,activate,voiceId:()=>localStorage.getItem(KEY)||""};
+ // Lecture seule, sans activer les réponses. En ligne, l'hôte attend la fin
+ // de cette promesse avant de diffuser le signal de départ à tous les joueurs.
+ async function read(text,id=""){ await speak(text,id); }
+ async function signal(text=""){
+   if(QuizConfig.topSignalEnabled) await speak(/chrono/i.test(text)?"Top chrono !":"Top !");
+ }
+ async function announce(text,id=""){ await read(text,id); await signal(text); }
+ async function activate(text,buttons,id="",onTimeout=null){
+   buttons.forEach(b=>{b.disabled=true;b.classList.add("voice-locked")});
+   await announce(text,id);
+   buttons.forEach(b=>{b.disabled=false;b.classList.remove("voice-locked");b.classList.add("voice-unlocked")});
+   setTimeout(()=>buttons.forEach(b=>b.classList.remove("voice-unlocked")),260);
+   if(QuizConfig.answerTimeSeconds>0&&typeof onTimeout==="function"){
+     clearTimeout(window.__quizAnswerTimer);
+     window.__quizAnswerTimer=setTimeout(()=>{if(buttons.some(b=>!b.disabled))onTimeout()},QuizConfig.answerTimeSeconds*1000);
+   }
+ }
+ window.QuizVoice={speak,read,signal,announce,activate,voiceId:()=>localStorage.getItem(KEY)||""};
 })();
