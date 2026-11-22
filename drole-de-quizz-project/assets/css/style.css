@@ -1,11 +1,12 @@
 :root {
          --ink: #241c3d;
          --muted: #766d91;
-         --paper: #faf8ff;
+         --paper: #5f2be4;
          --purple: #6545c8;
          --pink: #ed6aa8;
          --line: #e9e2f5;
-         --green: #159b68
+         --green: #159b68;
+         --ombre: #c7b7df;
       }
 
       * {
@@ -63,7 +64,8 @@
 
       .hero {
          background: linear-gradient(130deg, #36216b, #754ed1);
-         color: white
+         color: white;
+         box-shadow: 0 5px 0 var(--ombre);
       }
 
       .kicker {
@@ -108,7 +110,8 @@
          background: white;
          border: 1px solid var(--line);
          min-height: 115px;
-         color: var(--ink)
+         color: var(--ink);
+         box-shadow: 0 5px 0 var(--ombre);
       }
 
       .menu-card strong,
@@ -133,7 +136,7 @@
       }
 
       .btn.soft {
-         background: #f0eaff;
+         background: #fff;
          color: #5035a1
       }
 
@@ -278,7 +281,7 @@
          min-height: 150px;
          color: var(--ink);
          cursor: pointer;
-         box-shadow: 0 5px 0 #eee8f7
+         box-shadow: 0 5px 0 var(--ombre);
       }
 
       .topic-card.selected {

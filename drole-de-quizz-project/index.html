@@ -13,6 +13,8 @@
          --ink: #f4efff;
          --muted: #b9adcf;
          --line: #443957;
+         --purp: #460abe;
+         --ombre: #564256;
          color-scheme: dark
       }
 
@@ -23,6 +25,17 @@
       :root[data-theme="dark"] body {
          background: #171326;
          color: var(--ink)
+      }
+
+      :root[data-theme="dark"] .solo-answer,
+      :root[data-theme="dark"] .solo-question,
+      :root[data-theme="dark"] .choice {
+         color: var(--purp)
+      }
+
+      .status,
+      :root[data-theme="dark"] .score span {
+         background: none;
       }
 
       :root[data-theme="dark"] .panel,
