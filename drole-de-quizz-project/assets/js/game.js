@@ -1955,7 +1955,7 @@
    };
    $('challengePlayMode').onchange = () => {
       $('setupModeLabel').textContent = $('challengePlayMode').value === 'online' ? 'Défi à deux · en ligne' : 'Défi à deux · même appareil';
-      renderOnlineProfileAvatar(); $('onlinePlayerName').value = defaultMultiName(); drawNames(); updateSetupActions();
+      renderOnlineProfileAvatar(); $('onlinePlayerName').value = defaultMultiName(); drawNames(); updateSetupActions(); window.DQFriends?.renderModeInvitations?.(activeGameMode);
    };
    $('advanceRule').onchange = () => {
       if ($('advanceRule').value === 'firstCorrect' && $('teamScoreRule').value === 'eachCorrect') $('teamScoreRule').value = 'firstCorrect';
@@ -1969,14 +1969,14 @@
       renderOnlineProfileAvatar(); $('onlinePlayerName').value = defaultMultiName();
       $('setupModeLabel').textContent = 'Multijoueur en ligne';
       $('themeChosen').textContent = 'Aucune';
-      show('setup'); randomTopicOffer(); drawNames();
+      show('setup'); randomTopicOffer(); drawNames(); window.DQFriends?.renderModeInvitations?.('multiplayer');
    };
    $('challengeBtn').onclick = () => {
       solo = false; activeGameMode = 'challenge'; selectedTopic = null;
       $('playerCount').value = '2'; $('teamMode').value = 'free'; $('challengePlayMode').value = 'online';
       $('setupModeLabel').textContent = 'Défi à deux · en ligne';
       $('themeChosen').textContent = 'Aucune';
-      show('setup'); randomTopicOffer(); drawNames();
+      show('setup'); randomTopicOffer(); drawNames(); window.DQFriends?.renderModeInvitations?.('challenge');
    };
    function setupPlayers() {
       if (isOnlinePlay()) {
@@ -2003,7 +2003,7 @@
       advanceRule = $('advanceRule').value; challengeResponses = []; challengeResolved = false; challengeHandoff = false;
       show('game'); render();
    }
-   let advanceRule = 'firstCorrect', teamScoringRule = 'firstCorrect', challengeResponses = [], challengeResolved = false, challengeHandoff = false;
+   let advanceRule = 'fastestBonus', teamScoringRule = 'firstCorrect', challengeResponses = [], challengeResolved = false, challengeHandoff = false;
    let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
    function renderProfile() { playerProfile.render(); $('quizProfileScore').textContent = Number(localStorage.getItem('drole_quizz_best_solo') || 0); $('quizProfileStreak').textContent = Number(localStorage.getItem('drole_quizz_best_streak') || 0); }
    $('goProfile').onclick = () => { renderProfile(); show('profileScreen'); window.dispatchEvent(new Event('dq-profile-open')); };
@@ -2125,7 +2125,7 @@
    // L'hôte fixe l'heure de départ et la date limite : elle fait autorité pour tous.
    let onlineAnswerDeadline = 0, onlineQuestionTimer = null, onlineVoiceReady = new Set(), onlineQuestionStarted = false;
    // Chronométrage local : chaque joueur démarre à la fin de SON énoncé et du Top.
-   let onlineLocalAnswerStartedAt = 0, onlineAnswerTimes = {};
+   let onlineLocalAnswerStartedAt = 0, onlineAnswerTimes = {}, onlineLocalTimedOut = false;
    function onlineRosterData() {
       return players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar || AVATARS[0], customAvatar: p.customAvatar || '', score: p.score || 0, team: p.team || 0 }));
    }
@@ -2142,6 +2142,13 @@
    function updateOnlineRosterUI(prefix = 'Salon prêt') {
       $('onlineRoster').style.display = 'block';
       $('onlineRoster').innerHTML = `${escapeHtml(prefix)} — ${players.length} joueur(s) : ${players.map(p => `${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)}`).join(' · ')}`;
+      const minPlayers = 2;
+      if ($('hostStart') && onlineHost) {
+         $('hostStart').disabled = players.length < minPlayers;
+         $('hostStart').textContent = players.length < minPlayers
+            ? `En attente des joueurs (${players.length}/${minPlayers})`
+            : 'Démarrer le quizz';
+      }
    }
    function enterOnlineGame() {
       // Une fin de partie remplace le gestionnaire du bouton Suivant par
@@ -2171,7 +2178,7 @@
       answerButtons.forEach(button => { button.disabled = true; button.classList.add('voice-locked'); });
       if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
       onlineAnswerDeadline = 0; onlineVoiceReady = new Set(); onlineQuestionStarted = false;
-      onlineLocalAnswerStartedAt = 0; onlineAnswerTimes = {};
+      onlineLocalAnswerStartedAt = 0; onlineAnswerTimes = {}; onlineLocalTimedOut = false;
       // L'hôte diffuse l'énoncé, mais chaque appareil attend la fin de sa propre
       // lecture avant d'activer les réponses et de lancer son chronomètre local.
       if (onlineHost) {
@@ -2213,20 +2220,29 @@
          if (!locked) submitOnlineAnswer(-1);
       }, remaining);
    }
+   function broadcastAnswerProgress() {
+      if (!onlineHost) return;
+      const answered = players.filter(player => Object.prototype.hasOwnProperty.call(onlineAnswers, player.id))
+         .map(player => ({ id: player.id, name: player.name, elapsedMs: onlineAnswerTimes[player.id] ?? null }));
+      broadcastOnline({ type: 'answerProgress', index: onlineQuestionIndex, answered, total: players.length });
+   }
    function submitOnlineAnswer(i) {
       if (locked || !onlineGame) return;
       locked = true;
+      if (i < 0) onlineLocalTimedOut = true;
       if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
       $('answers').querySelectorAll('button').forEach(b => b.disabled = true);
       const elapsedMs = onlineLocalAnswerStartedAt ? Math.max(0, Math.round(performance.now() - onlineLocalAnswerStartedAt)) : 0;
       if (onlineHost) {
          onlineAnswers[onlinePlayerId] = i; onlineAnswerTimes[onlinePlayerId] = elapsedMs;
          onlineAnswerOrder.push(onlinePlayerId);
+         broadcastAnswerProgress();
          maybeFinishOnlineQuestion();
       } else {
          const c = connections[0];
          if (c && c.open) c.send({ type: 'answer', index: onlineQuestionIndex, choice: i, elapsedMs });
-         $('feedback').className = 'feedback'; $('feedback').textContent = 'Réponse envoyée. En attente des autres joueurs…';
+         $('feedback').className = 'feedback';
+         $('feedback').textContent = i < 0 ? 'Temps écoulé : tu ne peux plus répondre. Tu verras les joueurs ayant répondu et leurs chronos.' : 'Réponse envoyée. En attente des autres joueurs…';
       }
    }
    function maybeFinishOnlineQuestion() {
@@ -2241,12 +2257,21 @@
    }
    function finishOnlineQuestion(q) {
       const correctPlayers = onlineAnswerOrder.filter(id => onlineAnswers[id] === q.a).map(id => players.find(player => player.id === id)).filter(Boolean);
+      const basePoints = Math.max(1, Number(window.QuizConfig?.pointsPerCorrectAnswer) || 100);
+      const fastestCorrectId = correctPlayers[0]?.id || null;
       if (onlineTeamMode) {
          if (teamScoringRule === 'firstCorrect') {
             if (correctPlayers.length) onlineTeamScores[correctPlayers[0].team]++;
          } else correctPlayers.forEach(player => onlineTeamScores[player.team]++);
-      } else correctPlayers.forEach(player => { player.score = (player.score || 0) + 100 });
-      const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, answerTimes: onlineAnswerTimes, answerOrder: onlineAnswerOrder, correct: q.a, players: onlineRosterData(), teamScores: onlineTeamScores, teamNames: onlineTeamNames, teamMode: onlineTeamMode, teamScoringRule, ex: q.ex || '' };
+         if (advanceRule === 'fastestBonus' && fastestCorrectId) {
+            const fastestTeam = correctPlayers[0].team;
+            onlineTeamScores[fastestTeam] = Number(onlineTeamScores[fastestTeam] || 0) + 0.5;
+         }
+      } else correctPlayers.forEach(player => {
+         const bonus = advanceRule === 'fastestBonus' && player.id === fastestCorrectId ? 1.5 : 1;
+         player.score = (player.score || 0) + Math.round(basePoints * bonus);
+      });
+      const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, answerTimes: onlineAnswerTimes, answerOrder: onlineAnswerOrder, correct: q.a, players: onlineRosterData(), teamScores: onlineTeamScores, teamNames: onlineTeamNames, teamMode: onlineTeamMode, teamScoringRule, advanceRule, basePoints, fastestCorrectId, ex: q.ex || '' };
       broadcastOnline(result); showOnlineResult(result);
    }
    function showOnlineResult(m) {
@@ -2273,12 +2298,31 @@
       const fastestPlayer = players.find(player => player.id === fastestId);
       const fastestMs = fastestId ? Number(m.answerTimes?.[fastestId]) : NaN;
       const fastestLabel = fastestPlayer && Number.isFinite(fastestMs)
-         ? `<div class="ex">⚡ Plus rapide : ${escapeHtml(fastestPlayer.name)} (${(fastestMs / 1000).toFixed(2).replace('.', ',')} s)</div>` : '';
+         ? `<div class="ex">⚡ Plus rapide : ${escapeHtml(fastestPlayer.name)} (${(fastestMs / 1000).toFixed(2).replace('.', ',')} s)${m.advanceRule === 'fastestBonus' && !m.teamMode ? ` · +${Math.round((Number(m.basePoints) || 100) * 0.5)} points de bonus` : ''}</div>` : '';
+      const timingSummary = (m.answerOrder || []).map(id => {
+         const player = players.find(item => item.id === id);
+         const ms = Number(m.answerTimes?.[id]);
+         const choice = m.answers?.[id];
+         const label = player ? escapeHtml(player.name) : 'Joueur';
+         return `<div class="small">${label} : ${choice === undefined || choice < 0 ? 'temps écoulé / sans réponse' : `${(ms / 1000).toFixed(2).replace('.', ',')} s`}</div>`;
+      }).join('');
       const awardedTeams = m.teamScoringRule === 'firstCorrect' ? rightAnswers.slice(0, 1) : rightAnswers;
       const teamPoints = awardedTeams.reduce((totals, id) => { const player = players.find(item => item.id === id); if (player) totals[player.team] = (totals[player.team] || 0) + 1; return totals; }, {});
       const teamSummary = Object.entries(teamPoints).map(([team, points]) => `${escapeHtml(onlineTeamNames[Number(team)])} +${points}`).join(' · ');
-      const answerStatus = m.teamMode ? (teamSummary || 'Aucun point d’équipe') : (myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? `Bonne réponse ! +${window.QuizConfig.pointsPerCorrectAnswer} points` : 'Raté !');
-      $('feedback').innerHTML = `${answerStatus} Bonne réponse : ${q.opts[m.correct]}` + fastestLabel + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
+      const baseAward = Math.max(1, Number(m.basePoints) || Number(window.QuizConfig?.pointsPerCorrectAnswer) || 100);
+      const isFastestCorrect = correct && onlinePlayerId === fastestId;
+      const answerStatus = m.teamMode
+         ? `${teamSummary || 'Aucun point d’équipe'}${correct && fastestPlayer && !isFastestCorrect ? ` · Bonne réponse, mais ${escapeHtml(fastestPlayer.name)} a été plus rapide.` : ''}`
+         : (myChoice === undefined || myChoice < 0
+            ? 'Temps écoulé : tu n’as pas pu répondre.'
+            : !correct
+               ? 'Raté !'
+               : isFastestCorrect && m.advanceRule === 'fastestBonus'
+                  ? `Bonne réponse ! Tu es le plus rapide : +${Math.round(baseAward * 1.5)} points.`
+                  : m.advanceRule === 'fastestBonus' && fastestPlayer
+                     ? `Bonne réponse, mais ${escapeHtml(fastestPlayer.name)} a été plus rapide : +${baseAward} points.`
+                     : `Bonne réponse ! +${baseAward} points.`);
+      $('feedback').innerHTML = `${answerStatus} Bonne réponse : ${q.opts[m.correct]}` + fastestLabel + (timingSummary ? `<div class="timing-summary"><strong>Chronos des joueurs</strong>${timingSummary}</div>` : '') + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
       if (onlineHost) { $('next').style.display = 'block'; $('next').textContent = onlineQuestionIndex === onlineDeck.length - 1 ? 'Voir les résultats' : 'Question suivante'; }
       else { $('next').style.display = 'none'; $('turnLabel').textContent = 'En attente de la question suivante…' }
    }
@@ -2388,7 +2432,9 @@
          if (players.some(p => p.id === c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers, c.peer)) {
             onlineAnswers[c.peer] = Number(m.choice);
             onlineAnswerTimes[c.peer] = Math.max(0, Number(m.elapsedMs) || 0);
-            onlineAnswerOrder.push(c.peer); maybeFinishOnlineQuestion();
+            onlineAnswerOrder.push(c.peer);
+            broadcastAnswerProgress();
+            maybeFinishOnlineQuestion();
          }
          return;
       }
@@ -2439,6 +2485,18 @@
          beginLocalAnswerWindow(String(m.text || ''));
          return;
       }
+      if (m.type === 'answerProgress' && !onlineHost && m.index === onlineQuestionIndex) {
+         const lines = (m.answered || []).map(item => {
+            const seconds = Number.isFinite(Number(item.elapsedMs)) ? ` · ${(Number(item.elapsedMs) / 1000).toFixed(2).replace('.', ',')} s` : '';
+            return `${escapeHtml(item.name)}${seconds}`;
+         });
+         if (lines.length) {
+            const timeoutText = onlineLocalTimedOut ? 'Temps écoulé. ' : '';
+            $('feedback').className = 'feedback';
+            $('feedback').innerHTML = `${timeoutText}Joueurs ayant répondu (${lines.length}/${m.total}) :<br>${lines.join('<br>')}`;
+         }
+         return;
+      }
       if (m.type === 'questionResult' && !onlineHost && m.index === onlineQuestionIndex) {
          showOnlineResult(m); return;
       }
@@ -2452,6 +2510,7 @@
    }
    // Pont entre les invitations Supabase et le transport PeerJS déjà utilisé par le jeu.
    window.DQOnline = {
+      currentMode: () => activeGameMode,
       roomInfo: () => peer && onlineHost && supabaseRoomId ? ({ peerId: peer.id, roomCode: roomId.toUpperCase(), supabaseRoomId, gameMode: activeGameMode, topicId: selectedTopic }) : null,
       acceptInvite: async invitation => {
          activeGameMode = invitation.game_mode || 'multiplayer';
@@ -2459,7 +2518,7 @@
          if ($('challengePlayMode') && activeGameMode === 'challenge') $('challengePlayMode').value = 'online';
          const localProfile = (() => { try { return JSON.parse(localStorage.getItem('player_profile_v1') || '{}'); } catch (_) { return {}; } })();
          $('onlinePlayerName').value = localProfile.name || $('onlinePlayerName').value || 'Joueur';
-         show('settingsScreen'); updateSetupActions();
+         show('settingsScreen'); updateSetupActions(); window.DQFriends?.renderModeInvitations?.(activeGameMode);
          if (!invitation.room_code) throw new Error('Cette invitation ne contient pas de code de salon valide.');
          connectToRoom(invitation.room_code);
       }
@@ -2543,7 +2602,7 @@
    $('joinOnline').onclick = () => connectToRoom();
 
    $('hostStart').onclick = () => {
-      const minPlayers = activeGameMode === 'challenge' ? 2 : 3;
+      const minPlayers = 2;
       if (!onlineHost || players.length < minPlayers) { $('netStatus').textContent = `Il faut au moins ${minPlayers} joueurs dans le salon pour démarrer.`; return }
       advanceRule = $('advanceRule').value; teamScoringRule = $('teamScoreRule').value;
       onlineTeamMode = $('teamMode').value === 'teams';

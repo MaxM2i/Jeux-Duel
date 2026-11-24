@@ -39,11 +39,29 @@
    $('friendRequests').querySelectorAll('[data-accept-friend]').forEach(b=>b.onclick=()=>respondFriend(b.dataset.acceptFriend,'accepted'));
    $('friendRequests').querySelectorAll('[data-decline-friend]').forEach(b=>b.onclick=()=>respondFriend(b.dataset.declineFriend,'declined'));
  }
- async function loadGameInvites(){const {data,error}=await api().rpc('get_pending_game_invitations');
+ let pendingGameInvitations = [];
+ function renderGameInvitationRows(target, rows) {
+   if (!target) return;
+   target.innerHTML = rows.length ? rows.map(i=>`<div class="game-invite-item"><span><strong>${esc(i.inviter_name||'Un ami')}</strong> t’invite à jouer (${i.game_mode === 'challenge' ? 'Défi' : 'Multijoueur'})${i.topic_id ? ' · '+esc(i.topic_id) : ''}</span><div class="friend-actions"><button class="btn" data-accept-game="${i.id}">Rejoindre</button><button class="btn soft" data-decline-game="${i.id}">Refuser</button></div></div>`).join('') : '<p class="small">Aucune invitation pour le moment.</p>';
+   target.querySelectorAll('[data-accept-game]').forEach(b=>b.onclick=()=>acceptGameInvite(b.dataset.acceptGame));
+   target.querySelectorAll('[data-decline-game]').forEach(b=>b.onclick=()=>respondGameInvite(b.dataset.declineGame,'declined'));
+ }
+ async function loadGameInvites(){
+   const {data,error}=await api().rpc('get_pending_game_invitations');
    if(error){$('gameInvitations').innerHTML=`<p class="small">${esc(error.message)}</p>`;return;}
-   $('gameInvitations').innerHTML=(data||[]).length?data.map(i=>`<div class="game-invite-item"><span><strong>${esc(i.inviter_name||'Un ami')}</strong> t’invite à jouer (${esc(i.game_mode)})</span><div class="friend-actions"><button class="btn" data-accept-game="${i.id}">Rejoindre</button><button class="btn soft" data-decline-game="${i.id}">Refuser</button></div></div>`).join(''):'<p class="small">Aucune invitation de jeu.</p>';
-   $('gameInvitations').querySelectorAll('[data-accept-game]').forEach(b=>b.onclick=()=>acceptGameInvite(b.dataset.acceptGame));
-   $('gameInvitations').querySelectorAll('[data-decline-game]').forEach(b=>b.onclick=()=>respondGameInvite(b.dataset.declineGame,'declined'));
+   pendingGameInvitations = data || [];
+   renderGameInvitationRows($('gameInvitations'), pendingGameInvitations);
+   renderModeInvitations(window.DQOnline?.currentMode?.() || '');
+ }
+ function renderModeInvitations(mode) {
+   const box=$('modeGameInvitations'), list=$('modeGameInvitationsList');
+   if(!box || !list) return;
+   const isOnline = mode === 'multiplayer' || (mode === 'challenge' && $('challengePlayMode')?.value === 'online');
+   if (!isOnline || !currentUser) { box.hidden=true; return; }
+   const rows=pendingGameInvitations.filter(i => i.game_mode === mode);
+   box.hidden=false;
+   $('modeGameInvitationsTitle').textContent = mode === 'challenge' ? 'Invitations de défi reçues' : 'Invitations multijoueur reçues';
+   renderGameInvitationRows(list, rows);
  }
  async function addFriend(){const db=api();if(!db||!currentUser){status('Connecte-toi pour ajouter un ami.');return;}const code=$('friendCodeInput').value.trim().toUpperCase();if(!code){status('Saisis le code ami.');return;}const {error}=await db.rpc('send_friend_request_by_code',{p_friend_code:code});status(error?error.message:'Demande envoyée !');$('friendCodeInput').value='';await loadRequests();}
  async function respondFriend(id,next){const {error}=await api().from('friendships').update({status:next}).eq('id',id);status(error?.message|| (next==='accepted'?'Demande acceptée.':'Demande refusée.'));await Promise.all([loadFriends(),loadRequests()]);}
@@ -55,5 +73,5 @@
  async function sendGameInvite(friendId,info){const db=api();const {data:{user}}=await db.auth.getUser();const {error}=await db.from('room_invitations').insert({room_id:info.supabaseRoomId,inviter_id:user.id,invitee_id:friendId,room_code:info.roomCode,peer_id:info.peerId,game_mode:info.gameMode,topic_id:info.topicId});status(error?error.message:'Invitation envoyée !');}
  $('addFriendBtn')?.addEventListener('click',addFriend);$('copyFriendCode')?.addEventListener('click',()=>{const code=$('myFriendCode').textContent;if(code&&code!=='—')navigator.clipboard?.writeText(code);});
  window.addEventListener('dq-auth-changed',refresh);window.addEventListener('dq-room-ready',renderRoomPicker);window.addEventListener('dq-profile-open',refresh);
- window.DQFriends={refresh,renderRoomPicker};document.addEventListener('DOMContentLoaded',refresh);
+ window.DQFriends={refresh,renderRoomPicker,renderModeInvitations};document.addEventListener('DOMContentLoaded',refresh);
 })();

@@ -700,3 +700,11 @@ body.in-game #game .score { flex-wrap:wrap; }
 #accountLoginFields[hidden], #signOut[hidden], #roomSharePanel[hidden] { display:none !important; }
 #accountPanel { scroll-margin-top:12px; }
 #roomSharePanel .friend-code-row { margin-top:10px; }
+
+/* Invitations ciblées par mode et détail des chronos multijoueurs. */
+#modeGameInvitations[hidden] { display: none !important; }
+#modeGameInvitations { margin-top: 14px; }
+.timing-summary { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(120,100,150,.10); }
+.timing-summary > strong { display:block; margin-bottom:6px; }
+.timing-summary .small { margin:3px 0; }
+#hostStart:disabled { opacity:.55; cursor:not-allowed; filter:grayscale(.35); }

@@ -249,6 +249,7 @@
                   <option value="teams">En équipes</option>
                </select></div>
             <label class="small" for="advanceRule">Fin des réponses</label><select class="field" id="advanceRule">
+               <option value="fastestBonus" selected>Bonus au plus rapide (+50 % des points)</option>
                <option value="firstCorrect">Dès la première bonne réponse</option>
                <option value="allAnswered">Après la réponse de tous</option>
             </select>
@@ -279,6 +280,11 @@
             <div id="joinRoomWrap"><label class="small" for="roomCode">Code du salon</label><input class="field"
                   id="roomCode" placeholder="Code communiqué par l’hôte"><button class="btn soft full"
                   id="joinOnline">Rejoindre un salon</button></div>
+            <div class="panel" id="modeGameInvitations" hidden>
+               <h3 id="modeGameInvitationsTitle">Invitations reçues</h3>
+               <p class="small">Les invitations correspondant à ce mode apparaissent ici. Tu peux rejoindre directement sans saisir le code du salon.</p>
+               <div id="modeGameInvitationsList" class="friends-list"></div>
+            </div>
             <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
             <div id="onlineRoster" class="status" style="display:none"></div>
             <div id="roomSharePanel" class="panel" hidden>
