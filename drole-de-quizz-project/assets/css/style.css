@@ -157,7 +157,7 @@
       }
 
       .small {
-         color: var(--muted);
+         color: var(--purple);
          font-size: 13px
       }
 
@@ -708,3 +708,10 @@ body.in-game #game .score { flex-wrap:wrap; }
 .timing-summary > strong { display:block; margin-bottom:6px; }
 .timing-summary .small { margin:3px 0; }
 #hostStart:disabled { opacity:.55; cursor:not-allowed; filter:grayscale(.35); }
+
+/* Notifications d'invitations sur les cartes d'accueil et salon d'attente. */
+.menu-card { position: relative; }
+.home-invite-badge { display: inline-flex; align-items: center; justify-content: center; margin-top: 7px; padding: 4px 9px; border-radius: 999px; background: #e84b79; color: #fff; font-size: .75rem; font-weight: 800; }
+.home-invite-badge[hidden], #roomLobbyPanel[hidden] { display: none !important; }
+#roomLobbyPanel { margin-top: 12px; }
+#roomLobbyPlayers .friend-avatar, #roomLobbyExpected .friend-avatar { width: 42px; height: 42px; }

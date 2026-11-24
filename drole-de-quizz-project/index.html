@@ -85,9 +85,9 @@
          </div>
          <div class="menu-grid"><button class="menu-card" id="soloBtn"><span class="emoji">🧠</span><strong>Mode
                   solo</strong><small>Enchaîne les questions à ton rythme.</small></button><button class="menu-card"
-               id="challengeBtn"><span class="emoji">⚔️</span><strong>Défi à deux</strong><small>Affrontez-vous sur le
+               id="challengeBtn"><span class="emoji">⚔️</span><strong>Défi à deux</strong><span class="home-invite-badge" id="challengeInviteBadge" hidden></span><small>Affrontez-vous sur le
                   même appareil.</small></button><button class="menu-card" id="multiBtn"><span
-                  class="emoji">🌐</span><strong>Multijoueur en ligne</strong><small>Crée un salon et joue avec jusqu’à
+                  class="emoji">🌐</span><strong>Multijoueur en ligne</strong><span class="home-invite-badge" id="multiInviteBadge" hidden></span><small>Crée un salon et joue avec jusqu’à
                   7 amis.</small></button><button class="menu-card" id="goProfile"><span class="emoji"
                   id="homeAvatar"><img src="assets/avatar/08d694a0343943d7d0b58c1a9c17b525.jpg"
                      alt="Avatar"></span><strong>Mon profil</strong><small>Ton pseudo, ton avatar et tes records
@@ -287,6 +287,12 @@
             </div>
             <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
             <div id="onlineRoster" class="status" style="display:none"></div>
+            <div id="roomLobbyPanel" class="panel" hidden>
+               <h2 id="roomLobbyTitle">Salon en ligne</h2>
+               <p class="small" id="roomLobbyNotice">Tu as rejoint le salon. L’hôte peut démarrer la partie.</p>
+               <h3>Joueurs présents</h3><div id="roomLobbyPlayers" class="friends-list"></div>
+               <h3>Joueurs attendus</h3><div id="roomLobbyExpected" class="friends-list"></div>
+            </div>
             <div id="roomSharePanel" class="panel" hidden>
                <h3>Comment inviter tes joueurs ?</h3>
                <p class="small">Tu peux partager le code du salon, ou ton code ami pour qu'ils t'ajoutent et retrouvent tes invitations.</p>
