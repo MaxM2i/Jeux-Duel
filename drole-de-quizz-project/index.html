@@ -129,15 +129,6 @@
                voix</button><button class="btn full" id="stopVoice" disabled>Terminer et créer ma voix</button>
             <p class="small" id="voiceStatus"></p>
          </div>
-         <div class="panel">
-            <h2>Compte joueur</h2><label class="small" for="accountEmail">E-mail</label><input class="field"
-               id="accountEmail" type="email" autocomplete="email"><label class="small" for="accountPassword">Mot de
-               passe</label><input class="field" id="accountPassword" type="password"
-               autocomplete="current-password"><button class="btn full" id="signIn">Se connecter</button><button
-               class="btn soft full" id="signUp">Créer mon compte</button><button class="btn soft full" id="signOut"
-               hidden>Se déconnecter</button>
-            <p class="small" id="accountStatus"></p>
-         </div>
       </section>
       <section class="screen" id="profileScreen">
          <div class="backline"><button class="btn soft" data-home>← Menu</button><span class="kicker">Espace
@@ -150,6 +141,17 @@
                <h2 id="profileDisplayName">Super joueur</h2>
                <p class="small">Personnalise ton avatar et retrouve tes records.</p>
             </div>
+         </div>
+         <div class="panel" id="accountPanel">
+            <h2>Compte joueur</h2>
+            <div id="accountLoginFields">
+               <label class="small" for="accountEmail">E-mail</label><input class="field" id="accountEmail" type="email" autocomplete="email">
+               <label class="small" for="accountPassword">Mot de passe</label><input class="field" id="accountPassword" type="password" autocomplete="current-password">
+               <button class="btn full" id="signIn">Se connecter</button>
+               <button class="btn soft full" id="signUp">Créer mon compte</button>
+            </div>
+            <button class="btn soft full" id="signOut" hidden>Se déconnecter</button>
+            <p class="small" id="accountStatus"></p>
          </div>
          <div class="panel" id="friendsPanel">
             <h2>Mes amis</h2>
@@ -279,6 +281,12 @@
                   id="joinOnline">Rejoindre un salon</button></div>
             <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
             <div id="onlineRoster" class="status" style="display:none"></div>
+            <div id="roomSharePanel" class="panel" hidden>
+               <h3>Comment inviter tes joueurs ?</h3>
+               <p class="small">Tu peux partager le code du salon, ou ton code ami pour qu'ils t'ajoutent et retrouvent tes invitations.</p>
+               <div class="friend-code-row"><strong>Code du salon</strong><code id="shareRoomCode">—</code><button class="btn soft" id="copyRoomCode" type="button">Copier</button></div>
+               <div class="friend-code-row"><strong>Mon code ami</strong><code id="shareFriendCode">Voir dans mon profil</code><button class="btn soft" id="copyOwnFriendCode" type="button">Copier</button></div>
+            </div>
             <div id="roomFriendInvites" class="panel" hidden>
                <h3>Inviter mes amis</h3><p class="small">Envoie une invitation directe. Tes amis pourront rejoindre sans saisir le code du salon.</p>
                <div id="roomFriendInviteList" class="friends-list"></div>

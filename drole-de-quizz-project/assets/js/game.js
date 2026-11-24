@@ -2144,7 +2144,13 @@
       $('onlineRoster').innerHTML = `${escapeHtml(prefix)} — ${players.length} joueur(s) : ${players.map(p => `${avatarMarkup(p.avatar, p.customAvatar)} ${escapeHtml(p.name)}`).join(' · ')}`;
    }
    function enterOnlineGame() {
+      // Une fin de partie remplace le gestionnaire du bouton Suivant par
+      // un retour menu. Il faut impérativement le réarmer pour chaque revanche.
       onlineGame = true; solo = false; round = 1; turn = 0; locked = false;
+      if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
+      onlineQuestionTimer = null;
+      $('next').onclick = () => { if (onlineHost && onlineGame) advanceOnlineQuestion(); };
+      $('next').style.display = 'none';
       show('game'); renderOnlineQuestion();
    }
    // ===== Interface et synchronisation PeerJS =====
@@ -2311,10 +2317,15 @@
    }
 
    function startOnlineRematch() {
-      if (!onlineHost || !peer) return;
+      if (!onlineHost || !peer || !connections.some(c => c && c.open)) return;
+      if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
+      onlineQuestionTimer = null;
       players.forEach(player => { player.score = 0; });
       onlineTeamScores = [0, 0];
-      onlineDeck = buildDeck(Number(window.QuizConfig.onlineQuestions) || 15, selectedTopic);
+      onlineAnswers = {}; onlineAnswerTimes = {}; onlineAnswerOrder = [];
+      onlineVoiceReady = new Set(); onlineQuestionStarted = false;
+      onlineLocalAnswerStartedAt = 0; locked = false;
+      onlineDeck = buildDeck(Number($('questionCount').value) || Number(window.QuizConfig.onlineQuestions) || 15, selectedTopic);
       onlineQuestionIndex = 0;
       const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData(), advanceRule, teamScoringRule, teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames, voiceId: window.QuizVoice ? window.QuizVoice.voiceId() : '' };
       broadcastOnline(msg);
@@ -2382,9 +2393,13 @@
          return;
       }
       if (m.type === 'rematchOffer' && !onlineHost) {
-         $('feedback').insertAdjacentHTML('beforeend', '<div class="rematch-actions"><p>L’hôte propose une revanche !</p><button class="btn full" id="acceptRematch">Accepter</button><button class="btn soft full" id="declineRematch">Refuser</button><p class="small" id="rematchStatus"></p></div>');
-         $('acceptRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: true }); $('rematchStatus').textContent = 'Revanche acceptée.'; };
-         $('declineRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: false }); $('rematchStatus').textContent = 'Revanche refusée.'; };
+         // Le bloc est déjà présent sur l'écran de fin : on le réutilise,
+         // sans ajouter une seconde paire de boutons.
+         if (!$('acceptRematch') || !$('declineRematch')) {
+            $('feedback').insertAdjacentHTML('beforeend', '<div class="rematch-actions"><p>L’hôte propose une revanche !</p><button class="btn full" id="acceptRematch">Accepter</button><button class="btn soft full" id="declineRematch">Refuser</button><p class="small" id="rematchStatus"></p></div>');
+         }
+         $('acceptRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: true }); $('rematchStatus').textContent = 'Revanche acceptée.'; $('acceptRematch').disabled = true; $('declineRematch').disabled = true; };
+         $('declineRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: false }); $('rematchStatus').textContent = 'Revanche refusée.'; $('acceptRematch').disabled = true; $('declineRematch').disabled = true; };
          return;
       }
       if (m.type === 'rematchVote' && onlineHost) {
@@ -2465,8 +2480,19 @@
       peer = new Peer('drolequizz-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
       peer.on('open', id => {
          onlinePlayerId = id; players[0].id = id; roomId = id.replace('drolequizz-', '');
-         $('netStatus').textContent = 'Salon créé. Tu peux inviter directement tes amis.';
+         $('netStatus').textContent = 'Salon créé. Choisis comment inviter tes joueurs.';
          updateOnlineRosterUI(); $('hostStart').style.display = 'block';
+         const sharePanel = $('roomSharePanel');
+         if (sharePanel) {
+            sharePanel.hidden = false;
+            $('shareRoomCode').textContent = roomId.toUpperCase();
+            $('copyRoomCode')?.addEventListener('click', () => navigator.clipboard?.writeText(roomId.toUpperCase()));
+            $('copyOwnFriendCode')?.addEventListener('click', () => {
+               const friendCode = $('myFriendCode')?.textContent || '';
+               if (friendCode && friendCode !== '—' && friendCode !== 'Code en création') navigator.clipboard?.writeText(friendCode);
+               else $('netStatus').textContent = 'Connecte-toi à ton compte pour disposer de ton code ami.';
+            });
+         }
          // Enregistre le salon pour que les invitations privées puissent le référencer.
          (async () => {
             const db = window.DQSupabase?.client;

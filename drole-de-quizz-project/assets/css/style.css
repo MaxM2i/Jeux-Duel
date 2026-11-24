@@ -691,3 +691,12 @@ body.in-game #game .score { flex-wrap:wrap; }
 .friend-item img{width:38px;height:38px;object-fit:cover;border-radius:50%}
 .friend-actions{display:flex;gap:6px;flex-wrap:wrap}
 #roomFriendInvites{margin-top:12px}
+
+
+/* Avatars des amis : prise en charge des fichiers locaux et avatars personnalisés Supabase. */
+.friend-main { display:flex; align-items:center; gap:10px; min-width:0; }
+.friend-avatar, .friend-avatar-fallback { width:44px; height:44px; flex:0 0 44px; border-radius:50%; object-fit:cover; border:2px solid var(--line); background:var(--panel, #f1eafa); }
+.friend-avatar-fallback { display:grid; place-items:center; font-size:23px; }
+#accountLoginFields[hidden], #signOut[hidden], #roomSharePanel[hidden] { display:none !important; }
+#accountPanel { scroll-margin-top:12px; }
+#roomSharePanel .friend-code-row { margin-top:10px; }
