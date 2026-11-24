@@ -6,6 +6,8 @@
    const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen', 'settingsScreen'];
    function show(id) {
       screens.forEach(s => $(s).classList.toggle('active', s === id));
+      // En jeu, l'interface passe en plein écran applicatif : on masque l'en-tête du site.
+      document.body.classList.toggle('in-game', id === 'game' || id === 'soloGame');
       window.scrollTo(0, 0);
    }
    // Avant de quitter les paramètres, demander confirmation si des changements sont en attente.
@@ -2088,6 +2090,8 @@
    let onlineAnswerOrder = [], onlineTeamMode = false, onlineTeamScores = [0, 0], onlineTeamNames = ['Équipe A', 'Équipe B'];
    // L'hôte fixe l'heure de départ et la date limite : elle fait autorité pour tous.
    let onlineAnswerDeadline = 0, onlineQuestionTimer = null, onlineVoiceReady = new Set(), onlineQuestionStarted = false;
+   // Chronométrage local : chaque joueur démarre à la fin de SON énoncé et du Top.
+   let onlineLocalAnswerStartedAt = 0, onlineAnswerTimes = {};
    function onlineRosterData() {
       return players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar || AVATARS[0], customAvatar: p.customAvatar || '', score: p.score || 0, team: p.team || 0 }));
    }
@@ -2127,34 +2131,27 @@
       answerButtons.forEach(button => { button.disabled = true; button.classList.add('voice-locked'); });
       if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
       onlineAnswerDeadline = 0; onlineVoiceReady = new Set(); onlineQuestionStarted = false;
+      onlineLocalAnswerStartedAt = 0; onlineAnswerTimes = {};
+      // L'hôte diffuse l'énoncé, mais chaque appareil attend la fin de sa propre
+      // lecture avant d'activer les réponses et de lancer son chronomètre local.
       if (onlineHost) {
-         // Chaque appareil lit la même question. L'hôte attend que tous aient
-         // terminé leur lecture avant d'envoyer le Top commun : le temps de
-         // réponse ne commence donc jamais pendant l'énoncé.
-         onlineVoiceReady = new Set([onlinePlayerId]);
          broadcastOnline({ type: 'questionRead', index: onlineQuestionIndex, text: q.q, voiceId: window.onlineHostVoiceId || '' });
-         const readPromise = window.QuizVoice?.read ? window.QuizVoice.read(q.q, window.onlineHostVoiceId || '') : Promise.resolve();
-         Promise.resolve(readPromise).catch(() => {}).then(() => {
-            onlineVoiceReady.add(onlinePlayerId);
-            maybeStartOnlineQuestion(q.q);
-         });
+         beginLocalAnswerWindow(q.q);
       }
    }
-   async function maybeStartOnlineQuestion(questionText) {
-      if (!onlineHost || !onlineGame || onlineQuestionStarted) return;
-      const connectedIds = players.map(player => player.id).filter(Boolean);
-      if (!connectedIds.every(id => onlineVoiceReady.has(id))) return;
-      onlineQuestionStarted = true;
-      // Le signal est prononcé par l'hôte, puis diffusé. Les invités le jouent
-      // à réception et démarrent leur propre chronomètre à la fin du signal.
-      if (window.QuizVoice?.signal) {
-         try { await window.QuizVoice.signal(questionText); } catch (_) {}
-      }
+   async function beginLocalAnswerWindow(questionText) {
+      // Important : le chronomètre démarre après la fin complète de la question
+      // ET après le signal « Top » sur cet appareil, jamais à la réception réseau.
+      if (onlineLocalAnswerStartedAt || !onlineGame) return;
+      try {
+         if (window.QuizVoice?.read) await window.QuizVoice.read(questionText, window.onlineHostVoiceId || '');
+      } catch (_) { /* Une panne audio ne doit pas bloquer la partie. */ }
+      try {
+         if (window.QuizVoice?.signal) await window.QuizVoice.signal(questionText);
+      } catch (_) { /* Le Top visuel reste disponible même sans audio. */ }
+      onlineLocalAnswerStartedAt = performance.now();
       const duration = Math.max(0, Number(window.QuizConfig.answerTimeSeconds) || 0);
-      // Petite marge réseau côté serveur ; le chrono visible reste strictement
-      // celui défini par la configuration et démarre après le Top local.
-      onlineAnswerDeadline = Date.now() + duration * 1000 + 1500;
-      broadcastOnline({ type: 'questionStart', index: onlineQuestionIndex, durationMs: duration * 1000 });
+      onlineAnswerDeadline = duration > 0 ? Date.now() + duration * 1000 : 0;
       unlockOnlineAnswers(duration * 1000);
    }
    function unlockOnlineAnswers(timerDurationMs = null) {
@@ -2175,23 +2172,25 @@
       locked = true;
       if (onlineQuestionTimer) clearTimeout(onlineQuestionTimer);
       $('answers').querySelectorAll('button').forEach(b => b.disabled = true);
+      const elapsedMs = onlineLocalAnswerStartedAt ? Math.max(0, Math.round(performance.now() - onlineLocalAnswerStartedAt)) : 0;
       if (onlineHost) {
-         onlineAnswers[onlinePlayerId] = i;
+         onlineAnswers[onlinePlayerId] = i; onlineAnswerTimes[onlinePlayerId] = elapsedMs;
          onlineAnswerOrder.push(onlinePlayerId);
          maybeFinishOnlineQuestion();
       } else {
          const c = connections[0];
-         if (c && c.open) c.send({ type: 'answer', index: onlineQuestionIndex, choice: i });
+         if (c && c.open) c.send({ type: 'answer', index: onlineQuestionIndex, choice: i, elapsedMs });
          $('feedback').className = 'feedback'; $('feedback').textContent = 'Réponse envoyée. En attente des autres joueurs…';
       }
    }
    function maybeFinishOnlineQuestion() {
       if (!onlineHost) return;
       const q = onlineDeck[onlineQuestionIndex];
-      const firstCorrect = onlineAnswerOrder.some(id => onlineAnswers[id] === q.a);
       const everyoneAnswered = players.every(p => Object.prototype.hasOwnProperty.call(onlineAnswers, p.id));
-      if (advanceRule === 'firstCorrect' && !firstCorrect && !everyoneAnswered) return;
-      if (advanceRule === 'allAnswered' && !everyoneAnswered) return;
+      // On collecte toutes les réponses (ou expirations) avant de classer :
+      // l'ordre d'arrivée réseau ne doit jamais décider du joueur le plus rapide.
+      if (!everyoneAnswered) return;
+      onlineAnswerOrder.sort((a, b) => (onlineAnswerTimes[a] ?? Number.MAX_SAFE_INTEGER) - (onlineAnswerTimes[b] ?? Number.MAX_SAFE_INTEGER));
       finishOnlineQuestion(q);
    }
    function finishOnlineQuestion(q) {
@@ -2201,7 +2200,7 @@
             if (correctPlayers.length) onlineTeamScores[correctPlayers[0].team]++;
          } else correctPlayers.forEach(player => onlineTeamScores[player.team]++);
       } else correctPlayers.forEach(player => { player.score = (player.score || 0) + 100 });
-      const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, answerOrder: onlineAnswerOrder, correct: q.a, players: onlineRosterData(), teamScores: onlineTeamScores, teamNames: onlineTeamNames, teamMode: onlineTeamMode, teamScoringRule, ex: q.ex || '' };
+      const result = { type: 'questionResult', index: onlineQuestionIndex, answers: onlineAnswers, answerTimes: onlineAnswerTimes, answerOrder: onlineAnswerOrder, correct: q.a, players: onlineRosterData(), teamScores: onlineTeamScores, teamNames: onlineTeamNames, teamMode: onlineTeamMode, teamScoringRule, ex: q.ex || '' };
       broadcastOnline(result); showOnlineResult(result);
    }
    function showOnlineResult(m) {
@@ -2220,12 +2219,19 @@
       });
       renderOnlineScores();
       $('feedback').className = 'feedback ' + (correct ? 'good' : 'bad');
+      // answerOrder est trié par durée mesurée localement après le Top,
+      // et non par ordre d'arrivée des paquets réseau.
       const rightAnswers = (m.answerOrder || Object.keys(m.answers || {})).filter(id => m.answers?.[id] === m.correct);
+      const fastestId = rightAnswers[0];
+      const fastestPlayer = players.find(player => player.id === fastestId);
+      const fastestMs = fastestId ? Number(m.answerTimes?.[fastestId]) : NaN;
+      const fastestLabel = fastestPlayer && Number.isFinite(fastestMs)
+         ? `<div class="ex">⚡ Plus rapide : ${escapeHtml(fastestPlayer.name)} (${(fastestMs / 1000).toFixed(2).replace('.', ',')} s)</div>` : '';
       const awardedTeams = m.teamScoringRule === 'firstCorrect' ? rightAnswers.slice(0, 1) : rightAnswers;
       const teamPoints = awardedTeams.reduce((totals, id) => { const player = players.find(item => item.id === id); if (player) totals[player.team] = (totals[player.team] || 0) + 1; return totals; }, {});
       const teamSummary = Object.entries(teamPoints).map(([team, points]) => `${escapeHtml(onlineTeamNames[Number(team)])} +${points}`).join(' · ');
       const answerStatus = m.teamMode ? (teamSummary || 'Aucun point d’équipe') : (myChoice === undefined ? 'Tu n’as pas répondu.' : correct ? `Bonne réponse ! +${window.QuizConfig.pointsPerCorrectAnswer} points` : 'Raté !');
-      $('feedback').innerHTML = `${answerStatus} Bonne réponse : ${q.opts[m.correct]}` + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
+      $('feedback').innerHTML = `${answerStatus} Bonne réponse : ${q.opts[m.correct]}` + fastestLabel + ((m.ex || q.ex) ? `<div class="ex">💡 ${m.ex || q.ex}</div>` : '');
       if (onlineHost) { $('next').style.display = 'block'; $('next').textContent = onlineQuestionIndex === onlineDeck.length - 1 ? 'Voir les résultats' : 'Question suivante'; }
       else { $('next').style.display = 'none'; $('turnLabel').textContent = 'En attente de la question suivante…' }
    }
@@ -2307,9 +2313,10 @@
          return;
       }
       if (m.type === 'answer' && onlineHost && onlineGame && m.index === onlineQuestionIndex) {
-         if (onlineAnswerDeadline && Date.now() > onlineAnswerDeadline) return;
          if (players.some(p => p.id === c.peer) && !Object.prototype.hasOwnProperty.call(onlineAnswers, c.peer)) {
-            onlineAnswers[c.peer] = Number(m.choice); onlineAnswerOrder.push(c.peer); maybeFinishOnlineQuestion();
+            onlineAnswers[c.peer] = Number(m.choice);
+            onlineAnswerTimes[c.peer] = Math.max(0, Number(m.elapsedMs) || 0);
+            onlineAnswerOrder.push(c.peer); maybeFinishOnlineQuestion();
          }
          return;
       }
@@ -2337,20 +2344,9 @@
          $('netStatus').textContent = 'La partie commence !'; enterOnlineGame(); return;
       }
       if (m.type === 'questionRead' && !onlineHost && m.index === onlineQuestionIndex) {
-         const read = window.QuizVoice?.read ? window.QuizVoice.read(String(m.text || ''), String(m.voiceId || '')) : Promise.resolve();
-         Promise.resolve(read).catch(() => {}).then(() => {
-            const hostConnection = connections[0];
-            if (hostConnection?.open) hostConnection.send({ type: 'voiceReady', index: onlineQuestionIndex });
-         });
-         return;
-      }
-      if (m.type === 'questionStart' && !onlineHost && m.index === onlineQuestionIndex) {
-         // Le signal est joué localement ; le chrono démarre à la fin du Top.
-         const signal = window.QuizVoice?.signal ? window.QuizVoice.signal(onlineDeck[onlineQuestionIndex]?.q || '') : Promise.resolve();
-         Promise.resolve(signal).catch(() => {}).then(() => {
-            onlineAnswerDeadline = Date.now() + Math.max(0, Number(m.durationMs) || 0);
-            unlockOnlineAnswers(Math.max(0, Number(m.durationMs) || 0));
-         });
+         // Chaque invité active ses réponses uniquement après avoir entendu
+         // l'intégralité de la question puis le Top sur son propre appareil.
+         beginLocalAnswerWindow(String(m.text || ''));
          return;
       }
       if (m.type === 'questionResult' && !onlineHost && m.index === onlineQuestionIndex) {

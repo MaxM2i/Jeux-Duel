@@ -569,3 +569,103 @@
 .voice-unlocked{animation:voice-unlock .26s ease-out}
 @keyframes voice-unlock{0%{transform:scale(.97);filter:brightness(1.15)}100%{transform:scale(1);filter:none}}
 @media(max-width:420px){.quiz-podium{gap:5px}.podium-place{padding-left:3px;padding-right:3px}.podium-place strong{font-size:.75rem}.podium-place b{font-size:.68rem}}
+
+/* ===== Mode jeu immersif : l'interface occupe l'écran sans éléments de navigation superflus ===== */
+body.in-game {
+   min-height: 100dvh;
+   height: 100dvh;
+   overflow: hidden;
+   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+body.in-game .app {
+   width: 100%;
+   max-width: 980px;
+   height: 100%;
+   margin: 0 auto;
+   display: flex;
+   flex-direction: column;
+}
+body.in-game .topbar { display: none !important; }
+body.in-game .screen.active {
+   flex: 1;
+   min-height: 0;
+   overflow-y: auto;
+   overscroll-behavior: contain;
+   padding: 10px clamp(10px, 2.5vw, 24px) calc(12px + env(safe-area-inset-bottom));
+}
+body.in-game #game .backline,
+body.in-game #soloGame .backline {
+   margin: 0 0 8px;
+   min-height: 38px;
+}
+body.in-game #game > .panel {
+   min-height: calc(100% - 46px);
+   margin: 0;
+   padding: clamp(12px, 2.2vh, 22px);
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   gap: clamp(7px, 1.5vh, 14px);
+}
+body.in-game .score { gap: 5px; }
+body.in-game .score span { padding: 5px 8px; font-size: clamp(11px, 1.8vw, 14px); }
+body.in-game .question {
+   font-size: clamp(21px, 4.2vw, 34px);
+   line-height: 1.16;
+   margin: clamp(8px, 1.8vh, 18px) 0;
+}
+body.in-game .choice-grid {
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: clamp(7px, 1.5vw, 12px);
+}
+body.in-game .choice {
+   min-height: clamp(58px, 12vh, 104px);
+   padding: clamp(10px, 2vw, 18px);
+   font-size: clamp(14px, 2.3vw, 19px);
+   line-height: 1.2;
+}
+body.in-game #feedback { font-size: clamp(13px, 2vw, 16px); }
+body.in-game #next { margin-top: 4px; }
+body.in-game #soloGame {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+}
+body.in-game #soloGame .solo-progress { flex: 0 0 6px; }
+body.in-game #soloGame .solo-head { margin: 0; }
+body.in-game #soloGame .solo-question-card {
+   flex: 1;
+   min-height: 0;
+   padding: clamp(12px, 2.2vh, 22px);
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   gap: clamp(7px, 1.5vh, 14px);
+}
+body.in-game #soloGame .solo-question {
+   font-size: clamp(21px, 4.5vw, 34px);
+   margin: 8px 0 12px;
+}
+body.in-game #soloGame .solo-answers {
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 8px;
+}
+body.in-game #soloGame .solo-answer {
+   min-height: clamp(54px, 11vh, 92px);
+   padding: 9px;
+   font-size: clamp(13px, 2.2vw, 18px);
+}
+body.in-game #soloGame .solo-bottom { margin-top: auto; padding: 6px 2px; }
+@media (max-width: 560px) {
+   body.in-game #game > .panel { border-radius: 18px; }
+   body.in-game .choice-grid,
+   body.in-game #soloGame .solo-answers { grid-template-columns: 1fr 1fr; }
+   body.in-game .choice { min-height: 66px; }
+}
+@media (max-height: 620px) {
+   body.in-game #game > .panel { gap: 4px; padding: 9px; }
+   body.in-game .question { margin: 5px 0; font-size: clamp(18px, 3.5vw, 27px); }
+   body.in-game .choice { min-height: 48px; padding: 7px; }
+   body.in-game #soloGame .solo-question { margin: 4px 0; }
+   body.in-game #soloGame .solo-answer { min-height: 45px; }
+}
