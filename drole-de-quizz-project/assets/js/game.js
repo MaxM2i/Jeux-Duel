@@ -1841,6 +1841,7 @@
    };
    let players = [], turn = 0, round = 1, deck = [], solo = false, locked = false, peer = null, connections = [], roomRole = 'local', roomId = '', onlineHost = false;
    let activeGameMode = 'multiplayer';
+   let supabaseRoomId = null;
    const isOnlinePlay = () => activeGameMode === 'multiplayer' || (activeGameMode === 'challenge' && $('challengePlayMode').value === 'online');
    // Centralise l'état des boutons de lancement (thématique + pseudo + mode).
    function updateSetupActions() {
@@ -2005,7 +2006,7 @@
    let advanceRule = 'firstCorrect', teamScoringRule = 'firstCorrect', challengeResponses = [], challengeResolved = false, challengeHandoff = false;
    let soloRound = 1, soloScore = 0, soloStreak = 0, soloLocked = false, soloDeck = [];
    function renderProfile() { playerProfile.render(); $('quizProfileScore').textContent = Number(localStorage.getItem('drole_quizz_best_solo') || 0); $('quizProfileStreak').textContent = Number(localStorage.getItem('drole_quizz_best_streak') || 0); }
-   $('goProfile').onclick = () => { renderProfile(); show('profileScreen'); };
+   $('goProfile').onclick = () => { renderProfile(); show('profileScreen'); window.dispatchEvent(new Event('dq-profile-open')); };
    function startSolo() {
       solo = true; players = [{ name: 'Moi', score: 0, team: 0 }]; soloDeck = buildSoloDeck(Number($('soloQuestionCount').value) || window.QuizConfig.questions, selectedTopic); soloRound = 1; soloScore = 0; soloStreak = 0; soloLocked = false;
       const topic = TOPICS.find(t => t.id === selectedTopic); $('soloThemeLabel').textContent = topic ? `${topic.emoji} ${topic.name}` : 'Quiz';
@@ -2321,6 +2322,7 @@
    }
    function finishOnlineGame() {
       onlineGame = false;
+      if (supabaseRoomId && window.DQSupabase?.client) window.DQSupabase.client.from('game_rooms').update({ status: 'finished', finished_at: new Date().toISOString() }).eq('id', supabaseRoomId).then(() => {});
       saveGameStat(activeGameMode === 'challenge' ? 'challenge' : 'multi');
       $('roundLabel').textContent = 'Partie terminée';
       $('turnLabel').textContent = 'Classement final';
@@ -2433,6 +2435,20 @@
          onlineTeamScores = m.teamScores || onlineTeamScores; onlineTeamNames = m.teamNames || onlineTeamNames; finishOnlineGame(); return;
       }
    }
+   // Pont entre les invitations Supabase et le transport PeerJS déjà utilisé par le jeu.
+   window.DQOnline = {
+      roomInfo: () => peer && onlineHost && supabaseRoomId ? ({ peerId: peer.id, roomCode: roomId.toUpperCase(), supabaseRoomId, gameMode: activeGameMode, topicId: selectedTopic }) : null,
+      acceptInvite: async invitation => {
+         activeGameMode = invitation.game_mode || 'multiplayer';
+         selectedTopic = invitation.topic_id || selectedTopic;
+         if ($('challengePlayMode') && activeGameMode === 'challenge') $('challengePlayMode').value = 'online';
+         const localProfile = (() => { try { return JSON.parse(localStorage.getItem('player_profile_v1') || '{}'); } catch (_) { return {}; } })();
+         $('onlinePlayerName').value = localProfile.name || $('onlinePlayerName').value || 'Joueur';
+         show('settingsScreen'); updateSetupActions();
+         if (!invitation.room_code) throw new Error('Cette invitation ne contient pas de code de salon valide.');
+         connectToRoom(invitation.room_code);
+      }
+   };
    $('createOnline').onclick = () => {
       if (!selectedTopic) { $('netStatus').textContent = 'Choisis une thématique avant de créer le salon.'; return }
       if (!window.Peer) { $('netStatus').textContent = 'Connexion réseau indisponible. Recharge la page avec Internet.'; return }
@@ -2442,15 +2458,25 @@
       onlineTeamMode = $('teamMode').value === 'teams';
       onlineTeamNames = [$('teamA').value.trim() || 'Équipe A', $('teamB').value.trim() || 'Équipe B'];
       onlineTeamScores = [0, 0];
-      players = [{ id: '', name, ...profileAvatarIdentity(), score: 0, team: 0 }]; connections = []; onlineHost = true; onlineGame = false; roomRole = 'host';
+      players = [{ id: '', name, ...profileAvatarIdentity(), score: 0, team: 0 }]; connections = []; supabaseRoomId = null; onlineHost = true; onlineGame = false; roomRole = 'host';
       saveMultiIdentity(name);
       $('netStatus').textContent = 'Création du salon…'; $('createOnline').style.display = 'none'; $('joinRoomWrap').style.display = 'none'; $('startLocal').style.display = 'none';
       $('onlineRoster').style.display = 'block'; $('onlineRoster').textContent = 'Création du salon…';
       peer = new Peer('drolequizz-' + Math.random().toString(36).slice(2, 8), PEER_OPTS);
       peer.on('open', id => {
          onlinePlayerId = id; players[0].id = id; roomId = id.replace('drolequizz-', '');
-         $('netStatus').textContent = 'Salon créé. Partage ce code : ' + roomId.toUpperCase();
+         $('netStatus').textContent = 'Salon créé. Tu peux inviter directement tes amis.';
          updateOnlineRosterUI(); $('hostStart').style.display = 'block';
+         // Enregistre le salon pour que les invitations privées puissent le référencer.
+         (async () => {
+            const db = window.DQSupabase?.client;
+            const user = await window.DQSupabase?.user?.();
+            if (!db || !user) { $('netStatus').textContent = 'Salon prêt. Connecte-toi à ton compte pour inviter tes amis directement.'; return; }
+            const { data, error } = await db.from('game_rooms').insert({ room_code: roomId.toUpperCase(), game_mode: activeGameMode, host_id: user.id, topic_id: selectedTopic, status: 'waiting', max_players: activeGameMode === 'challenge' ? 2 : 8 }).select('id').single();
+            if (error) { $('netStatus').textContent = 'Salon prêt, mais invitations entre amis indisponibles : ' + error.message; return; }
+            supabaseRoomId = data.id;
+            window.dispatchEvent(new CustomEvent('dq-room-ready'));
+         })();
       });
       peer.on('connection', c => {
          c.on('data', m => handleOnlineData(c, m));
@@ -2469,8 +2495,8 @@
       });
       peer.on('error', err => { $('netStatus').textContent = 'Erreur de salon : ' + (err.type || 'connexion') });
    };
-   $('joinOnline').onclick = () => {
-      const code = $('roomCode').value.trim().toLowerCase(), name = $('onlinePlayerName').value.trim();
+   function connectToRoom(codeOverride) {
+      const code = String(codeOverride || $('roomCode').value).trim().toLowerCase(), name = $('onlinePlayerName').value.trim();
       if (!window.Peer) { $('netStatus').textContent = 'Connexion réseau indisponible. Recharge la page avec Internet.'; return }
       if (!name) { $('netStatus').textContent = 'Choisis ton pseudo avant de rejoindre le salon.'; $('onlinePlayerName').focus(); return }
       if (!code) { $('netStatus').textContent = 'Saisis le code du salon.'; return }
@@ -2488,6 +2514,8 @@
       });
       peer.on('error', err => { clearTimeout(timeout); $('netStatus').textContent = 'Connexion impossible : ' + (err.type || 'erreur réseau') });
    };
+   $('joinOnline').onclick = () => connectToRoom();
+
    $('hostStart').onclick = () => {
       const minPlayers = activeGameMode === 'challenge' ? 2 : 3;
       if (!onlineHost || players.length < minPlayers) { $('netStatus').textContent = `Il faut au moins ${minPlayers} joueurs dans le salon pour démarrer.`; return }
@@ -2497,7 +2525,7 @@
       onlineDeck = buildDeck(Number($('questionCount').value) || window.QuizConfig.questions, selectedTopic); onlineQuestionIndex = 0;
       players.forEach((player, index) => { player.score = 0; player.team = onlineTeamMode ? index % 2 : 0 });
       const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData(), advanceRule, teamScoringRule, teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames, voiceId: window.QuizVoice ? window.QuizVoice.voiceId() : '' };
-      broadcastOnline(msg); $('netStatus').textContent = 'La partie est lancée !'; enterOnlineGame();
+      broadcastOnline(msg); if (supabaseRoomId && window.DQSupabase?.client) window.DQSupabase.client.from('game_rooms').update({ status: 'playing', started_at: new Date().toISOString() }).eq('id', supabaseRoomId).then(() => {}); $('netStatus').textContent = 'La partie est lancée !'; enterOnlineGame();
    };
    $('quit').onclick = () => { if (peer) peer.destroy(); peer = null; connections = []; players = []; onlineHost = false; onlineGame = false; roomRole = 'local'; show('home') };
 })();

@@ -151,6 +151,17 @@
                <p class="small">Personnalise ton avatar et retrouve tes records.</p>
             </div>
          </div>
+         <div class="panel" id="friendsPanel">
+            <h2>Mes amis</h2>
+            <p class="small">Ton code ami permet à tes proches de t'ajouter. Une fois amis, vous pourrez vous inviter directement dans un salon, sans saisir de code.</p>
+            <div class="friend-code-row"><strong>Mon code ami</strong><code id="myFriendCode">—</code><button class="btn soft" id="copyFriendCode" type="button">Copier</button></div>
+            <label class="small" for="friendCodeInput">Ajouter un ami avec son code</label>
+            <div class="friend-add-row"><input class="field" id="friendCodeInput" maxlength="10" placeholder="Ex. ABC12345"><button class="btn" id="addFriendBtn" type="button">Ajouter</button></div>
+            <p class="small" id="friendsStatus" role="status"></p>
+            <h3>Mes amis</h3><div id="friendsList" class="friends-list"><p class="small">Connecte-toi pour retrouver tes amis.</p></div>
+            <h3>Demandes d'amis reçues</h3><div id="friendRequests" class="friends-list"></div>
+            <h3>Invitations de jeu</h3><div id="gameInvitations" class="friends-list"></div>
+         </div>
          <div class="panel">
             <h2>Choisis ton avatar</h2>
             <button class="btn soft full" id="toggleAvatarChoices" type="button"
@@ -268,6 +279,10 @@
                   id="joinOnline">Rejoindre un salon</button></div>
             <div class="status" id="netStatus">Choisis les paramètres de la partie.</div>
             <div id="onlineRoster" class="status" style="display:none"></div>
+            <div id="roomFriendInvites" class="panel" hidden>
+               <h3>Inviter mes amis</h3><p class="small">Envoie une invitation directe. Tes amis pourront rejoindre sans saisir le code du salon.</p>
+               <div id="roomFriendInviteList" class="friends-list"></div>
+            </div>
             <button class="btn full" id="hostStart" style="display:none">Démarrer le quiz</button>
          </div>
       </section>
@@ -312,6 +327,7 @@
    <script src="assets/js/ai-questions.js"></script>
    <script src="assets/js/voice.js"></script>
    <script src="assets/js/auth.js"></script>
+   <script src="assets/js/friends.js"></script>
    <script src="assets/js/game.js"></script>
 </body>
 

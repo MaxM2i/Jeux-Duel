@@ -680,3 +680,14 @@ body.in-game .screen.active { padding-top: 6px; padding-bottom: max(8px, env(saf
 body.in-game #game .backline { display:flex; align-items:center; justify-content:space-between; margin:0 0 6px; }
 body.in-game #game > .panel { min-height:0; height:calc(100% - 44px); margin:0; overflow-y:auto; }
 body.in-game #game .score { flex-wrap:wrap; }
+
+/* Espace social : amis et invitations directes */
+.friend-code-row,.friend-add-row,.friend-item,.game-invite-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.friend-code-row code{font-size:1.1rem;font-weight:800;letter-spacing:.12em;padding:8px 12px;border-radius:10px;background:var(--line)}
+.friend-add-row .field{flex:1;min-width:130px}
+.friends-list{display:grid;gap:8px;margin:8px 0 14px}
+.friend-item,.game-invite-item{justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:12px}
+.friend-item .friend-main{display:flex;align-items:center;gap:9px;min-width:0}
+.friend-item img{width:38px;height:38px;object-fit:cover;border-radius:50%}
+.friend-actions{display:flex;gap:6px;flex-wrap:wrap}
+#roomFriendInvites{margin-top:12px}
