@@ -11,7 +11,7 @@
    if (/^(https?:|data:image\/)/i.test(avatar)) return avatar;
    return 'assets/avatar/' + encodeURIComponent(String(avatar).replace(/^assets\/avatar\//, ''));
  };
- const friendAvatar = f => { const src=avatarSrc(f.avatar, f.custom_avatar); return src ? `<img class="friend-avatar" src=assets/avatar/"${esc(src)}" alt="Avatar de ${esc(f.display_name)}" loading="lazy" onerror="this.hidden=true">` : '<span class="friend-avatar-fallback" aria-hidden="true">🙂</span>'; };
+ const friendAvatar = f => { const src=avatarSrc(f.avatar, f.custom_avatar); return src ? `<img class="friend-avatar" src="${esc(src)}" alt="Avatar de ${esc(f.display_name)}" loading="lazy" onerror="this.hidden=true">` : '<span class="friend-avatar-fallback" aria-hidden="true">🙂</span>'; };
  async function refresh() {
    const db = api();
    if (!db) { status('Configure l’URL et la clé publique Supabase dans assets/js/config.js.'); return; }
