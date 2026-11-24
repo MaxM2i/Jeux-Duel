@@ -5,7 +5,7 @@
    const $ = id => document.getElementById(id), rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a, shuffle = a => a.sort(() => Math.random() - .5);
    const screens = ['home', 'setup', 'game', 'soloGame', 'soloSetup', 'profileScreen', 'settingsScreen'];
    function show(id) {
-      screens.forEach(s => $(s).classList.toggle('active', s === id));
+      document.querySelectorAll('.screen').forEach(screen => screen.classList.toggle('active', screen.id === id));
       // En jeu, l'interface passe en plein écran applicatif : on masque l'en-tête du site.
       document.body.classList.toggle('in-game', id === 'game' || id === 'soloGame');
       window.scrollTo(0, 0);
@@ -28,6 +28,38 @@
    }
    function avatarMarkup(avatar, customAvatar = '') { return `<img class="avatar-mini" src="${avatarSource(avatar, customAvatar)}" alt="">`; }
    function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
+   // Statistiques locales du joueur : cumulées entre les sessions et consultables dans le profil.
+   const STATS_KEY = 'drole_quizz_player_stats_v1';
+   function readStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY) || '{}'); } catch (_) { return {}; } }
+   function saveQuestionStat(mode, topic, correct, elapsedMs) {
+      const stats = readStats();
+      stats.games = stats.games || { solo: 0, challenge: 0, multi: 0 };
+      stats.answers = stats.answers || { correct: 0, wrong: 0, totalMs: 0, timed: 0 };
+      stats.themes = stats.themes || {};
+      stats.answers[correct ? 'correct' : 'wrong']++;
+      stats.answers.totalMs += Math.max(0, Number(elapsedMs) || 0);
+      if (elapsedMs > 0) stats.answers.timed++;
+      const topicInfo = (typeof TOPICS !== 'undefined' ? TOPICS.find(item => item.id === topic) : null); const key = topicInfo ? `${topicInfo.emoji || ''} ${topicInfo.name}`.trim() : (topic || 'Divers');
+      stats.themes[key] = stats.themes[key] || { played: 0, correct: 0, wrong: 0 };
+      stats.themes[key].played++;
+      stats.themes[key][correct ? 'correct' : 'wrong']++;
+      stats.lastMode = mode;
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (_) {}
+      renderPlayerStats();
+   }
+   function saveGameStat(mode) {
+      const stats = readStats(); stats.games = stats.games || { solo: 0, challenge: 0, multi: 0 };
+      stats.games[mode] = (stats.games[mode] || 0) + 1;
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (_) {}
+      renderPlayerStats();
+   }
+   function renderPlayerStats() {
+      const el = $('playerStats'); if (!el) return;
+      const st = readStats(), a = st.answers || { correct: 0, wrong: 0, totalMs: 0, timed: 0 }, themes = Object.entries(st.themes || {});
+      const best = [...themes].sort((x,y) => (y[1].correct / Math.max(1,y[1].played)) - (x[1].correct / Math.max(1,x[1].played)))[0];
+      const most = [...themes].sort((x,y) => y[1].played - x[1].played)[0];
+      el.innerHTML = `<div class="profile-stats"><div><b>${a.correct || 0}</b><small>Bonnes réponses</small></div><div><b>${a.wrong || 0}</b><small>Mauvaises réponses</small></div><div><b>${a.timed ? (a.totalMs/a.timed/1000).toFixed(1)+' s' : '—'}</b><small>Temps moyen</small></div></div><p class="small">Défis : ${(st.games?.challenge)||0} · Multijoueur : ${(st.games?.multi)||0} · Solo : ${(st.games?.solo)||0}</p><p class="small">Thème le plus joué : ${most ? escapeHtml(most[0])+' ('+most[1].played+')' : '—'}</p><p class="small">Meilleur taux de réussite : ${best ? escapeHtml(best[0])+' ('+Math.round(best[1].correct/Math.max(1,best[1].played)*100)+' %)' : '—'}</p>`;
+   }
    function saveMultiIdentity(name) { try { if (name) localStorage.setItem(multiNameKey, name) } catch (e) { } }
    function avatarRowHtml(selected) {
       return AVATARS.map(a => `<button type="button" class="avatar-chip${a === selected ? ' sel' : ''}" data-a="${a}" aria-label="Choisir cet avatar"><img src="${avatarSource(a)}" alt=""></button>`).join('');
@@ -1981,6 +2013,7 @@
    }
    function renderSolo() {
       const q = soloDeck[soloRound - 1]; if (!q) { finishSolo(); return }
+      window.__soloQuestionStartedAt = performance.now();
       $('soloRoundLabel').textContent = `Question ${soloRound} / ${soloDeck.length}`; $('soloCount').textContent = String(soloRound).padStart(2, '0');
       $('soloProgressFill').style.width = ((soloRound - 1) / soloDeck.length * 100) + '%'; $('soloQuestion').textContent = q.q;
       $('soloAnswers').innerHTML = q.opts.map((a, i) => `<button class="solo-answer" data-i="${i}"><span>${String.fromCharCode(65 + i)}</span>${a}</button>`).join('');
@@ -1990,7 +2023,7 @@
 
    }
    function answerSolo(i) {
-      if (soloLocked) return; soloLocked = true; const q = soloDeck[soloRound - 1], ok = i === q.a;
+      if (soloLocked) return; soloLocked = true; const q = soloDeck[soloRound - 1], ok = i === q.a; saveQuestionStat('solo', selectedTopic, ok, Math.max(0, Math.round(performance.now() - (window.__soloQuestionStartedAt || performance.now()))));
       if (ok) { soloScore += window.QuizConfig.pointsPerCorrectAnswer; soloStreak++ } else soloStreak = 0;
       $('soloAnswers').querySelectorAll('button').forEach(b => { b.disabled = true; const n = Number(b.dataset.i); if (n === q.a) b.classList.add('correct'); else if (n === i) b.classList.add('wrong') });
       $('soloFeedback').className = 'solo-feedback ' + (ok ? 'good' : 'bad');
@@ -1998,7 +2031,7 @@
       $('soloScore').textContent = soloScore; $('soloStreak').textContent = soloStreak; $('soloNext').style.display = 'block';
       $('soloNext').textContent = soloRound === soloDeck.length ? 'Voir mon résultat' : 'Question suivante';
    }
-   function finishSolo() {
+   function finishSolo() { saveGameStat('solo');
       localStorage.setItem('drole_quizz_best_solo', Math.max(soloScore, Number(localStorage.getItem('drole_quizz_best_solo') || 0)));
       localStorage.setItem('drole_quizz_best_streak', Math.max(soloStreak, Number(localStorage.getItem('drole_quizz_best_streak') || 0)));
       $('soloProgressFill').style.width = '100%'; $('soloQuestion').textContent = 'Bravo, défi terminé !';
@@ -2143,12 +2176,18 @@
       // Important : le chronomètre démarre après la fin complète de la question
       // ET après le signal « Top » sur cet appareil, jamais à la réception réseau.
       if (onlineLocalAnswerStartedAt || !onlineGame) return;
-      try {
-         if (window.QuizVoice?.read) await window.QuizVoice.read(questionText, window.onlineHostVoiceId || '');
-      } catch (_) { /* Une panne audio ne doit pas bloquer la partie. */ }
-      try {
-         if (window.QuizVoice?.signal) await window.QuizVoice.signal(questionText);
-      } catch (_) { /* Le Top visuel reste disponible même sans audio. */ }
+      const voiceOn = !!window.QuizConfig.voiceEnabled;
+      if (voiceOn && window.QuizVoice?.read) {
+         try { await window.QuizVoice.read(questionText, window.onlineHostVoiceId || ''); }
+         catch (_) { /* Une panne audio ne doit pas bloquer la partie. */ }
+      } else {
+         // Sans lecture vocale, laisser à chacun un délai de lecture identique.
+         await new Promise(resolve => setTimeout(resolve, Math.max(2500, Number(window.QuizConfig.readingDelaySeconds || 5) * 1000)));
+      }
+      if (window.QuizConfig.topSignalEnabled && window.QuizVoice?.signal) {
+         try { await window.QuizVoice.signal(questionText); }
+         catch (_) { /* Le Top visuel reste disponible même sans audio. */ }
+      }
       onlineLocalAnswerStartedAt = performance.now();
       const duration = Math.max(0, Number(window.QuizConfig.answerTimeSeconds) || 0);
       onlineAnswerDeadline = duration > 0 ? Date.now() + duration * 1000 : 0;
@@ -2212,6 +2251,7 @@
       onlineTeamNames = m.teamNames || onlineTeamNames;
       const myChoice = m.answers?.[onlinePlayerId];
       const correct = myChoice === m.correct;
+      if (!m._statsRecorded) { m._statsRecorded = true; saveQuestionStat(activeGameMode === 'challenge' ? 'challenge' : 'multi', selectedTopic, correct, Number(m.answerTimes?.[onlinePlayerId]) || 0); }
       $('answers').querySelectorAll('button').forEach((b, i) => {
          b.disabled = true;
          if (i === m.correct) b.style.border = '2px solid #159b68';
@@ -2269,8 +2309,19 @@
       }
    }
 
+   function startOnlineRematch() {
+      if (!onlineHost || !peer) return;
+      players.forEach(player => { player.score = 0; });
+      onlineTeamScores = [0, 0];
+      onlineDeck = buildDeck(Number(window.QuizConfig.onlineQuestions) || 15, selectedTopic);
+      onlineQuestionIndex = 0;
+      const msg = { type: 'gameStart', deck: onlineDeck, players: onlineRosterData(), advanceRule, teamScoringRule, teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames, voiceId: window.QuizVoice ? window.QuizVoice.voiceId() : '' };
+      broadcastOnline(msg);
+      enterOnlineGame();
+   }
    function finishOnlineGame() {
       onlineGame = false;
+      saveGameStat(activeGameMode === 'challenge' ? 'challenge' : 'multi');
       $('roundLabel').textContent = 'Partie terminée';
       $('turnLabel').textContent = 'Classement final';
       $('question').textContent = 'Bravo à tous !';
@@ -2283,9 +2334,17 @@
          $('feedback').innerHTML = podiumHTML(players, 'points');
       }
       launchWinnerConfetti();
+      const rematch = onlineHost
+         ? '<div class="rematch-actions"><button class="btn full" id="offerRematch">🔁 Proposer une revanche</button><p class="small" id="rematchStatus">Invite les autres joueurs à rejouer.</p></div>'
+         : '<div class="rematch-actions"><p>Une revanche ?</p><button class="btn full" id="acceptRematch">Accepter</button><button class="btn soft full" id="declineRematch">Refuser</button><p class="small" id="rematchStatus"></p></div>';
+      $('feedback').insertAdjacentHTML('beforeend', rematch);
       $('next').style.display = 'block'; $('next').textContent = 'Retour au menu';
       if (onlineHost) broadcastOnline({ type: 'gameFinished', players: onlineRosterData(), teamMode: onlineTeamMode, teamScores: onlineTeamScores, teamNames: onlineTeamNames });
       $('next').onclick = () => { if (peer) { try { peer.destroy() } catch (e) { } } peer = null; connections = []; onlineHost = false; onlineGame = false; show('home') };
+      $('offerRematch')?.addEventListener('click', () => { broadcastOnline({ type: 'rematchOffer' }); $('rematchStatus').textContent = 'Proposition envoyée aux joueurs.'; });
+      $('acceptRematch')?.addEventListener('click', () => { connections[0]?.send({ type: 'rematchVote', accepted: true }); $('rematchStatus').textContent = 'Revanche acceptée. En attente de l’hôte…'; $('acceptRematch').disabled = true; $('declineRematch').disabled = true; });
+      $('declineRematch')?.addEventListener('click', () => { connections[0]?.send({ type: 'rematchVote', accepted: false }); $('rematchStatus').textContent = 'Tu as décliné la revanche.'; $('acceptRematch').disabled = true; $('declineRematch').disabled = true; });
+      $('feedback').querySelectorAll('#offerRematch,#acceptRematch,#declineRematch').forEach(btn => btn.addEventListener('click', () => {}));
    }
    // ===== Protocole réseau : messages hôte / invités =====
    function handleOnlineData(c, m) {
@@ -2318,6 +2377,20 @@
             onlineAnswerTimes[c.peer] = Math.max(0, Number(m.elapsedMs) || 0);
             onlineAnswerOrder.push(c.peer); maybeFinishOnlineQuestion();
          }
+         return;
+      }
+      if (m.type === 'rematchOffer' && !onlineHost) {
+         $('feedback').insertAdjacentHTML('beforeend', '<div class="rematch-actions"><p>L’hôte propose une revanche !</p><button class="btn full" id="acceptRematch">Accepter</button><button class="btn soft full" id="declineRematch">Refuser</button><p class="small" id="rematchStatus"></p></div>');
+         $('acceptRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: true }); $('rematchStatus').textContent = 'Revanche acceptée.'; };
+         $('declineRematch').onclick = () => { c.send({ type: 'rematchVote', accepted: false }); $('rematchStatus').textContent = 'Revanche refusée.'; };
+         return;
+      }
+      if (m.type === 'rematchVote' && onlineHost) {
+         if (m.accepted) {
+            $('rematchStatus') && ($('rematchStatus').textContent = 'Revanche acceptée !');
+            if (!$('startRematch')) $('feedback').insertAdjacentHTML('beforeend', '<button class="btn full" id="startRematch">Démarrer la revanche</button>');
+            $('startRematch').onclick = startOnlineRematch;
+         } else if ($('rematchStatus')) $('rematchStatus').textContent = 'Un joueur a refusé.';
          return;
       }
       if (m.type === 'rejected') {

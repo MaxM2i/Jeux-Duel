@@ -669,3 +669,14 @@ body.in-game #soloGame .solo-bottom { margin-top: auto; padding: 6px 2px; }
    body.in-game #soloGame .solo-question { margin: 4px 0; }
    body.in-game #soloGame .solo-answer { min-height: 45px; }
 }
+
+/* Évite qu'un ancien écran de jeu reste visible derrière l'écran actif. */
+.screen:not(.active) { display: none !important; }
+.rematch-actions { margin: 16px 0 6px; padding: 14px; border-radius: 16px; background: var(--line); color: var(--ink); }
+.rematch-actions .btn { margin-top: 8px; }
+body.in-game { padding-top: max(0px, env(safe-area-inset-top)); }
+body.in-game .app { max-width: none; width: 100%; }
+body.in-game .screen.active { padding-top: 6px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+body.in-game #game .backline { display:flex; align-items:center; justify-content:space-between; margin:0 0 6px; }
+body.in-game #game > .panel { min-height:0; height:calc(100% - 44px); margin:0; overflow-y:auto; }
+body.in-game #game .score { flex-wrap:wrap; }
