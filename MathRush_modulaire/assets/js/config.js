@@ -32,8 +32,8 @@
     {id:'quick',label:'Calculs rapides'}, {id:'complex',label:'Calculs complexes'},
     {id:'rounding',label:'Arrondis'}, {id:'coordinates',label:'Coordonnées'},
     {id:'percentages',label:'Pourcentages'}, {id:'common-multiples',label:'Plus petit / plus grand multiple ou diviseur commun (PPCM / PGCD)'},
-    {id:'multiplication-division',label:'Multiplication et division'},
-    {id:'mixed',label:'Tout mélangé',composite:true,includes:['quick','complex','rounding','coordinates','percentages','common-multiples','multiplication-division']}
+    {id:'multiplication-division',label:'Multiplication et division'}, {id:'exponents',label:'Les exposants'}, {id:'fractions',label:'Les fractions'},
+    {id:'mixed',label:'Tout mélangé',composite:true,includes:['quick','complex','rounding','coordinates','percentages','common-multiples','multiplication-division','exponents','fractions']}
   ];
   const CONTENT_GENERATORS = [
     {id:'basic-operation',label:'Opération simple',categories:['quick','multiplication-division']},
@@ -50,7 +50,13 @@
     {id:'exact-division',label:'Division exacte',categories:['multiplication-division','quick']},
     {id:'factor-decomposition',label:'Décomposition en facteurs',categories:['common-multiples','multiplication-division']},
     {id:'equivalent-expression',label:'Expression équivalente',categories:['quick','complex','multiplication-division']},
-    {id:'missing-elements',label:'Éléments manquants',categories:['quick','complex','rounding','percentages','multiplication-division','common-multiples']}
+    {id:'missing-elements',label:'Éléments manquants',categories:['quick','complex','rounding','percentages','multiplication-division','common-multiples']},
+    {id:'power-operation',label:'Puissances et exposants',categories:['exponents']},
+    {id:'fraction-of',label:'Fraction et part d’un tout',categories:['fractions']},
+    {id:'fraction-equivalence',label:'Fractions équivalentes',categories:['fractions']},
+    {id:'fraction-operation',label:'Opération sur des fractions',categories:['fractions']},
+    {id:'decimal-value',label:'Nombres décimaux et dixièmes',categories:['percentages','fractions']},
+    {id:'number-value',label:'Nombre à représenter',categories:['quick','complex','percentages','multiplication-division','exponents','fractions']}
   ];
   const PRESENTATION_MODELS = [
     {id:'choice',label:'Choix de réponses'}, {id:'cursor',label:'Curseur / règle graduée'},
@@ -59,23 +65,31 @@
     {id:'blue-blocks',label:'Blocs bleus'}, {id:'blue-white-grid',label:'Grille bleue et blanche'},
     {id:'symbols',label:'Symboles'}, {id:'factor-tree',label:'Arbre de décomposition'},
     {id:'coordinate-grid',label:'Repère graphique'}, {id:'vertical-operation',label:'Opération posée'},
-    {id:'horizontal-operation',label:'Opération horizontale'}, {id:'model-grid',label:'Modèle à compléter'}
+    {id:'horizontal-operation',label:'Opération horizontale'}, {id:'model-grid',label:'Modèle à compléter'},
+    {id:'square-100',label:'Carré 100'}, {id:'square-bar',label:'Carré barré'},
+    {id:'pie-chart',label:'Camenbert'}, {id:'square-9',label:'Carré 9'}
   ];
   const PRESENTATION_COMPATIBILITY = {
-    'basic-operation':['choice','cursor','table','boxes','missing-boxes','horizontal-operation','vertical-operation'],
-    'multi-step-operation':['choice','table','boxes','missing-boxes','horizontal-operation','vertical-operation'],
+    'basic-operation':['choice','cursor','table','boxes','missing-boxes','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
+    'multi-step-operation':['choice','table','boxes','missing-boxes','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
     'rounded-number':['choice','cursor','table','boxes','missing-boxes','blue-blocks'],
     'point-read':['choice','coordinate-grid','boxes'], 'point-place':['coordinate-grid','cursor'],
     'segment-distance':['coordinate-grid','boxes','choice'],
-    'percentage-of':['choice','cursor','table','boxes','missing-boxes','blue-blocks','blue-white-grid','symbols'],
-    'ratio-proportion':['table','boxes','blue-blocks','blue-white-grid','symbols','model-grid'],
+    'ratio-proportion':['table','boxes','blue-blocks','blue-white-grid','symbols','model-grid','square-100','square-bar','pie-chart','square-9'],
     'common-multiple':['choice','cursor','table','boxes','missing-boxes','factor-tree'],
     'common-divisor':['choice','cursor','table','boxes','missing-boxes','factor-tree'],
-    'multiplication-product':['choice','cursor','table','boxes','missing-boxes','factor-tree','vertical-operation'],
-    'exact-division':['choice','cursor','table','boxes','missing-boxes','factor-tree','vertical-operation'],
+    'multiplication-product':['choice','cursor','table','boxes','missing-boxes','factor-tree','vertical-operation','square-100','square-bar','pie-chart','square-9'],
+    'exact-division':['choice','cursor','table','boxes','missing-boxes','factor-tree','vertical-operation','square-100','square-bar','pie-chart','square-9'],
     'factor-decomposition':['factor-tree','boxes','table'],
     'equivalent-expression':['choice','equivalent','boxes','table'],
-    'missing-elements':['boxes','missing-boxes','table','cursor','equivalent']
+    'missing-elements':['boxes','missing-boxes','table','cursor','equivalent'],
+    'power-operation':['choice','boxes','table','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
+    'fraction-of':['choice','table','boxes','missing-boxes','square-100','square-bar','pie-chart','square-9'],
+    'fraction-equivalence':['choice','table','boxes','square-100','square-bar','pie-chart','square-9'],
+    'fraction-operation':['choice','table','boxes','square-100','square-bar','pie-chart','square-9'],
+    'decimal-value':['choice','table','boxes','square-100','square-bar','pie-chart'],
+    'number-value':['choice','table','boxes','square-100','square-bar','pie-chart','square-9'],
+    'percentage-of':['choice','cursor','table','boxes','missing-boxes','blue-blocks','blue-white-grid','symbols','square-100','square-bar','pie-chart']
   };
 
   // Catalogue pilotable depuis exercise-lab.html. Les poids sont relatifs entre modèles compatibles.
@@ -98,7 +112,9 @@
     { id:'number-pattern', label:'Suite logique', type:'pattern', modes:['quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:1000, description:'Trouver le terme suivant d’une suite.' , categoryIds:["quick", "complex"], contentIds:["basic-operation"], presentationIds:["model-grid", "boxes"]},
     { id:'number-model', label:'Modèle à compléter', type:'model', modes:['quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:1000, description:'Reproduire une transformation numérique.' , categoryIds:["quick", "complex"], contentIds:["basic-operation", "equivalent-expression"], presentationIds:["model-grid", "boxes"]},
     { id:'factor-gap', label:'Facteurs manquants', type:'factors', modes:['common-multiples','multiplication-division'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Retrouver un facteur dans un produit.' , categoryIds:["quick", "common-multiples", "multiplication-division"], contentIds:["factor-decomposition", "missing-elements"], presentationIds:["factor-tree", "boxes"]},
-    { id:'equation-target', label:'Expression équivalente', type:'equation', modes:['complex','quick'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Choisir une expression qui atteint une cible.' , categoryIds:["quick", "complex", "multiplication-division"], contentIds:["equivalent-expression"], presentationIds:["equivalent", "choice"]}
+    { id:'equation-target', label:'Expression équivalente', type:'equation', modes:['complex','quick'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:2, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:1000, description:'Choisir une expression qui atteint une cible.' , categoryIds:["quick", "complex", "multiplication-division"], contentIds:["equivalent-expression"], presentationIds:["equivalent", "choice"]},
+    { id:'exponents', label:'Puissances et exposants', type:'exponent', modes:['exponents','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:100, description:'Calculer une puissance et retrouver éventuellement sa base ou son exposant.', categoryIds:['exponents'], contentIds:['power-operation'], presentationIds:['choice','boxes','table','horizontal-operation']},
+    { id:'fraction-touch-models', label:'Fractions et modèles tactiles', type:'touchModel', modes:['fractions','percentages','quick','complex','multiplication-division','exponents','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:100, description:'Représenter ou lire une fraction, un pourcentage ou une valeur décimale avec un modèle tactile.', categoryIds:['fractions','percentages','quick','complex','multiplication-division','exponents'], contentIds:['fraction-of','fraction-equivalence','fraction-operation','decimal-value','percentage-of','ratio-proportion','number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'], presentationIds:['square-100','square-bar','pie-chart','square-9'], contentTemplate:'{contentLabel}', contentSlot:'above', touchInteraction:'random'}
   ];
 
   // Modèle de curseur actif : remplace cet objet par le code exporté depuis exercise-lab.html.
@@ -113,7 +129,9 @@
     { id: 'percentages', label: 'Pourcentages', mark: '%', description: 'Calculer une part', family: 'proportionnalité' },
     { id: 'common-multiples', label: 'PPCM / PGCD', mark: '÷', description: 'Plus petit commun multiple et plus grand commun diviseur', family: 'arithmétique' },
     { id: 'multiplication-division', label: 'Multiplication et division', mark: '×÷', description: 'Produits, divisions exactes et facteurs manquants', family: 'calcul' },
-    { id: 'mixed', label: 'Tout mélangé', mark: '?', description: 'Un tirage parmi les sept catégories précédentes', family: 'mixte' }
+    { id: 'exponents', label: 'Les exposants', mark: 'xⁿ', description: 'Calculer des puissances et retrouver base ou exposant', family: 'calcul' },
+    { id: 'fractions', label: 'Les fractions', mark: 'a/b', description: 'Lire, représenter, comparer et calculer des fractions', family: 'proportionnalité' },
+    { id: 'mixed', label: 'Tout mélangé', mark: '?', description: 'Un tirage parmi les neuf catégories précédentes', family: 'mixte' }
   ];
 
   // Un profil par palier. Les bornes sont volontairement lisibles et modifiables.

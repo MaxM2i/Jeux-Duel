@@ -229,7 +229,15 @@
             const q = $('soloQuestion');
             const priorTip=document.getElementById('soloStrategy');if(priorTip)priorTip.remove();if(exercise.op){const tip=document.createElement('div');tip.id='soloStrategy';tip.className='strategy-tip';tip.textContent=mathStrategy(exercise.a,exercise.b,exercise.op);q.before(tip);}
             if(exercise.type==='pairmatch'){renderSoloPairs(q);return;}
-            if (exercise.type === 'commonSlider') {
+            if(exercise.type==='touchModel'){
+               const filling=exercise.touchMode==='fill';
+               q.innerHTML=`<div class="visual-prompt"><small>${escapeHtml(exercise.prompt)}</small>${touchModelHtml(exercise,filling)}</div>`;
+               if(filling){choice=0;$('soloValidate').disabled=true;bindTouchModel(q,count=>{if(locked)return;choice=count;$('soloValidate').disabled=count===0;});}
+               else{q.insertAdjacentHTML('beforeend',`<div class="choices visual-choices">${exercise.opts.map((n,i)=>`<button class="choice" data-v="${n}">${escapeHtml(exercise.displayOpts[i])}</button>`).join('')}</div>`);q.querySelectorAll('.choice').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));}
+            } else if(exercise.type==='exponent'){
+               q.innerHTML=`<div class="visual-prompt"><small>Les exposants</small><div class="visual-equation">${exercise.prompt}</div></div><div class="choices visual-choices">${exercise.opts.map(n=>`<button class="choice" data-v="${n}">${n}</button>`).join('')}</div>`;
+               q.querySelectorAll('.choice').forEach(b=>b.onclick=()=>selectSolo(Number(b.dataset.v),b));
+            } else if (exercise.type === 'commonSlider') {
                q.innerHTML = `<div class="visual-prompt"><small>Sélectionne le ${exercise.label}</small><div class="visual-equation">${exercise.expression||`${exercise.a} , ${exercise.b}`}</div></div><div class="cursor-scale-wrap"><div class="range-value" id="rangeValue">?</div><input id="soloRange" class="range" type="range" min="${exercise.min}" max="${exercise.max}" step="${exercise.cursorStep||exercise.step}" value="${Math.min(exercise.max, Math.max(exercise.min, exercise.cursorStartValue??exercise.ticks[1]))}"><div class="ticks" id="soloTicks"></div></div>`;
                const range=$('soloRange'),value=$('rangeValue');
                range.addEventListener('input', e => { choice = Number(e.currentTarget.value); $('soloValidate').disabled = false; updateCursor(); });
@@ -294,6 +302,8 @@
          }
          function soloExerciseExplanation(){
             if(!exercise)return 'Lis la consigne, repère les nombres utiles puis choisis ou saisis ta réponse.';
+            if(exercise.type==='touchModel')return `Le modèle ${exercise.presentationId} représente ${exercise.contentLabel}. ${['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(exercise.contentId)?'Chaque élément bleu compte pour une unité du résultat.':'Chaque élément bleu représente une part du tout.'} Compte les éléments bleus pour retrouver la valeur.`;
+            if(exercise.type==='exponent')return exercise.questionKind==='base'?`Cherche quel nombre multiplié par lui-même ${exercise.exponent} fois donne ${exercise.result}.`:exercise.questionKind==='exponent'?`Combien de fois faut-il multiplier ${exercise.base} par lui-même pour obtenir ${exercise.result} ?`:`Une puissance ${exercise.base} puissance ${exercise.exponent} signifie multiplier ${exercise.base} par lui-même ${exercise.exponent} fois.`;
             if(exercise.mode==='coordinates')return `Un point se lit dans l’ordre (x ; y) : x indique la position horizontale, puis y la position verticale. Échelle : chaque carreau représente 1 unité. Les axes commencent à 0 et vont jusqu’à ${exercise.coordinateMax||'la valeur maximale indiquée'} ; lis d’abord x, puis y.`;
             if(exercise.mode==='percentages'||exercise.type==='percent')return `Un pourcentage signifie « sur 100 ». ${exercise.pct}% correspond à ${exercise.pct}/100 : multiplie ${exercise.base} par ${exercise.pct}, puis divise par 100.`;
             if(exercise.mode==='common-multiples'&&!['factorTree','ppcmChoice','factors'].includes(exercise.type))return `Le ${exercise.askPpcm?'PPCM':'PGCD'} compare les multiples ou les diviseurs de ${exercise.a} et ${exercise.b}. ${exercise.askPpcm?'Cherche le plus petit nombre présent dans les deux listes de multiples.':'Cherche le plus grand nombre qui divise les deux nombres sans reste.'}`;
@@ -316,6 +326,8 @@
          function soloExerciseHint(){
             if(!exercise)return 'Commence par repérer ce que la consigne te demande.';
             if(exercise.mode==='coordinates')return `Lis d’abord l’axe horizontal (x), puis l’axe vertical (y). Le point est à ${exercise.x} carreaux vers la droite et ${exercise.y} vers le haut.`;
+            if(exercise.type==='touchModel')return `Compte les éléments bleus. ${['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(exercise.contentId)?'Chaque élément vaut une unité du résultat.':'Chaque élément représente une part de la totalité.'}`;
+            if(exercise.type==='exponent')return exercise.questionKind==='base'?`Teste les bases possibles à la puissance ${exercise.exponent} jusqu’à obtenir ${exercise.result}.`:exercise.questionKind==='exponent'?`Multiplie ${exercise.base} par lui-même jusqu’à atteindre ${exercise.result}.`:`Multiplie ${exercise.base} par lui-même ${exercise.exponent} fois.`;
             if(exercise.type==='percent'||exercise.mode==='percentages')return `${exercise.pct}% de ${exercise.base} : commence par calculer 10% (= ${exercise.base/10}), puis adapte ce résultat au pourcentage demandé.`;
             if(exercise.type==='factorTree')return `Commence par multiplier les deux facteurs du bas : ${exercise.lowerA} × ${exercise.lowerB}.`;
             if(exercise.type==='ppcmChoice')return `Commence par écrire les premiers multiples de ${exercise.a} et de ${exercise.b}.`;
@@ -493,8 +505,11 @@
                if(exercise.type==='model')label=`Complète le modèle ${exercise.displayVals.join(' · ')} · ?`;
                if(exercise.type==='factors')label=`Facteurs de ${exercise.a*exercise.b*exercise.c} : ?`;
                if(exercise.type==='equation')label=`Expression égale à ${exercise.target} : ?`;
+               let visual='';
+               if(exercise.type==='touchModel'){label=`Observe ${exercise.contentLabel} sur le modèle`;resultText=exercise.answerLabel||String(exercise.ans);visual=touchModelHtml(exercise,false);}
+               if(exercise.type==='exponent'){label=exercise.prompt;resultText=String(exercise.ans);}
                if(exercise.mode==='coordinates' && Number.isFinite(exercise.x) && Number.isFinite(exercise.y)){label=`(${exercise.x} ; ${exercise.y})`;resultText=`x = ${exercise.x} · y = ${exercise.y}`;}
-               if(exercise.mode==='percentages'){label=`${exercise.pct} % de ${exercise.base}`;resultText=String(Number(exercise.ans.toFixed(2))); }
+               if(exercise.mode==='percentages'&&exercise.type!=='touchModel'){label=`${exercise.pct} % de ${exercise.base}`;resultText=String(Number(exercise.ans.toFixed(2))); }
                if(!label&&exercise.type==='round')label=`Arrondis ${exercise.number} à la ${exercise.unit===10?'dizaine':exercise.unit===100?'centaine':'millier'} près`;
                if(!label&&exercise.mode==='percentages')label=`${exercise.pct} % de ${exercise.base}`;
                if(!label&&exercise.type==='commonSlider')label=exercise.expression?`Place ${exercise.expression} sur la règle graduée`:`${exercise.label} de ${exercise.a} et ${exercise.b}`;
@@ -504,7 +519,7 @@
                // La clé de correspondance suit la réponse réellement affichée,
                // notamment après formatage des pourcentages et des coordonnées.
                const matchValue=exercise.mode==='coordinates'?`coord-${exercise.x}-${exercise.y}`:resultText;
-               seen.add(key);pairs.push({id:pairs.length,label,result,matchValue,mode:exercise.mode,visual:''});
+               seen.add(key);pairs.push({id:pairs.length,label,result,matchValue,mode:exercise.mode,visual});
             }
             // Repli sûr si un mode produit trop peu d'énoncés distincts.
             while(pairs.length<count){const a=rand(2,12),b=rand(2,12),label=`${a} × ${b} = ?`,result=String(a*b),key=`${label}|${result}`;if(!seen.has(key)){seen.add(key);pairs.push({id:pairs.length,label,result,matchValue:result,mode:'quick',visual:''});}}
@@ -701,6 +716,42 @@
          const FRIENDS_KEY = 'mathrush_friends_v1';
          function getFriends() { try { return JSON.parse(localStorage.getItem(FRIENDS_KEY) || '[]'); } catch (e) { return []; } }
          function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+         // Adaptateur de présentation tactile : le contenu (fraction, pourcentage, décimal)
+         // est transmis séparément du modèle graphique choisi.
+         function touchUnitLabel(ex,kind){
+            const generic=['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(ex.contentId);
+            if(generic)return kind==='square-100'?'1 unité par case':kind==='square-bar'?'1 unité par barre':kind==='pie-chart'?'1 unité par part':'1 unité par case';
+            if(kind==='square-100')return ex.contentId==='decimal-value'?'0,01 par case':ex.categoryId==='fractions'?'1/100 par case':'1 % par case';
+            if(kind==='square-bar')return ex.contentId==='decimal-value'?'0,1 par barre':ex.categoryId==='fractions'?'1/10 par barre':'10 % par barre';
+            if(kind==='pie-chart')return ex.contentId==='decimal-value'?'0,1 par part':ex.categoryId==='fractions'?'1/8 par part':'10 % par part';
+            return '1/9 par case';
+         }
+         function touchModelHtml(ex, editable=false){
+            const kind=ex.presentationId||'square-100',count=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?8:9,unitLabel=touchUnitLabel(ex,kind);
+            const filled=editable?0:Math.max(0,Math.min(count,Number(ex.touchTarget)||0));
+            const title=kind==='square-100'?'Carré 100':kind==='square-bar'?'Carré barré':kind==='pie-chart'?'Camenbert':'Carré 9';
+            const rawTemplate=String(ex.contentTemplate||'{contentLabel}');const contentText=rawTemplate.replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g,(_,key)=>String(ex[key]??''));const content=`<div class="touch-content">${escapeHtml(contentText||ex.contentLabel||ex.expression||'')}</div>`;
+            let visual='';
+            if(kind==='square-100')visual=`<div class="touch-square-100" data-touch-kind="cells">${Array.from({length:100},(_,i)=>editable?`<button type="button" class="touch-cell ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Case ${i+1}"></button>`:`<i class="touch-cell ${i<filled?'on':''}"></i>`).join('')}</div>`;
+            else if(kind==='square-bar')visual=`<div class="touch-square-bar" data-touch-kind="cells">${Array.from({length:10},(_,i)=>editable?`<button type="button" class="touch-bar ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Barre ${i+1}, 10 pour cent">${Array.from({length:10},()=>'<i></i>').join('')}</button>`:`<div class="touch-bar ${i<filled?'on':''}">${Array.from({length:10},()=>'<i></i>').join('')}</div>`).join('')}</div>`;
+            else if(kind==='square-9')visual=`<div class="touch-square-9" data-touch-kind="cells">${Array.from({length:9},(_,i)=>editable?`<button type="button" class="touch-cell ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Case ${i+1} sur 9"></button>`:`<i class="touch-cell ${i<filled?'on':''}"></i>`).join('')}</div>`;
+            else visual=editable?`<button type="button" class="touch-pie editable" data-touch-kind="pie" data-filled="${filled}" style="background:conic-gradient(#3188f5 0% ${filled/count*100}%,#e7edf5 ${filled/count*100}% 100%)"><span></span></button>`:`<div class="touch-pie" data-filled="${filled}" style="background:conic-gradient(#3188f5 0% ${filled/count*100}%,#e7edf5 ${filled/count*100}% 100%)"><span></span></div>`;
+            return `<section class="touch-model" data-touch-model="${kind}" data-unit-label="${escapeHtml(unitLabel)}"><small>${title} · ${editable?'touche les cases pour remplir':'modèle déjà rempli'}</small>${ex.contentSlot==='inside'?`<div class="touch-visual-wrap">${visual}${content}</div>`:ex.contentSlot==='hidden'?visual:content+visual}<div class="touch-count" aria-live="polite">${editable?'0':filled} / ${count} · ${unitLabel}</div></section>`;
+         }
+         function bindTouchModel(host, onCount){
+            const model=host.querySelector('[data-touch-model]');if(!model)return;
+            const kind=model.dataset.touchModel,total=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?8:9,unitLabel=model.dataset.unitLabel||'unité';
+            const selected=new Set();const pie=model.querySelector('.touch-pie');
+            const paint=()=>{
+               model.querySelectorAll('[data-touch-index]').forEach(button=>{const on=selected.has(Number(button.dataset.touchIndex));button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on));});
+               if(pie){const stops=Array.from({length:total},(_,i)=>`${selected.has(i)?'#3188f5':'#e7edf5'} ${i/total*100}% ${(i+1)/total*100}%`);pie.style.background=`conic-gradient(${stops.join(',')})`;pie.dataset.filled=String(selected.size);}
+               const count=model.querySelector('.touch-count');if(count)count.textContent=`${selected.size} / ${total} · ${unitLabel}`;
+               onCount(selected.size);
+            };
+            model.querySelectorAll('[data-touch-index]').forEach(button=>button.addEventListener('click',()=>{const i=Number(button.dataset.touchIndex);selected.has(i)?selected.delete(i):selected.add(i);paint();}));
+            if(pie)pie.addEventListener('click',event=>{const r=pie.getBoundingClientRect(),x=event.clientX-r.left-r.width/2,y=event.clientY-r.top-r.height/2;let angle=(Math.atan2(y,x)*180/Math.PI+90+360)%360;const i=Math.floor(angle/360*total);selected.has(i)?selected.delete(i):selected.add(i);paint();});
+         }
+
          function renderFriends() {
             const box = $('friendsList'); if (!box) return; const a = getFriends();
             if (!a.length) { box.textContent = 'Aucun ami enregistré pour le moment.'; return; }
@@ -730,7 +781,16 @@
             const answer=String(generated.ans);
             let prompt=generated.prompt||'';
             let visual=generated.visual||'';
-            if(generated.type==='commonSlider')prompt=generated.expression?`Place le résultat de ${generated.expression} sur la règle graduée.`:`Place le résultat de ${generated.a} + ${generated.b} sur la règle graduée.`;
+            if(generated.type==='touchModel'){
+               const filling=generated.touchMode==='fill';
+               prompt=generated.prompt;
+               visual=touchModelHtml(generated,filling);
+               if(filling)return{choiceBased:true,touchModel:generated,touchFill:true,type:generated.mode,prompt,visual,opts:[String(generated.ans)],answerIndex:generated.ans,ans:String(generated.ans)};
+               const options=generated.displayOpts.map(String);
+               return{choiceBased:true,touchModel:generated,touchFill:false,type:generated.mode,prompt,visual,opts:options,answerIndex:generated.opts.indexOf(generated.ans),ans:String(generated.ans)};
+            }
+            if(generated.type==='exponent')prompt=generated.prompt;
+            else if(generated.type==='commonSlider')prompt=generated.expression?`Place le résultat de ${generated.expression} sur la règle graduée.`:`Place le résultat de ${generated.a} + ${generated.b} sur la règle graduée.`;
             else if(generated.type==='round')prompt=`Arrondis ${generated.number} à la ${generated.unit===10?'dizaine':generated.unit===100?'centaine':'millier'} la plus proche.`;
             else if(generated.type==='roundingTable'){
                prompt=generated.prompt;
@@ -787,11 +847,12 @@
          function updateDuelScore() { $('myScore').textContent = duelMy; $('opScore').textContent = duelOpp; }
          function renderDuelQuestion(q) {
             duelQ = q; duelQuestionStartedAt=Date.now(); roundEnded = false; answeredThisRound = false; hostWrong = false; guestWrong = false; duelHostAnswered = null; duelGuestAnswered = null; duelFirstCorrectSide = null; $('duelRoundLabel').textContent = `Manche ${round} / 10`; $('duelCountdown').textContent = ''; $('duelFeedback').className = 'feedback'; $('duelFeedback').textContent = '';
-            $('duelQuestion').innerHTML = q.burger
+            $('duelQuestion').innerHTML = q.touchModel ? `<div class="question"><small>${escapeHtml(q.prompt)}</small>${q.visual||''}</div>` : q.burger
                ? `<div class="burger-cat">${escapeHtml(q.cat)}</div><div class="burger-q">${escapeHtml(q.text)}</div>`
                : q.choiceBased ? `<div class="question"><small>${(MathRushConfig.MODES.find(mode=>mode.id===q.type)?.label)||'Exercice'}</small>${escapeHtml(q.prompt)}</div>${q.visual||''}`
                : `<div class="question"><small>Calcule le plus vite possible</small>${q.a} ${q.op} ${q.b} = ?</div>`;
-            $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : q.type==='baseTen' ? `<button class="choice count-block-choice" data-i="${i}"><span class="count-blocks" aria-label="${Number(n)} blocs bleus">${Array.from({length:Number(n)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
+            if(q.touchModel&&q.touchFill){$('duelOptions').innerHTML=`<button class="choice touch-submit" data-i="${q.answerIndex}" disabled>Valider la représentation</button>`;bindTouchModel($('duelQuestion'),count=>{const button=$('duelOptions').querySelector('button');if(button){button.dataset.i=String(count);button.disabled=count===0;}});}
+            else $('duelOptions').innerHTML = q.opts.map((n, i) => q.burger ? `<button class="choice" data-i="${i}">${'ABCD'[i]} · ${escapeHtml(n)}</button>` : q.touchModel ? `<button class="choice" data-i="${i}">${escapeHtml(q.touchModel.displayOpts[i])}</button>` : q.type==='baseTen' ? `<button class="choice count-block-choice" data-i="${i}"><span class="count-blocks" aria-label="${Number(n)} blocs bleus">${Array.from({length:Number(n)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>` : `<button class="choice" data-i="${i}">${escapeHtml(n)}</button>`).join('');
             $('duelOptions').querySelectorAll('button').forEach(b => b.onclick = () => answerDuel(Number(b.dataset.i), b));
             updateDuelScore();
          }
@@ -807,7 +868,7 @@
          function finishLocalDuelQuestion(){
             $('duelOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.i)===duelQ.answerIndex)button.style.border='2px solid #159b68';});
             $('duelFeedback').className='feedback show '+(localDuelAnswers.some(answer=>answer.correct)?'good':'bad');
-            $('duelFeedback').textContent=`${localDuelAnswers.some(answer=>answer.correct)?'Bonne réponse !':'Aucune bonne réponse.'} Résultat : ${duelQ.ans}.`;
+            $('duelFeedback').textContent=`${localDuelAnswers.some(answer=>answer.correct)?'Bonne réponse !':'Aucune bonne réponse.'} Résultat : ${duelQ.touchModel?.answerLabel||duelQ.ans}.`;
             $('localDuelNext').textContent=localDuelRound===10?'Voir les résultats':'Question suivante';$('localDuelNext').style.display='block';localDuelHandoff=false;
          }
          function answerLocalDuel(value){
@@ -815,7 +876,7 @@
             answeredThisRound=true;const elapsed=Date.now()-duelQuestionStartedAt;recordTiming(localDuelSessionStats,elapsed,0);recordTiming(rapidityStats,elapsed,0);persist();const correct=value===duelQ.answerIndex;
             localDuelAnswers.push({player:localDuelTurn,correct,at:Date.now()});
             const player=localDuelPlayers[localDuelTurn];
-            $('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+            $('duelOptions').querySelectorAll('button').forEach(button=>button.disabled=true);$('duelQuestion').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
             if(localDuelRule==='firstCorrect'){
                if(correct){player.score+=100;duelMy=localDuelPlayers[0].score;duelOpp=localDuelPlayers[1].score;updateDuelScore();roundEnded=true;finishLocalDuelQuestion();return;}
                if(localDuelAnswers.length===2){roundEnded=true;finishLocalDuelQuestion();return;}
@@ -850,7 +911,7 @@
             if (roundEnded || answeredThisRound || !conn || !conn.open) return;
             const elapsed=Date.now()-duelQuestionStartedAt;recordTiming(duelSessionStats,elapsed,0);recordTiming(rapidityStats,elapsed,0);persist();
             const right = duelQ.burger ? value === duelQ.ansIdx : duelQ.choiceBased ? value === duelQ.answerIndex : value === duelQ.ans;
-            answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
+            answeredThisRound=true;$('duelOptions').querySelectorAll('button').forEach(b=>b.disabled=true);$('duelQuestion').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
             if(duelAdvanceRule==='turns'){
                if(role==='host'){
                   if(right)closeRound('host');else{hostWrong=true;if(guestWrong)closeRound('draw');else{conn.send({type:'turnUpdate',next:'guest',wrong:'host'});$('duelFeedback').className='feedback show bad';$('duelFeedback').textContent='Raté ! Au tour de ton adversaire.';}}
@@ -874,9 +935,9 @@
             if(duelHostAnswered!==null&&duelGuestAnswered!==null)closeRound('both');
          }
          function closeRound(winner) {
-            if (roundEnded) return; roundEnded = true;
+            if (roundEnded) return; roundEnded = true;$('duelQuestion').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
             if(winner==='host')duelMy+=100;else if(winner==='guest')duelOpp+=100;else if(winner==='both'){if(duelHostAnswered)duelMy+=100;if(duelGuestAnswered)duelOpp+=100;if(duelFirstCorrectSide==='host')duelMy+=50;else if(duelFirstCorrectSide==='guest')duelOpp+=50;}
-            const goodAnswer = duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.choiceBased ? duelQ.opts[duelQ.answerIndex] : duelQ.ans;
+            const goodAnswer = duelQ.touchFill ? (duelQ.touchModel?.answerLabel||duelQ.ans) : duelQ.burger ? ` ${'ABCD'[duelQ.ansIdx]} — ${duelQ.opts[duelQ.ansIdx]}` : duelQ.choiceBased ? duelQ.opts[duelQ.answerIndex] : duelQ.ans;
             $('duelOptions').querySelectorAll('button').forEach(b => b.disabled = true);
             $('duelFeedback').className = 'feedback show ' + (winner === 'draw' ? 'near' : 'good');
             const resultMessage=winner==='host'?'Tu as trouvé en premier !':winner==='guest'?'Ton adversaire a trouvé en premier !':winner==='both'?`Réponses reçues. ${duelHostAnswered?'Tu marques 100 points.':'Tu ne marques pas de point.'} ${duelGuestAnswered?'Ton adversaire marque 100 points.':'Ton adversaire ne marque pas de point.'}`:duelQ.burger?'Manche terminée, personne n\'a trouvé !':'Manche terminée';
@@ -1012,20 +1073,21 @@
                const player=mathPlayers[mathTurn];if(!player)return;
                $('mathTurn').innerHTML=`Manche ${mathRound}/10 · ${mathAdvanceRule==='turns'?'Au tour de ':''}${mathAdvanceRule==='turns'?`<img class="local-math-avatar" src="${profileAvatarUrl(player)}" alt=""> ${escapeHtml(player.name)}`:'À vous de répondre'}`;
                $('mathLocalQuestion').textContent=mathLocalQuestion.prompt;$('mathLocalVisual').innerHTML=mathLocalQuestion.visual||'';
-               $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>mathLocalQuestion.type==='baseTen'?`<button class="choice count-block-choice" type="button" data-answer="${index}"><span class="count-blocks" aria-label="${Number(option)} blocs bleus">${Array.from({length:Number(option)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>`:`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
+               if(mathLocalQuestion.touchModel&&mathLocalQuestion.touchFill){$('mathLocalOptions').innerHTML=`<button class="choice touch-submit" type="button" data-answer="0" disabled>Valider la représentation</button>`;bindTouchModel($('mathLocalVisual'),count=>{const button=$('mathLocalOptions').querySelector('button');if(button){button.dataset.answer=String(count);button.disabled=count===0;}});}
+               else $('mathLocalOptions').innerHTML=mathLocalQuestion.opts.map((option,index)=>mathLocalQuestion.touchModel?`<button class="choice" type="button" data-answer="${index}">${escapeHtml(mathLocalQuestion.touchModel.displayOpts[index])}</button>`:mathLocalQuestion.type==='baseTen'?`<button class="choice count-block-choice" type="button" data-answer="${index}"><span class="count-blocks" aria-label="${Number(option)} blocs bleus">${Array.from({length:Number(option)},()=>'<i class=\"count-blue-block\"></i>').join('')}</span></button>`:`<button class="choice" type="button" data-answer="${index}">${escapeHtml(option)}</button>`).join('');
                const canAnswer=mathAdvanceRule==='turns'?player.id===mathOnlineId:!mathAnswers[mathOnlineId];
-               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=!canAnswer||mathLocalLocked;button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=!canAnswer||mathLocalLocked||(mathLocalQuestion.touchFill&&Number(button.dataset.answer)===0);button.onclick=()=>submitMathAnswer(Number(button.dataset.answer));});if(!canAnswer||mathLocalLocked)$('mathLocalVisual').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
                $('mathNextLocal').style.display='none';$('mathLocalScores').innerHTML=mathScores();
             }
             function renderMathResult(message){
                mathPlayers.splice(0,mathPlayers.length,...message.players);mathLocalLocked=true;
-               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.answer)===message.answerIndex)button.style.border='2px solid #159b68';});
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>{button.disabled=true;if(Number(button.dataset.answer)===message.answerIndex)button.style.border='2px solid #159b68';});$('mathLocalVisual').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
                $('mathLocalFeedback').className='feedback show '+(message.correct?'good':'bad');$('mathLocalFeedback').textContent=message.feedback|| (message.correct?'Bonne réponse !':'Raté.');$('mathLocalScores').innerHTML=mathScores();
             }
             function submitMathAnswer(answerIndex){
                if(mathLocalLocked||!mathGameStarted)return;
                const elapsedMs=Math.max(0,Date.now()-mathQuestionStartedAt);recordTiming(rapidityStats,elapsedMs,0);persist();const payload={type:'mathAnswer',round:mathRound,answerIndex,elapsedMs};mathLocalLocked=true;
-               $('mathLocalOptions').querySelectorAll('button').forEach(button=>button.disabled=true);
+               $('mathLocalOptions').querySelectorAll('button').forEach(button=>button.disabled=true);$('mathLocalVisual').querySelectorAll('.touch-cell,.touch-bar,.touch-pie').forEach(control=>control.disabled=true);
                if(mathHost)applyMathAnswer(mathOnlineId,answerIndex,elapsedMs);else if(mathConnections[0]?.open)mathConnections[0].send(payload);
             }
             function applyMathAnswer(playerId,answerIndex,elapsedMs=0){
@@ -1056,7 +1118,7 @@
                else finishMathRound('',mathLocalQuestion.answerIndex,'Tous les joueurs ont répondu. Personne n’a trouvé.',false);
             }
             function finishMathRound(winnerId,answerIndex,feedback,correct){
-               const result={type:'mathAnswerResult',players:mathPlayers,answerIndex,correct,feedback,winnerId,answer:mathLocalQuestion.opts[mathLocalQuestion.answerIndex]};
+               const result={type:'mathAnswerResult',players:mathPlayers,answerIndex,correct,feedback,winnerId,answer:mathLocalQuestion.touchFill?(mathLocalQuestion.touchModel?.answerLabel||mathLocalQuestion.ans):mathLocalQuestion.opts[mathLocalQuestion.answerIndex]};
                renderMathResult(result);$('mathNextLocal').style.display='block';$('mathNextLocal').textContent=mathRound===10?'Voir les résultats':'Question suivante';broadcastMath(result);
             }
             function handleMathData(connection,message){

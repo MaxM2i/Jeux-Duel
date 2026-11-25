@@ -11,7 +11,7 @@ const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const shuffle = values => [...values].sort(() => Math.random() - 0.5);
 
 for (let difficulty = 0; difficulty <= 6; difficulty++) {
-  for (const mode of ['quick', 'complex', 'rounding', 'coordinates', 'percentages', 'common-multiples', 'multiplication-division', 'mixed']) {
+  for (const mode of ['quick', 'complex', 'rounding', 'coordinates', 'percentages', 'common-multiples', 'multiplication-division', 'exponents', 'fractions', 'mixed']) {
     for (let i = 0; i < 100; i++) {
       const exercise = context.window.MathRushExercises.createSoloExercise(mode, difficulty, rand, shuffle);
       assert.ok(exercise.mode, `mode manquant (${mode}, difficulté ${difficulty})`);
@@ -30,12 +30,19 @@ for (let difficulty = 0; difficulty <= 6; difficulty++) {
 
 // Catalogue des modèles : chaque variante visuelle doit être générable et mathématiquement cohérente.
 const cfgArchitecture=context.window.MathRushConfig;
-assert.equal(cfgArchitecture.MATH_CATEGORIES.length,8,'les huit catégories doivent être listées, tout mélangé inclus');
+assert.equal(cfgArchitecture.MATH_CATEGORIES.length,10,'les dix catégories doivent être listées, tout mélangé inclus');
 assert.ok(cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed')?.composite,'Tout mélangé doit être identifié comme catégorie composite');
-assert.deepEqual([...cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed').includes].sort(),['common-multiples','complex','coordinates','multiplication-division','percentages','quick','rounding'].sort(),'Tout mélangé doit reprendre les sept catégories');
+assert.deepEqual([...cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed').includes].sort(),['common-multiples','complex','coordinates','exponents','fractions','multiplication-division','percentages','quick','rounding'].sort(),'Tout mélangé doit reprendre les neuf catégories');
 assert.ok(cfgArchitecture.CONTENT_GENERATORS.length>=12,'catalogue des générateurs de contenu incomplet');
-assert.ok(cfgArchitecture.PRESENTATION_MODELS.length>=10,'catalogue des présentations incomplet');
+assert.ok(cfgArchitecture.PRESENTATION_MODELS.length>=18,'catalogue des présentations incomplet');
+assert.deepEqual(['square-100','square-bar','pie-chart','square-9'].map(id=>cfgArchitecture.PRESENTATION_MODELS.find(model=>model.id===id)?.label),['Carré 100','Carré barré','Camenbert','Carré 9'],'les quatre modèles tactiles doivent être nommés');
 assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['percentage-of'].includes('blue-white-grid'),'compatibilité pourcentages/grille absente');
+assert.ok(cfgArchitecture.CONTENT_GENERATORS.some(x=>x.id==='power-operation'&&x.categories.includes('exponents')),'générateur exposants absent');
+assert.ok(cfgArchitecture.CONTENT_GENERATORS.some(x=>x.id==='fraction-of'&&x.categories.includes('fractions')),'générateur fractions absent');
+assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['basic-operation'].includes('square-9'),'les modèles tactiles doivent accepter aussi un contenu de calcul simple');
+assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['number-value'].includes('square-100'),'les modèles tactiles doivent accepter un contenu numérique');
+assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['fraction-of'].includes('square-9'),'compatibilité fraction/carré 9 absente');
+assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['fraction-operation'].includes('square-9'),'compatibilité opération/carré 9 absente');
 const modelCatalog = context.window.MathRushConfig.EXERCISE_MODELS;
 assert.ok(Array.isArray(modelCatalog) && modelCatalog.length >= 10, 'catalogue de modèles absent ou incomplet');
 for (const model of modelCatalog) {
@@ -89,6 +96,65 @@ assert.notEqual(context.window.MathRushExercises.createSoloExercise('quick',2,ra
 cursorModel.playModes=previousPlayModes;
 modelCatalog.forEach((model,index)=>{model.weight=previousWeights[index];});
 
+// Les deux nouvelles catégories sont générées dans chaque contexte de jeu.
+{
+  const weights=modelCatalog.map(model=>model.weight);
+  for(const category of ['exponents','fractions']){
+    const targetId=category==='exponents'?'exponents':'fraction-touch-models';
+    modelCatalog.forEach(model=>{model.weight=model.id===targetId?1:0;});
+    for(const playMode of ['solo','duel','multiplayer','gogo']){
+      const ex=context.window.MathRushExercises.createSoloExercise(category,2,rand,shuffle,playMode);
+      assert.ok(ex.ans!==undefined,`réponse absente pour ${category}/${playMode}`);
+      assert.ok(Array.isArray(ex.opts)&&ex.opts.length>=2,`choix absents pour ${category}/${playMode}`);
+      if(category==='exponents'){assert.equal(ex.type,'exponent');assert.equal(ex.result,Math.pow(ex.base,ex.exponent));assert.equal(ex.ans,ex.questionKind==='base'?ex.base:ex.questionKind==='exponent'?ex.exponent:ex.result);}
+      else{assert.equal(ex.type,'touchModel');assert.ok(['square-100','square-bar','pie-chart','square-9'].includes(ex.presentationId));}
+    }
+  }
+  modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
+}
+// Les exposants permettent aussi de retrouver la base ou l’exposant manquant.
+{
+  const weights=modelCatalog.map(model=>model.weight);modelCatalog.forEach(model=>{model.weight=model.id==='exponents'?1:0;});
+  const forceBase=(min,max)=>min===0&&max===3?2:min,forceExponent=(min,max)=>min===0&&max===3?3:min;
+  const baseQuestion=context.window.MathRushExercises.createSoloExercise('exponents',1,forceBase,shuffle,'solo');
+  const exponentQuestion=context.window.MathRushExercises.createSoloExercise('exponents',1,forceExponent,shuffle,'solo');
+  assert.equal(baseQuestion.questionKind,'base');assert.equal(baseQuestion.ans,baseQuestion.base);assert.equal(baseQuestion.result,Math.pow(baseQuestion.base,baseQuestion.exponent));
+  assert.equal(exponentQuestion.questionKind,'exponent');assert.equal(exponentQuestion.ans,exponentQuestion.exponent);assert.equal(exponentQuestion.result,Math.pow(exponentQuestion.base,exponentQuestion.exponent));
+  modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
+}
+// Vérifie les limites et les quatre rendus tactiles sur leurs contenus compatibles.
+{
+  const weights=modelCatalog.map(model=>model.weight),touch=modelCatalog.find(model=>model.id==='fraction-touch-models');
+  modelCatalog.forEach(model=>{model.weight=model.id===touch.id?1:0;});
+  const cases=[['fractions','square-100','fraction-of',1,59],['fractions','square-bar','fraction-of',1,10],['fractions','pie-chart','fraction-of',1,8],['fractions','square-9','fraction-of',1,8],['fractions','square-9','fraction-operation',2,8],['percentages','square-100','percentage-of',1,59],['percentages','square-bar','percentage-of',1,10],['percentages','pie-chart','percentage-of',1,8]];
+  for(const [category,presentation,content,min,max] of cases){
+    touch.presentationIds=[presentation];touch.contentIds=[content];
+    const ex=context.window.MathRushExercises.createSoloExercise(category,2,rand,shuffle,'solo');
+    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.touchTarget>=min&&ex.touchTarget<=max,`cible hors plage ${presentation}`);assert.ok(ex.touchMode==='fill'||ex.touchMode==='read');assert.ok(ex.contentTemplate&&ex.contentSlot,'réglage de contenu du modèle tactile absent');
+  }
+  // Fraction équivalente et opération : le résultat doit correspondre à la quantité dessinée.
+  touch.presentationIds=['square-9'];touch.contentIds=['fraction-equivalence'];
+  const equivalent=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');
+  const eq=equivalent.contentLabel.match(/(\d+)\/(\d+) = \?\/(\d+)/);
+  assert.ok(eq,'énoncé de fraction équivalente absent');assert.equal(Number(eq[1])*Number(eq[3])/Number(eq[2]),equivalent.ans,'fraction équivalente incorrecte');
+  touch.contentIds=['fraction-operation'];
+  const operation=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');
+  const op=operation.contentLabel.match(/(\d+)\/(\d+) \+ (\d+)\/(\d+)/);
+  assert.ok(op,'opération sur fractions absente');assert.equal(Number(op[1])+Number(op[3]),operation.ans,'addition de fractions incorrecte');
+  touch.presentationIds=['square-100'];touch.contentIds=['decimal-value'];
+  const decimal=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');assert.ok(decimal.touchTarget>=50&&decimal.touchTarget<=59,'Carré 100 décimal doit commencer à 0,5');
+  touch.presentationIds=['square-9'];touch.contentIds=['fraction-of'];touch.touchInteraction='fill';assert.equal(context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo').touchMode,'fill','mode tactile remplir non configurable');touch.touchInteraction='read';assert.equal(context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo').touchMode,'read','mode tactile prérempli non configurable');touch.touchInteraction='random';
+  // Un modèle tactile accepte également un nombre ou une opération simple sans changer son renderer.
+  for(const presentation of ['square-100','square-bar','pie-chart','square-9']){
+    touch.presentationIds=[presentation];touch.contentIds=['basic-operation'];
+    const ex=context.window.MathRushExercises.createSoloExercise('quick',2,rand,shuffle,'solo');
+    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.contentLabel.match(/^\d+ [ +−×] \d+$/),'le modèle doit pouvoir afficher une opération');assert.ok(ex.ans>=1&&ex.ans<=(presentation==='square-100'?59:presentation==='square-bar'?10:8));
+    const m=ex.contentLabel.match(/^(\d+) ([+−×]) (\d+)$/),a=Number(m[1]),b=Number(m[3]),expected=m[2]==='+'?a+b:m[2]==='−'?a-b:a*b;assert.equal(ex.ans,expected,'le résultat de l’opération affichée doit correspondre au remplissage');
+  }
+  modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
+  touch.presentationIds=['square-100','square-bar','pie-chart','square-9'];touch.contentIds=['fraction-of','fraction-equivalence','fraction-operation','decimal-value','percentage-of','ratio-proportion','number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'];touch.touchInteraction='random';
+}
+
 const milestones = context.window.MathRushProgression.getMilestones('quick', {
   section: 1, level: 7, done: ['1-1', '1-2', '1-3', '1-4', '1-5']
 });
@@ -106,6 +172,7 @@ assert.ok(trophies.some(trophy => trophy.id === 'streak-10'));
 const appSource = fs.readFileSync(`${__dirname}/../assets/js/app.js`, 'utf8');
 const htmlSource = fs.readFileSync(`${__dirname}/../index.html`, 'utf8');
 assert.ok(appSource.includes('function renderSharedMathModeCards'), 'génération partagée des modes absente');
+assert.ok(appSource.includes('function touchModelHtml') && appSource.includes('bindTouchModel') && appSource.includes('touchModelHtml(exercise,false)'), 'adaptateur tactile solo/compétitif/Duo à gogo absent');
 assert.ok(appSource.includes("renderSharedMathModeCards('duelMathModes'"), 'sélecteur Défi non alimenté');
 assert.ok(appSource.includes("renderSharedMathModeCards('mathRoomModes'"), 'sélecteur Multijoueur non alimenté');
 assert.ok(appSource.includes('duel-finish-anim'), 'animation de fin du Défi absente');
@@ -178,7 +245,7 @@ for(let i=0;i<300;i++){
     assert.ok(!missing.expression.includes('×')||missing.expression.split('×').length===2,'le premier palier ne doit pas proposer trois facteurs');
   }
 }
-console.log('MathRush : tests réussis (5 600 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
+console.log('MathRush : tests réussis (7 000 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
 
 // Régression curseur mobile : aucun padding horizontal ne doit écraser le rail tactile.
 const cssSource = require('fs').readFileSync(require('path').join(__dirname, '../assets/css/mathrush.css'), 'utf8');

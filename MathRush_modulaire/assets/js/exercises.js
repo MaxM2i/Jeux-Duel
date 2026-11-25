@@ -83,7 +83,109 @@
     const presentationId = compatiblePresentations.length ? pick(compatiblePresentations, rand) : (selectedModel?.presentationIds || [])[0] || null;
     const modelMin = Number.isFinite(Number(selectedModel?.numberMin)) ? Number(selectedModel.numberMin) : 1;
     const modelMax = Number.isFinite(Number(selectedModel?.numberMax)) ? Number(selectedModel.numberMax) : 10000;
-    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId });
+    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId, contentTemplate:selectedModel?.contentTemplate||'{contentLabel}', contentSlot:selectedModel?.contentSlot||'above' });
+
+    // Contenus puissances et fractions : les présentations restent interchangeables.
+    if (selectedModel?.type === 'exponent') {
+      const base = rand(2, rank <= 1 ? 6 : rank <= 3 ? 10 : 15);
+      const exponent = rand(2, rank <= 1 ? 3 : rank <= 3 ? 4 : 5);
+      const result = Math.pow(base, exponent);
+      const questionKind = pick(['result','result','base','exponent'],rand);
+      let ans,prompt,contentLabel;
+      if(questionKind==='base'){ans=base;prompt=`Quelle base donne ${result} avec une puissance ${exponent} ?  □^${exponent} = ${result}`;contentLabel=prompt;}
+      else if(questionKind==='exponent'){ans=exponent;prompt=`Quel exposant manque ? ${base}^□ = ${result}`;contentLabel=prompt;}
+      else{ans=result;prompt=`${base} puissance ${exponent} = ?`;contentLabel=`${base} puissance ${exponent}`;}
+      const opts = shuffle(unique([ans, ans + 1, Math.max(1, ans - 1), questionKind==='result'?base*exponent:ans+2]));
+      while (opts.length < 4) opts.push(ans + opts.length + 2);
+      return tag({type:'exponent', mode, base, exponent, result, questionKind, ans, prompt, opts:opts.slice(0,4), contentLabel, expression:`${base}^${exponent}`});
+    }
+    if (selectedModel?.type === 'touchModel') {
+      const model = presentationId || 'square-100';
+      const interaction=selectedModel?.touchInteraction||'random';
+      const fillMode = interaction==='fill' ? true : interaction==='read' ? false : rand(0,1)===0;
+      let target, denominator, label, prompt, unit, contentLabel;
+      const capacity=model==='square-100'?59:model==='square-bar'?10:8;
+      if (contentId === 'ratio-proportion') {
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
+        target=rand(1,capacity);unit=model==='square-bar'||model==='pie-chart'?10:1;
+        const part=model==='square-100'?target:model==='square-bar'?target*10:model==='pie-chart'?target*10:target;
+        const whole=model==='square-100'?100:model==='square-bar'||model==='pie-chart'?100:9;
+        contentLabel=`${part}:${whole-part}`;label=`Représente le rapport ${contentLabel}`;
+      } else if (['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId)) {
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;unit=model==='square-bar'||model==='pie-chart'?10:1;
+        if(contentId==='number-value'){target=rand(1,capacity);contentLabel=String(target);label=`Représente le nombre ${target}`;}
+        else if(contentId==='basic-operation'){
+          const op=pick(['+','−','×'],rand);let a,b;
+          if(op==='+'){a=rand(1,Math.max(1,capacity-1));b=rand(1,Math.max(1,capacity-a));target=a+b;}
+          else if(op==='−'){a=rand(2,capacity);b=rand(1,a-1);target=a-b;}
+          else{a=rand(2,Math.max(2,Math.floor(Math.sqrt(capacity))));b=rand(2,Math.max(2,Math.floor(capacity/a)));target=a*b;}
+          contentLabel=`${a} ${op} ${b}`;label=`Calcule ${contentLabel}`;
+        } else if(contentId==='multi-step-operation'){
+          const b=rand(1,Math.min(2,capacity-1)),c=rand(1,Math.max(1,Math.floor((capacity-1)/b))),a=rand(1,Math.max(1,capacity-b*c));
+          target=a+b*c;contentLabel=`${a} + ${b} × ${c}`;label=`Calcule ${contentLabel}`;
+        } else if(contentId==='multiplication-product'){
+          const a=rand(2,Math.max(2,Math.floor(Math.sqrt(capacity)))),b=rand(2,Math.max(2,Math.floor(capacity/a)));target=a*b;contentLabel=`${a} × ${b}`;label=`Calcule ${contentLabel}`;
+        } else if(contentId==='exact-division'){
+          target=rand(1,capacity);const divisor=rand(2,5);contentLabel=`${target*divisor} ÷ ${divisor}`;label=`Calcule ${contentLabel}`;
+        } else {
+          const base=rand(2,capacity>=9?3:2),maxExp=Math.max(2,Math.floor(Math.log(capacity)/Math.log(base))),exp=rand(2,maxExp);target=Math.pow(base,exp);contentLabel=`${base}^${exp}`;label=`Calcule ${base} puissance ${exp}`;
+        }
+      } else if (contentId === 'fraction-equivalence') {
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
+        const sourceDenominator=model==='square-100'?10:model==='square-bar'?2:model==='pie-chart'?4:3;
+        const factor=denominator/sourceDenominator;
+        const sourceNumerator=rand(1,Math.max(1,Math.floor((model==='square-100'?59:denominator)/factor)));
+        target=sourceNumerator*factor;unit=model==='square-bar'||model==='pie-chart'?10:1;
+        contentLabel=`${sourceNumerator}/${sourceDenominator} = ?/${denominator}`;
+        label=`Trouve la fraction équivalente à ${sourceNumerator}/${sourceDenominator}`;
+      } else if (contentId === 'fraction-operation') {
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
+        const maxNumerator=model==='square-100'?59:model==='square-9'?8:denominator;
+        const first=rand(1,Math.max(1,Math.floor(maxNumerator/2))),second=rand(1,Math.max(1,maxNumerator-first));
+        target=first+second;unit=model==='square-bar'||model==='pie-chart'?10:1;
+        contentLabel=`${first}/${denominator} + ${second}/${denominator}`;
+        label=`Calcule ${contentLabel}`;
+      } else if (model === 'square-100') {
+        denominator = 100; target = rand(1,59); unit = 1;
+        if (contentId === 'decimal-value') { target = rand(50,59); label = `${(target/100).toLocaleString('fr-FR')} = ? / 100`; contentLabel = `${(target/100).toLocaleString('fr-FR')}`; }
+        else if (categoryId === 'fractions') { label = `Représente ${target}/100`; contentLabel = `${target}/100`; }
+        else { label = `Représente ${target}%`; contentLabel = `${target}%`; }
+      } else if (model === 'square-bar') {
+        denominator = 10; target = rand(1,10); unit = 10;
+        if (contentId === 'decimal-value') { label = `Représente ${(target/10).toLocaleString('fr-FR')}`; contentLabel = (target/10).toLocaleString('fr-FR'); }
+        else if (categoryId === 'fractions') { label = `Représente ${target}/10`; contentLabel = `${target}/10`; }
+        else { label = `Représente ${target*10}%`; contentLabel = `${target*10}%`; }
+      } else if (model === 'pie-chart') {
+        denominator = 8; target = rand(1,8); unit = 10;
+        if (contentId === 'decimal-value') { label = `Quelle valeur est représentée ?`; contentLabel = `${(target/10).toLocaleString('fr-FR')}`; }
+        else if (categoryId === 'fractions') { label = `Représente ${target}/8`; contentLabel = `${target}/8`; }
+        else { label = `Représente ${target*10}%`; contentLabel = `${target*10}%`; }
+      } else {
+        denominator = 9; target = rand(1,8); unit = 1;
+        label = categoryId === 'fractions' ? `Représente ${target}/9` : `Quelle fraction du carré est bleue ?`;
+        contentLabel = `${target}/9`;
+      }
+      prompt = contentId==='number-value'
+        ? (fillMode ? `Touche ${target} éléments pour représenter le nombre ${target}.` : 'Observe le modèle et trouve le nombre représenté.')
+        : ['basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId)
+        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
+        : contentId === 'fraction-operation'
+        ? (fillMode === 'fill' ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
+        : fillMode ? `Touche les éléments pour représenter ${contentLabel}.` : `${label} Observe le modèle et trouve la valeur représentée.`;
+      const formatTouchValue = value => ['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId) ? String(value) : model === 'square-100'
+        ? (contentId === 'decimal-value' ? (value/100).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/100` : `${value}%`)
+        : model === 'square-bar'
+          ? (contentId === 'decimal-value' ? (value/10).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/10` : `${value*10}%`)
+          : model === 'pie-chart'
+            ? (contentId === 'decimal-value' ? (value/10).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/8` : `${value*10}%`)
+            : `${value}/9`;
+      const answerText = formatTouchValue(target);
+      const numericAnswer = target;
+      const displayOpts = shuffle(unique([target, Math.max(1,target-1), Math.min(denominator,target+1), Math.max(1,denominator-target)]));
+      while(displayOpts.length<4) displayOpts.push(Math.min(denominator, displayOpts.length+target+2));
+      const opts = displayOpts.slice(0,4);
+      return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel});
+    }
 
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.
     if (selectedModel?.type === 'commonSlider') {
