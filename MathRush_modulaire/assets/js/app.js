@@ -720,36 +720,52 @@
          // est transmis séparément du modèle graphique choisi.
          function touchUnitLabel(ex,kind){
             const generic=['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(ex.contentId);
-            if(generic)return kind==='square-100'?'1 unité par case':kind==='square-bar'?'1 unité par barre':kind==='pie-chart'?'1 unité par part':'1 unité par case';
+            if(generic)return kind==='square-100'?'1 unité par case':kind==='square-bar'?'1 unité par colonne (10 %)':kind==='pie-chart'?'1 part du camembert':'1 unité par case';
             if(kind==='square-100')return ex.contentId==='decimal-value'?'0,01 par case':ex.categoryId==='fractions'?'1/100 par case':'1 % par case';
-            if(kind==='square-bar')return ex.contentId==='decimal-value'?'0,1 par barre':ex.categoryId==='fractions'?'1/10 par barre':'10 % par barre';
-            if(kind==='pie-chart')return ex.contentId==='decimal-value'?'0,1 par part':ex.categoryId==='fractions'?'1/8 par part':'10 % par part';
+            if(kind==='square-bar')return ex.contentId==='decimal-value'?'0,1 par colonne':ex.categoryId==='fractions'?'1/10 par colonne':'10 % par colonne';
+            if(kind==='pie-chart')return ex.contentId==='decimal-value'?`1/${ex.touchParts||8} par part`:ex.categoryId==='fractions'?`1/${ex.touchParts||8} par part`:`${Math.round(100/(ex.touchParts||8))} % par part`;
             return '1/9 par case';
          }
          function touchModelHtml(ex, editable=false){
-            const kind=ex.presentationId||'square-100',count=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?8:9,unitLabel=touchUnitLabel(ex,kind);
-            const filled=editable?0:Math.max(0,Math.min(count,Number(ex.touchTarget)||0));
+            const kind=ex.presentationId||'square-100',unitSize=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?Math.max(2,Math.min(8,Number(ex.touchParts)||8)):9;
+            const target=Math.max(0,Math.round(Number(ex.touchTarget)||0)),units=Math.max(1,Math.ceil(target/unitSize)),total=units*unitSize,filled=editable?0:Math.min(total,target),unitLabel=touchUnitLabel(ex,kind);
             const title=kind==='square-100'?'Carré 100':kind==='square-bar'?'Carré barré':kind==='pie-chart'?'Camenbert':'Carré 9';
             const rawTemplate=String(ex.contentTemplate||'{contentLabel}');const contentText=rawTemplate.replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g,(_,key)=>String(ex[key]??''));const content=`<div class="touch-content">${escapeHtml(contentText||ex.contentLabel||ex.expression||'')}</div>`;
+            const cell=(index,cls='touch-cell')=>editable?`<button type="button" class="${cls} ${index<filled?'on':''}" data-touch-index="${index}" aria-label="Élément ${index+1}"></button>`:`<i class="${cls} ${index<filled?'on':''}"></i>`;
             let visual='';
-            if(kind==='square-100')visual=`<div class="touch-square-100" data-touch-kind="cells">${Array.from({length:100},(_,i)=>editable?`<button type="button" class="touch-cell ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Case ${i+1}"></button>`:`<i class="touch-cell ${i<filled?'on':''}"></i>`).join('')}</div>`;
-            else if(kind==='square-bar')visual=`<div class="touch-square-bar" data-touch-kind="cells">${Array.from({length:10},(_,i)=>editable?`<button type="button" class="touch-bar ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Barre ${i+1}, 10 pour cent">${Array.from({length:10},()=>'<i></i>').join('')}</button>`:`<div class="touch-bar ${i<filled?'on':''}">${Array.from({length:10},()=>'<i></i>').join('')}</div>`).join('')}</div>`;
-            else if(kind==='square-9')visual=`<div class="touch-square-9" data-touch-kind="cells">${Array.from({length:9},(_,i)=>editable?`<button type="button" class="touch-cell ${i<filled?'on':''}" data-touch-index="${i}" aria-label="Case ${i+1} sur 9"></button>`:`<i class="touch-cell ${i<filled?'on':''}"></i>`).join('')}</div>`;
-            else visual=editable?`<button type="button" class="touch-pie editable" data-touch-kind="pie" data-filled="${filled}" style="background:conic-gradient(#3188f5 0% ${filled/count*100}%,#e7edf5 ${filled/count*100}% 100%)"><span></span></button>`:`<div class="touch-pie" data-filled="${filled}" style="background:conic-gradient(#3188f5 0% ${filled/count*100}%,#e7edf5 ${filled/count*100}% 100%)"><span></span></div>`;
-            return `<section class="touch-model" data-touch-model="${kind}" data-unit-label="${escapeHtml(unitLabel)}"><small>${title} · ${editable?'touche les cases pour remplir':'modèle déjà rempli'}</small>${ex.contentSlot==='inside'?`<div class="touch-visual-wrap">${visual}${content}</div>`:ex.contentSlot==='hidden'?visual:content+visual}<div class="touch-count" aria-live="polite">${editable?'0':filled} / ${count} · ${unitLabel}</div></section>`;
+            if(kind==='square-100'){
+               visual=`<div class="touch-units touch-units-100" data-touch-kind="cells">${Array.from({length:units},(_,u)=>`<div class="touch-square-100" style="z-index:${units-u};transform:translate(${u*12}px,${u*12}px)" aria-label="Carré 100 numéro ${u+1}">${Array.from({length:100},(_,i)=>cell(u*100+i)).join('')}</div>`).join('')}</div>`;
+            }else if(kind==='square-bar'){
+               visual=`<div class="touch-units touch-units-bar" data-touch-kind="cells">${Array.from({length:units},(_,u)=>`<div class="touch-square-bar" style="z-index:${units-u};transform:translate(${u*12}px,${u*12}px)" aria-label="Barre de dix numéro ${u+1}">${Array.from({length:10},(_,i)=>cell(u*10+i,'touch-bar-cell')).join('')}</div>`).join('')}</div>`;
+            }else if(kind==='square-9'){
+               visual=`<div class="touch-square-9" data-touch-kind="cells">${Array.from({length:9},(_,i)=>cell(i)).join('')}</div>`;
+            }else{
+               const parts=unitSize,segments=Array.from({length:parts},(_,i)=>`${i<filled?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`).join(',');
+               visual=`<div class="touch-pie-stack" data-touch-kind="pie">${Array.from({length:units},(_,u)=>{const start=u*parts,n=Math.max(0,Math.min(parts,filled-start));const stops=Array.from({length:parts},(_,i)=>`${i<n?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`).join(',');return `<div class="touch-pie" data-pie-unit="${u}" data-parts="${parts}" style="background:conic-gradient(${stops})"><span>${u+1}</span></div>`;}).join('')}</div>`;
+            }
+            const countText=editable?`0 / ${total} · ${unitLabel}`:'Combien d’unités sont représentées ?';
+            return `<section class="touch-model" data-touch-model="${kind}" data-unit-size="${unitSize}" data-unit-label="${escapeHtml(unitLabel)}"><small>${title} · ${editable?'glisse le doigt pour remplir':'modèle déjà rempli'}</small>${ex.contentSlot==='inside'?`<div class="touch-visual-wrap">${visual}${content}</div>`:ex.contentSlot==='hidden'?visual:content+visual}<div class="touch-count" aria-live="polite">${countText}</div></section>`;
          }
          function bindTouchModel(host, onCount){
             const model=host.querySelector('[data-touch-model]');if(!model)return;
-            const kind=model.dataset.touchModel,total=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?8:9,unitLabel=model.dataset.unitLabel||'unité';
-            const selected=new Set();const pie=model.querySelector('.touch-pie');
+            const kind=model.dataset.touchModel,total=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?Math.max(2,Math.min(8,Number(model.querySelector('[data-parts]')?.dataset.parts)||8)):9;
+            const selected=new Set();let drawing=false,drawValue=true;const pies=[...model.querySelectorAll('.touch-pie')];
             const paint=()=>{
                model.querySelectorAll('[data-touch-index]').forEach(button=>{const on=selected.has(Number(button.dataset.touchIndex));button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on));});
-               if(pie){const stops=Array.from({length:total},(_,i)=>`${selected.has(i)?'#3188f5':'#e7edf5'} ${i/total*100}% ${(i+1)/total*100}%`);pie.style.background=`conic-gradient(${stops.join(',')})`;pie.dataset.filled=String(selected.size);}
-               const count=model.querySelector('.touch-count');if(count)count.textContent=`${selected.size} / ${total} · ${unitLabel}`;
+               pies.forEach((pie,u)=>{const parts=Number(pie.dataset.parts)||total,start=u*parts;const stops=Array.from({length:parts},(_,i)=>`${selected.has(start+i)?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`);pie.style.background=`conic-gradient(${stops.join(',')})`;});
+               const count=model.querySelector('.touch-count');if(count)count.textContent=`${selected.size} / ${model.querySelectorAll('[data-touch-index]').length||total} · ${model.dataset.unitLabel||'unité'}`;
                onCount(selected.size);
             };
-            model.querySelectorAll('[data-touch-index]').forEach(button=>button.addEventListener('click',()=>{const i=Number(button.dataset.touchIndex);selected.has(i)?selected.delete(i):selected.add(i);paint();}));
-            if(pie)pie.addEventListener('click',event=>{const r=pie.getBoundingClientRect(),x=event.clientX-r.left-r.width/2,y=event.clientY-r.top-r.height/2;let angle=(Math.atan2(y,x)*180/Math.PI+90+360)%360;const i=Math.floor(angle/360*total);selected.has(i)?selected.delete(i):selected.add(i);paint();});
+            const apply=(index)=>{if(index<0)return;if(drawValue)selected.add(index);else selected.delete(index);paint();};
+            model.addEventListener('pointerdown',event=>{const cell=event.target.closest('[data-touch-index]');if(cell){event.preventDefault();drawing=true;const index=Number(cell.dataset.touchIndex);drawValue=!selected.has(index);apply(index);}});
+            model.addEventListener('pointerover',event=>{if(!drawing)return;const cell=event.target.closest('[data-touch-index]');if(cell)apply(Number(cell.dataset.touchIndex));});
+            window.addEventListener('pointermove',event=>{if(!drawing)return;const hit=document.elementFromPoint(event.clientX,event.clientY);const cell=hit?.closest?.('[data-touch-index]');if(cell&&model.contains(cell)){apply(Number(cell.dataset.touchIndex));return;}const pie=hit?.closest?.('.touch-pie');if(pie&&model.contains(pie)){const r=pie.getBoundingClientRect(),x=event.clientX-r.left-r.width/2,y=event.clientY-r.top-r.height/2;const angle=(Math.atan2(y,x)*180/Math.PI+90+360)%360,parts=Number(pie.dataset.parts)||total;apply(Number(pie.dataset.pieUnit||0)*parts+Math.floor(angle/360*parts));}});
+            const stop=()=>{drawing=false;};window.addEventListener('pointerup',stop);window.addEventListener('pointercancel',stop);
+            pies.forEach(pie=>{
+               const mark=event=>{const r=pie.getBoundingClientRect(),x=event.clientX-r.left-r.width/2,y=event.clientY-r.top-r.height/2;let angle=(Math.atan2(y,x)*180/Math.PI+90+360)%360;const parts=Number(pie.dataset.parts)||total,i=Math.floor(angle/360*parts),index=Number(pie.dataset.pieUnit||0)*parts+i;apply(index);};
+               pie.addEventListener('pointerdown',event=>{event.preventDefault();drawing=true;const r=pie.getBoundingClientRect(),x=event.clientX-r.left-r.width/2,y=event.clientY-r.top-r.height/2;let angle=(Math.atan2(y,x)*180/Math.PI+90+360)%360;const i=Math.floor(angle/360*(Number(pie.dataset.parts)||total));drawValue=!selected.has(Number(pie.dataset.pieUnit||0)*(Number(pie.dataset.parts)||total)+i);mark(event);});
+               pie.addEventListener('pointermove',event=>{if(drawing)mark(event);});
+            });
          }
 
          function renderFriends() {

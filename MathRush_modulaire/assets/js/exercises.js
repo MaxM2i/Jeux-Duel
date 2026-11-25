@@ -104,15 +104,15 @@
       const interaction=selectedModel?.touchInteraction||'random';
       const fillMode = interaction==='fill' ? true : interaction==='read' ? false : rand(0,1)===0;
       let target, denominator, label, prompt, unit, contentLabel;
-      const capacity=model==='square-100'?59:model==='square-bar'?10:8;
+      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?rand(2,8):9;
       if (contentId === 'ratio-proportion') {
-        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
         target=rand(1,capacity);unit=model==='square-bar'||model==='pie-chart'?10:1;
-        const part=model==='square-100'?target:model==='square-bar'?target*10:model==='pie-chart'?target*10:target;
-        const whole=model==='square-100'?100:model==='square-bar'||model==='pie-chart'?100:9;
+        const part=target;
+        const whole=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?denominator:9;
         contentLabel=`${part}:${whole-part}`;label=`Représente le rapport ${contentLabel}`;
       } else if (['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId)) {
-        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;unit=model==='square-bar'||model==='pie-chart'?10:1;
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;unit=model==='square-bar'||model==='pie-chart'?10:1;
         if(contentId==='number-value'){target=rand(1,capacity);contentLabel=String(target);label=`Représente le nombre ${target}`;}
         else if(contentId==='basic-operation'){
           const op=pick(['+','−','×'],rand);let a,b;
@@ -131,32 +131,32 @@
           const base=rand(2,capacity>=9?3:2),maxExp=Math.max(2,Math.floor(Math.log(capacity)/Math.log(base))),exp=rand(2,maxExp);target=Math.pow(base,exp);contentLabel=`${base}^${exp}`;label=`Calcule ${base} puissance ${exp}`;
         }
       } else if (contentId === 'fraction-equivalence') {
-        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
-        const sourceDenominator=model==='square-100'?10:model==='square-bar'?2:model==='pie-chart'?4:3;
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
+        const sourceDenominator=model==='square-100'?10:model==='square-bar'?2:model==='pie-chart'?(denominator%2===0?denominator/2:denominator):3;
         const factor=denominator/sourceDenominator;
-        const sourceNumerator=rand(1,Math.max(1,Math.floor((model==='square-100'?59:denominator)/factor)));
+        const sourceNumerator=rand(1,Math.max(1,Math.floor((model==='square-100'?200:model==='square-bar'?20:denominator)/factor)));
         target=sourceNumerator*factor;unit=model==='square-bar'||model==='pie-chart'?10:1;
         contentLabel=`${sourceNumerator}/${sourceDenominator} = ?/${denominator}`;
         label=`Trouve la fraction équivalente à ${sourceNumerator}/${sourceDenominator}`;
       } else if (contentId === 'fraction-operation') {
-        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?8:9;
-        const maxNumerator=model==='square-100'?59:model==='square-9'?8:denominator;
+        denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
+        const maxNumerator=model==='square-100'?200:model==='square-bar'?20:model==='square-9'?8:denominator;
         const first=rand(1,Math.max(1,Math.floor(maxNumerator/2))),second=rand(1,Math.max(1,maxNumerator-first));
         target=first+second;unit=model==='square-bar'||model==='pie-chart'?10:1;
         contentLabel=`${first}/${denominator} + ${second}/${denominator}`;
         label=`Calcule ${contentLabel}`;
       } else if (model === 'square-100') {
-        denominator = 100; target = rand(1,59); unit = 1;
-        if (contentId === 'decimal-value') { target = rand(50,59); label = `${(target/100).toLocaleString('fr-FR')} = ? / 100`; contentLabel = `${(target/100).toLocaleString('fr-FR')}`; }
+        denominator = 100; target = rand(1,200); unit = 1;
+        if (contentId === 'decimal-value') { target = rand(50,200); label = `${(target/100).toLocaleString('fr-FR')} = ? / 100`; contentLabel = `${(target/100).toLocaleString('fr-FR')}`; }
         else if (categoryId === 'fractions') { label = `Représente ${target}/100`; contentLabel = `${target}/100`; }
         else { label = `Représente ${target}%`; contentLabel = `${target}%`; }
       } else if (model === 'square-bar') {
-        denominator = 10; target = rand(1,10); unit = 10;
+        denominator = 10; target = rand(1,20); unit = 10;
         if (contentId === 'decimal-value') { label = `Représente ${(target/10).toLocaleString('fr-FR')}`; contentLabel = (target/10).toLocaleString('fr-FR'); }
         else if (categoryId === 'fractions') { label = `Représente ${target}/10`; contentLabel = `${target}/10`; }
         else { label = `Représente ${target*10}%`; contentLabel = `${target*10}%`; }
       } else if (model === 'pie-chart') {
-        denominator = 8; target = rand(1,8); unit = 10;
+        denominator = capacity; target = rand(1,denominator); unit = 10;
         if (contentId === 'decimal-value') { label = `Quelle valeur est représentée ?`; contentLabel = `${(target/10).toLocaleString('fr-FR')}`; }
         else if (categoryId === 'fractions') { label = `Représente ${target}/8`; contentLabel = `${target}/8`; }
         else { label = `Représente ${target*10}%`; contentLabel = `${target*10}%`; }
@@ -170,21 +170,21 @@
         : ['basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId)
         ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
         : contentId === 'fraction-operation'
-        ? (fillMode === 'fill' ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
+        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
         : fillMode ? `Touche les éléments pour représenter ${contentLabel}.` : `${label} Observe le modèle et trouve la valeur représentée.`;
       const formatTouchValue = value => ['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId) ? String(value) : model === 'square-100'
         ? (contentId === 'decimal-value' ? (value/100).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/100` : `${value}%`)
         : model === 'square-bar'
           ? (contentId === 'decimal-value' ? (value/10).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/10` : `${value*10}%`)
           : model === 'pie-chart'
-            ? (contentId === 'decimal-value' ? (value/10).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/8` : `${value*10}%`)
+            ? (contentId === 'decimal-value' ? (value/denominator).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/${denominator}` : `${Math.round(value/denominator*100)}%`)
             : `${value}/9`;
       const answerText = formatTouchValue(target);
       const numericAnswer = target;
-      const displayOpts = shuffle(unique([target, Math.max(1,target-1), Math.min(denominator,target+1), Math.max(1,denominator-target)]));
-      while(displayOpts.length<4) displayOpts.push(Math.min(denominator, displayOpts.length+target+2));
-      const opts = displayOpts.slice(0,4);
-      return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel});
+      const maxAnswer=model==='square-100'?200:model==='square-bar'?20:denominator;
+      const displayOpts = shuffle(unique([target,Math.max(0,target-1),Math.min(maxAnswer,target+1),Math.max(0,target-2),Math.min(maxAnswer,target+2),0,maxAnswer,Math.floor(maxAnswer/2)])).slice(0,4);
+      const opts = displayOpts;
+      return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,touchParts:model==='pie-chart'?denominator:undefined,touchUnitSize:model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?denominator:9,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel});
     }
 
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.

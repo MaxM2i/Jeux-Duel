@@ -73,6 +73,13 @@ for (const [id,mode,type] of specialModels) {
   modelCatalog.forEach((model,index) => { model.weight = weights[index]; });
 }
 
+// Les modèles tactiles acceptent plusieurs unités et le remplissage par balayage.
+{
+  const app=fs.readFileSync(`${__dirname}/../assets/js/app.js`,'utf8');
+  assert.ok(app.includes("addEventListener('pointerdown'")&&app.includes("addEventListener('pointerover'"),'remplissage tactile par balayage absent');
+  assert.ok(app.includes('touch-units-100')&&app.includes('touch-units-bar'),'unités multiples des modèles tactiles absentes');
+}
+
 // Les cases à compléter doivent produire une question adaptée à chaque catégorie compatible.
 {
   const weights=modelCatalog.map(model=>model.weight);
@@ -126,12 +133,25 @@ modelCatalog.forEach((model,index)=>{model.weight=previousWeights[index];});
 {
   const weights=modelCatalog.map(model=>model.weight),touch=modelCatalog.find(model=>model.id==='fraction-touch-models');
   modelCatalog.forEach(model=>{model.weight=model.id===touch.id?1:0;});
-  const cases=[['fractions','square-100','fraction-of',1,59],['fractions','square-bar','fraction-of',1,10],['fractions','pie-chart','fraction-of',1,8],['fractions','square-9','fraction-of',1,8],['fractions','square-9','fraction-operation',2,8],['percentages','square-100','percentage-of',1,59],['percentages','square-bar','percentage-of',1,10],['percentages','pie-chart','percentage-of',1,8]];
+  const cases=[['fractions','square-100','fraction-of',1,200],['fractions','square-bar','fraction-of',1,20],['fractions','pie-chart','fraction-of',1,8],['fractions','square-9','fraction-of',1,8],['fractions','square-9','fraction-operation',2,8],['percentages','square-100','percentage-of',1,200],['percentages','square-bar','percentage-of',1,20],['percentages','pie-chart','percentage-of',1,8]];
   for(const [category,presentation,content,min,max] of cases){
     touch.presentationIds=[presentation];touch.contentIds=[content];
     const ex=context.window.MathRushExercises.createSoloExercise(category,2,rand,shuffle,'solo');
-    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.touchTarget>=min&&ex.touchTarget<=max,`cible hors plage ${presentation}`);assert.ok(ex.touchMode==='fill'||ex.touchMode==='read');assert.ok(ex.contentTemplate&&ex.contentSlot,'réglage de contenu du modèle tactile absent');
+    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.touchTarget>=min&&ex.touchTarget<=max,`cible hors plage ${presentation}`);assert.ok(ex.touchMode==='fill'||ex.touchMode==='read');if(presentation==='pie-chart')assert.ok(ex.touchParts>=2&&ex.touchParts<=8,'camembert entre 2 et 8 parts');assert.ok(ex.contentTemplate&&ex.contentSlot,'réglage de contenu du modèle tactile absent');
   }
+  // Les deux modèles à unités répétables représentent bien 150 % / 200 % sans plafonner à une unité.
+  touch.touchInteraction='fill';touch.contentIds=['number-value'];
+  touch.presentationIds=['square-bar'];
+  const maxRand=(min,max)=>max;
+  const barMulti=context.window.MathRushExercises.createSoloExercise('quick',2,maxRand,shuffle,'solo');
+  assert.equal(barMulti.touchTarget,20,'Carré barré doit pouvoir représenter 200 %');
+  touch.presentationIds=['square-100'];
+  const squareMulti=context.window.MathRushExercises.createSoloExercise('quick',2,maxRand,shuffle,'solo');
+  assert.equal(squareMulti.touchTarget,200,'Carré 100 doit pouvoir représenter 200 %');
+  touch.presentationIds=['pie-chart'];
+  const pieParts=context.window.MathRushExercises.createSoloExercise('quick',2,maxRand,shuffle,'solo');
+  assert.ok(pieParts.touchParts>=2&&pieParts.touchParts<=8,'camembert réglable de 2 à 8 parts');
+  touch.touchInteraction='random';
   // Fraction équivalente et opération : le résultat doit correspondre à la quantité dessinée.
   touch.presentationIds=['square-9'];touch.contentIds=['fraction-equivalence'];
   const equivalent=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');
@@ -142,13 +162,13 @@ modelCatalog.forEach((model,index)=>{model.weight=previousWeights[index];});
   const op=operation.contentLabel.match(/(\d+)\/(\d+) \+ (\d+)\/(\d+)/);
   assert.ok(op,'opération sur fractions absente');assert.equal(Number(op[1])+Number(op[3]),operation.ans,'addition de fractions incorrecte');
   touch.presentationIds=['square-100'];touch.contentIds=['decimal-value'];
-  const decimal=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');assert.ok(decimal.touchTarget>=50&&decimal.touchTarget<=59,'Carré 100 décimal doit commencer à 0,5');
+  const decimal=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');assert.ok(decimal.touchTarget>=50&&decimal.touchTarget<=200,'Carré 100 décimal doit pouvoir dépasser une unité à partir de 0,5');
   touch.presentationIds=['square-9'];touch.contentIds=['fraction-of'];touch.touchInteraction='fill';assert.equal(context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo').touchMode,'fill','mode tactile remplir non configurable');touch.touchInteraction='read';assert.equal(context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo').touchMode,'read','mode tactile prérempli non configurable');touch.touchInteraction='random';
   // Un modèle tactile accepte également un nombre ou une opération simple sans changer son renderer.
   for(const presentation of ['square-100','square-bar','pie-chart','square-9']){
     touch.presentationIds=[presentation];touch.contentIds=['basic-operation'];
     const ex=context.window.MathRushExercises.createSoloExercise('quick',2,rand,shuffle,'solo');
-    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.contentLabel.match(/^\d+ [ +−×] \d+$/),'le modèle doit pouvoir afficher une opération');assert.ok(ex.ans>=1&&ex.ans<=(presentation==='square-100'?59:presentation==='square-bar'?10:8));
+    assert.equal(ex.type,'touchModel');assert.equal(ex.presentationId,presentation);assert.ok(ex.contentLabel.match(/^\d+ [ +−×] \d+$/),'le modèle doit pouvoir afficher une opération');assert.ok(ex.ans>=1&&ex.ans<=(presentation==='square-100'?200:presentation==='square-bar'?20:8));
     const m=ex.contentLabel.match(/^(\d+) ([+−×]) (\d+)$/),a=Number(m[1]),b=Number(m[3]),expected=m[2]==='+'?a+b:m[2]==='−'?a-b:a*b;assert.equal(ex.ans,expected,'le résultat de l’opération affichée doit correspondre au remplissage');
   }
   modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
