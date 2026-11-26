@@ -35,7 +35,7 @@ assert.ok(cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed')?
 assert.deepEqual([...cfgArchitecture.MATH_CATEGORIES.find(category=>category.id==='mixed').includes].sort(),['common-multiples','complex','coordinates','exponents','fractions','multiplication-division','percentages','quick','rounding'].sort(),'Tout mélangé doit reprendre les neuf catégories');
 assert.ok(cfgArchitecture.CONTENT_GENERATORS.length>=12,'catalogue des générateurs de contenu incomplet');
 assert.ok(cfgArchitecture.PRESENTATION_MODELS.length>=18,'catalogue des présentations incomplet');
-assert.deepEqual(['square-100','square-bar','pie-chart','square-9'].map(id=>cfgArchitecture.PRESENTATION_MODELS.find(model=>model.id===id)?.label),['Carré 100','Carré barré','Camenbert','Carré 9'],'les quatre modèles tactiles doivent être nommés');
+assert.deepEqual(['square-100','square-bar','pie-chart','square-9'].map(id=>cfgArchitecture.PRESENTATION_MODELS.find(model=>model.id===id)?.label),['Carré 100','Carré barré','Camembert','Carré 9'],'les quatre modèles tactiles doivent être nommés');
 assert.ok(cfgArchitecture.PRESENTATION_COMPATIBILITY['percentage-of'].includes('blue-white-grid'),'compatibilité pourcentages/grille absente');
 assert.ok(cfgArchitecture.CONTENT_GENERATORS.some(x=>x.id==='power-operation'&&x.categories.includes('exponents')),'générateur exposants absent');
 assert.ok(cfgArchitecture.CONTENT_GENERATORS.some(x=>x.id==='fraction-of'&&x.categories.includes('fractions')),'générateur fractions absent');
@@ -100,6 +100,24 @@ for (const [id,mode,type] of specialModels) {
     assert.ok(ex.opts.includes(ex.ans),'le camembert doit proposer la bonne réponse');
   }
   touch.weight=snapshot.weight;touch.categoryIds=snapshot.categoryIds;touch.modes=snapshot.modes;touch.contentIds=snapshot.contentIds;touch.presentationIds=snapshot.presentationIds;touch.touchInteraction=snapshot.touchInteraction;touch.design=snapshot.design;
+}
+
+// Les autorisations définies dans le Labo doivent réellement filtrer catégories, contenus et modes.
+{
+  const touch=modelCatalog.find(model=>model.id==='fraction-touch-models'),weights=modelCatalog.map(model=>model.weight),rules=context.window.MathRushConfig.PRESENTATION_RULES;
+  const snapshot={categoryIds:[...touch.categoryIds],modes:[...touch.modes],contentIds:[...touch.contentIds],presentationIds:[...touch.presentationIds]};
+  const previous=rules['pie-chart'];
+  modelCatalog.forEach(model=>{model.weight=model.id===touch.id?1:0;});
+  touch.categoryIds=['fractions','percentages'];touch.modes=['fractions','percentages'];touch.contentIds=['fraction-operation','percentage-of'];touch.presentationIds=['pie-chart'];
+  rules['pie-chart']={categories:['percentages'],contents:['percentage-of'],playModes:['solo']};
+  assert.throws(()=>context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo'),'aucun modèle autorisé ne doit pouvoir générer une présentation interdite');
+  const allowed=context.window.MathRushExercises.createSoloExercise('percentages',2,rand,shuffle,'solo');
+  assert.equal(allowed.type,'touchModel');assert.equal(allowed.presentationId,'pie-chart');assert.equal(allowed.contentId,'percentage-of');
+  const duelDenied=context.window.MathRushExercises.createSoloExercise('percentages',2,rand,shuffle,'duel');
+  assert.notEqual(duelDenied.presentationId,'pie-chart','un mode de jeu interdit ne doit pas utiliser la présentation');
+  if(previous)rules['pie-chart']=previous;else delete rules['pie-chart'];
+  touch.categoryIds=snapshot.categoryIds;touch.modes=snapshot.modes;touch.contentIds=snapshot.contentIds;touch.presentationIds=snapshot.presentationIds;
+  modelCatalog.forEach((model,index)=>{model.weight=weights[index];});
 }
 
 // Les cases à compléter doivent produire une question adaptée à chaque catégorie compatible.
@@ -287,6 +305,24 @@ for(let i=0;i<300;i++){
     assert.ok(!missing.expression.includes('×')||missing.expression.split('×').length===2,'le premier palier ne doit pas proposer trois facteurs');
   }
 }
+// Le camembert doit reprendre exactement le dénominateur de la fraction, et masquer le calcul si le visuel donne la réponse.
+{
+  const touch=modelCatalog.find(model=>model.id==='fraction-touch-models');
+  const snapshot={weight:touch.weight,categoryIds:[...touch.categoryIds],modes:[...touch.modes],contentIds:[...touch.contentIds],presentationIds:[...touch.presentationIds],touchInteraction:touch.touchInteraction,design:{...(touch.design||{})}};
+  modelCatalog.forEach(model=>{model.weight=model.id===touch.id?1:0;});
+  touch.categoryIds=['fractions'];touch.modes=['fractions'];touch.contentIds=['fraction-operation'];touch.presentationIds=['pie-chart'];touch.touchInteraction='read';touch.design={pieParts:5};
+  for(let i=0;i<250;i++){
+    const ex=context.window.MathRushExercises.createSoloExercise('fractions',2,rand,shuffle,'solo');
+    const denominator=Number(ex.contentLabel.match(/\/(\d+)/)?.[1]);
+    assert.equal(ex.touchParts,denominator,'le camembert doit avoir le même nombre de parts que le dénominateur');
+    assert.equal(ex.touchParts,5,'le camembert respecte le réglage à 5 parts');
+    assert.ok(!ex.prompt.includes(ex.contentLabel),'le calcul ne doit pas être révélé quand le visuel suffit');
+    assert.equal(ex.contentSlot,'hidden','le calcul est masqué au-dessus du camembert en mode lecture');
+    assert.ok(ex.opts.includes(ex.ans),'la bonne réponse doit rester proposée');
+  }
+  touch.weight=snapshot.weight;touch.categoryIds=snapshot.categoryIds;touch.modes=snapshot.modes;touch.contentIds=snapshot.contentIds;touch.presentationIds=snapshot.presentationIds;touch.touchInteraction=snapshot.touchInteraction;touch.design=snapshot.design;
+}
+
 console.log('MathRush : tests réussis (7 000 exercices, progression, trophées, sélecteurs Défi/Multijoueur et écrans de fin).');
 
 // Régression curseur mobile : aucun padding horizontal ne doit écraser le rail tactile.
@@ -300,15 +336,15 @@ const labSource=fs.readFileSync(`${__dirname}/../labo.html`,'utf8');
 assert.ok(appSource.includes('const correct=String(answer)')&&appSource.includes('shuffle([correct,...uniqueDistractors.slice(0,3)])'),'le Défi doit toujours conserver la bonne réponse');
 assert.ok(appSource.includes('<svg class="touch-pie-segment-lines"')&&cssSource.includes('.touch-pie-segment-lines circle,.touch-pie-segment-lines line'),'séparations vectorielles du camembert absentes');
 
-assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="cursorColor"') && labSource.includes('id="cursorStep"'), 'panneau de réglage du curseur absent');
-assert.ok(!labSource.includes('customFieldsPreview') && !labSource.includes('addTextField'), 'ancien panneau de champs de texte encore présent');
-assert.ok(labSource.includes('id="addMarker"') && labSource.includes('id="clearMarkers"') && labSource.includes('id="cursorStart"'), 'édition des repères et de la position initiale absente');
-assert.ok(labSource.includes('id="modelPresentationChoices"') && labSource.includes('id="designPieParts"') && labSource.includes('id="designSeparator"'), 'éditeur direct des présentations et des camemberts absent');
-assert.ok(labSource.includes('id="catalogPanel"') && labSource.includes('id="modelOverview"') && labSource.includes('id="exportCatalog"') && labSource.includes('id="modelPlayModes"') && labSource.includes('id="testSelectedModel"') && labSource.includes('function syncRuntimeCatalog()'), 'catalogue éditable des modèles absent');
-assert.ok(labSource.includes('id="selectedModelPreview"') && labSource.includes('function renderSelectedModelPreview()') && labSource.includes('refreshModelPreview'), 'aperçu visuel vivant du modèle sélectionné absent');
-assert.ok(appSource.includes('function renderCursorScale(') && appSource.includes('left:${left}'), 'graduations du curseur non positionnées proportionnellement');
-assert.ok(labSource.includes('id="integrationCode"') && labSource.includes('id="generateCode"') && appSource.includes('MathRushConfig.CURSOR_MODEL'), 'export de code du modèle de curseur absent');
-assert.ok(!labSource.includes('localStorage.setItem') && !labSource.includes('localStorage.getItem'), 'le laboratoire ne doit pas utiliser le stockage navigateur');
+assert.ok(labSource.includes('id="modelList"') && labSource.includes('id="previewStage"'), 'bibliothèque visuelle des modèles absente');
+assert.ok(labSource.includes('id="categoryChecks"') && labSource.includes('id="contentChecks"') && labSource.includes('id="playChecks"'), 'sélecteurs catégories/contenus/modes absents');
+assert.ok(fs.readFileSync(`${__dirname}/../assets/js/exercises.js`,'utf8').includes('rules.playModes.includes(gameContext)'), 'les autorisations de modes du Labo ne sont pas appliquées au générateur');
+assert.ok(labSource.includes('id="downloadJs"') && labSource.includes('id="downloadCss"') && labSource.includes('function exportJs()') && labSource.includes('function exportCss()'), 'export des réglages du Labo absent');
+assert.ok(labSource.includes('preview-pie') && labSource.includes('preview-square') && labSource.includes('preview-nine') && labSource.includes('preview-tree') && labSource.includes('preview-table') && labSource.includes('preview-boxes'), 'aperçus visuels des modèles absents');
+assert.ok(labSource.includes('customCss') && labSource.includes('separatorWidth') && labSource.includes('pieParts'), 'réglages de design du Labo absents');
+assert.ok(!labSource.includes('localStorage.setItem') && !labSource.includes('localStorage.getItem'), 'le Labo ne doit pas utiliser le stockage navigateur');
+assert.ok(fs.existsSync(`${__dirname}/../assets/js/custom-models.js`) && fs.existsSync(`${__dirname}/../assets/css/model-custom.css`), 'points d’intégration des personnalisations absents');
+assert.ok(fs.readFileSync(`${__dirname}/../index.html`,'utf8').includes('assets/js/custom-models.js') && fs.readFileSync(`${__dirname}/../index.html`,'utf8').includes('assets/css/model-custom.css'), 'le jeu ne charge pas les fichiers personnalisés');
 assert.ok(appSource.includes('soloRescuePanel') && appSource.includes('Ta partie est en pause') && !appSource.includes('fb.innerHTML+=`<div class="streak-rescue"'), 'panneau de rattrapage séparé ou feedback neutre absent');
 assert.ok(appSource.includes('RESCUE_MIN_STREAK') && appSource.includes('rescueStreakBtn') && appSource.includes('currentGlobalStreak'), 'rattrapage de série global absent');
 assert.equal(context.window.MathRushConfig.GAME_RULES.RESCUE_MIN_STREAK,20);

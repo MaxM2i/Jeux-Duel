@@ -67,7 +67,7 @@
     {id:'coordinate-grid',label:'Repère graphique'}, {id:'vertical-operation',label:'Opération posée'},
     {id:'horizontal-operation',label:'Opération horizontale'}, {id:'model-grid',label:'Modèle à compléter'},
     {id:'square-100',label:'Carré 100'}, {id:'square-bar',label:'Carré barré'},
-    {id:'pie-chart',label:'Camenbert'}, {id:'square-9',label:'Carré 9'}
+    {id:'pie-chart',label:'Camembert'}, {id:'square-9',label:'Carré 9'}
   ];
   const PRESENTATION_COMPATIBILITY = {
     'basic-operation':['choice','cursor','table','boxes','missing-boxes','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
@@ -151,5 +151,5 @@
     { title: 'Défi', description: 'Résoudre des exercices plus exigeants' }
   ];
 
-  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISE_MODELS, MATH_CATEGORIES, CONTENT_GENERATORS, PRESENTATION_MODELS, PRESENTATION_COMPATIBILITY, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
+  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISE_MODELS, MATH_CATEGORIES, CONTENT_GENERATORS, PRESENTATION_MODELS, PRESENTATION_COMPATIBILITY, PRESENTATION_DESIGNS: {}, PRESENTATION_RULES: {}, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
 })();

@@ -62,7 +62,17 @@
     const rank = Math.max(0, Math.min(6, difficultyRank));
     const profile = window.MathRushConfig.DIFFICULTY[rank];
     const catalog = window.MathRushConfig.EXERCISE_MODELS || [];
-    const eligible = catalog.filter(model => model.enabled !== false && (model.categoryIds || model.modes).includes(mode) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0);
+    const presentationAllowed = (presentationId, contentId) => {
+      const rules = window.MathRushConfig.PRESENTATION_RULES?.[presentationId];
+      return !rules || (rules.categories.includes(mode) && rules.contents.includes(contentId) && (!rules.playModes?.length || rules.playModes.includes(gameContext)));
+    };
+    const modelHasAllowedContent = model => !model.contentIds?.length || model.contentIds.some(contentId => {
+      const content = (window.MathRushConfig.CONTENT_GENERATORS || []).find(item => item.id === contentId);
+      if (!content || !content.categories.includes(mode)) return false;
+      return !model.presentationIds?.length || model.presentationIds.some(presentationId =>
+        (window.MathRushConfig.PRESENTATION_COMPATIBILITY?.[contentId] || model.presentationIds).includes(presentationId) && presentationAllowed(presentationId, contentId));
+    }) || model.type !== 'touchModel';
+    const eligible = catalog.filter(model => model.enabled !== false && (model.categoryIds || model.modes).includes(mode) && (model.playModes || ['solo','duel','multiplayer','gogo']).includes(gameContext) && rank >= model.difficultyMin && rank <= model.difficultyMax && model.weight > 0 && modelHasAllowedContent(model));
     const totalWeight = eligible.reduce((sum, model) => sum + model.weight, 0);
     let selectedModel = null;
     if (totalWeight > 0) {
@@ -75,15 +85,21 @@
     const categoryId = mode;
     const compatibleContents = (selectedModel?.contentIds || []).filter(id => {
       const item = (window.MathRushConfig.CONTENT_GENERATORS || []).find(x => x.id === id);
-      return item && item.categories.includes(categoryId);
+      return item && item.categories.includes(categoryId) && (!selectedModel?.presentationIds?.length || selectedModel.presentationIds.some(p =>
+        (window.MathRushConfig.PRESENTATION_COMPATIBILITY?.[id] || selectedModel.presentationIds).includes(p) && presentationAllowed(p, id)));
     });
     const contentId = compatibleContents.length ? pick(compatibleContents, rand) : null;
-    const compatiblePresentations = (selectedModel?.presentationIds || []).filter(id =>
-      (window.MathRushConfig.PRESENTATION_COMPATIBILITY?.[contentId] || selectedModel?.presentationIds || []).includes(id));
-    const presentationId = compatiblePresentations.length ? pick(compatiblePresentations, rand) : (selectedModel?.presentationIds || [])[0] || null;
+    const compatiblePresentations = (selectedModel?.presentationIds || []).filter(id => {
+      const allowedByGenerator = (window.MathRushConfig.PRESENTATION_COMPATIBILITY?.[contentId] || selectedModel?.presentationIds || []).includes(id);
+      const rules = window.MathRushConfig.PRESENTATION_RULES?.[id];
+      const allowedByLab = presentationAllowed(id, contentId);
+      return allowedByGenerator && allowedByLab;
+    });
+    const presentationId = compatiblePresentations.length ? pick(compatiblePresentations, rand) : null;
     const modelMin = Number.isFinite(Number(selectedModel?.numberMin)) ? Number(selectedModel.numberMin) : 1;
     const modelMax = Number.isFinite(Number(selectedModel?.numberMax)) ? Number(selectedModel.numberMax) : 10000;
-    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId, contentTemplate:selectedModel?.contentTemplate||'{contentLabel}', contentSlot:selectedModel?.contentSlot||'above', modelDesign:selectedModel?.design||{} });
+    const presentationDesign = window.MathRushConfig.PRESENTATION_DESIGNS?.[presentationId] || {};
+    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId, contentTemplate:selectedModel?.contentTemplate||'{contentLabel}', contentSlot:exercise.contentSlot??selectedModel?.contentSlot??'above', modelDesign:{...(selectedModel?.design||{}),...presentationDesign} });
 
     // Contenus puissances et fractions : les présentations restent interchangeables.
     if (selectedModel?.type === 'exponent') {
@@ -104,7 +120,8 @@
       const interaction=selectedModel?.touchInteraction||'random';
       const fillMode = interaction==='fill' ? true : interaction==='read' ? false : rand(0,1)===0;
       let target, denominator, label, prompt, unit, contentLabel;
-      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?Math.max(2,Math.min(8,Number(selectedModel?.design?.pieParts)||rand(2,8))):8;
+      const pieParts=Math.max(2,Math.min(8,Number(presentationDesign.pieParts||selectedModel?.design?.pieParts)||rand(2,8)));
+      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?pieParts:8;
       if (contentId === 'ratio-proportion') {
         denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
         target=rand(1,capacity);unit=model==='square-bar'||model==='pie-chart'?10:1;
@@ -158,7 +175,7 @@
       } else if (model === 'pie-chart') {
         denominator = capacity; target = rand(1,denominator); unit = 10;
         if (contentId === 'decimal-value') { label = `Quelle valeur est représentée ?`; contentLabel = `${(target/10).toLocaleString('fr-FR')}`; }
-        else if (categoryId === 'fractions') { label = `Représente ${target}/8`; contentLabel = `${target}/8`; }
+        else if (categoryId === 'fractions') { label = `Représente ${target}/${denominator}`; contentLabel = `${target}/${denominator}`; }
         else { label = `Représente ${target*10}%`; contentLabel = `${target*10}%`; }
       } else {
         denominator = 9; target = rand(1,8); unit = 1;
@@ -168,10 +185,10 @@
       prompt = contentId==='number-value'
         ? (fillMode ? `Touche ${target} éléments pour représenter le nombre ${target}.` : 'Observe le modèle et trouve le nombre représenté.')
         : ['basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId)
-        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
+        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat.`)
         : contentId === 'fraction-operation'
-        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat de ${contentLabel}.`)
-        : fillMode ? `Touche les éléments pour représenter ${contentLabel}.` : `${label} Observe le modèle et trouve la valeur représentée.`;
+        ? (fillMode ? `Calcule ${contentLabel}, puis touche la bonne quantité.` : `Observe le modèle et trouve le résultat.`)
+        : fillMode ? `Touche les éléments pour représenter ${contentLabel}.` : `Observe le modèle et trouve la valeur représentée.`;
       const formatTouchValue = value => ['number-value','basic-operation','multi-step-operation','multiplication-product','exact-division','power-operation'].includes(contentId) ? String(value) : model === 'square-100'
         ? (contentId === 'decimal-value' ? (value/100).toLocaleString('fr-FR') : categoryId === 'fractions' ? `${value}/100` : `${value}%`)
         : model === 'square-bar'
@@ -194,7 +211,7 @@
       }
       const displayOpts = shuffle([target, ...distractors]).slice(0,4);
       const opts = displayOpts;
-      return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,touchParts:model==='pie-chart'?denominator:undefined,touchUnitSize:model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?denominator:9,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel});
+      return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,touchParts:model==='pie-chart'?denominator:undefined,touchUnitSize:model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?denominator:9,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel,contentSlot:fillMode?(selectedModel?.contentSlot||'above'):'hidden'});
     }
 
     // Variantes visuelles dédiées : elles sont réellement tirées dans les modes compatibles.
