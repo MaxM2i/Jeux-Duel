@@ -25,11 +25,14 @@
         }
 
         .lab header {
-            position: sticky;
-            top: 0;
             background: #f3f6ffee;
             backdrop-filter: blur(8px);
-            z-index: 5;
+            padding: 10px 0
+        }
+
+        .Myheader {
+            position: sticky;
+            top: 0;
             padding: 10px 0
         }
 
@@ -575,6 +578,14 @@
             <p id="result" class="status" aria-live="polite"></p>
         </section>
         <section class="panel" id="catalogPanel">
+            <div class="panel Myheader" id="selectedPreviewPanel">
+                <h3>👁️ Aperçu du modèle sélectionné</h3>
+                <p class="muted">Cet aperçu utilise le générateur réel du jeu. Il se met à jour pendant que tu modifies
+                    les paramètres ci-dessus.</p>
+                <div id="selectedModelPreview" class="selected-model-preview">
+                    <p class="muted">Sélectionne un modèle pour afficher son rendu.</p>
+                </div><button id="refreshModelPreview" type="button" class="secondary">Nouvel exemple</button>
+            </div>
             <h2>📚 Catalogue des modèles du jeu</h2>
             <p class="muted">Chaque ligne correspond à un modèle réellement utilisé par les générateurs. Tu peux
                 activer/désactiver un modèle, régler son poids de tirage, ses modes, ses niveaux et sa plage de nombres.
@@ -596,14 +607,7 @@
                 <p><b>Tout mélangé</b> sélectionne parmi les neuf catégories ; il ne constitue pas une famille de
                     contenu supplémentaire.</p>
             </div>
-            <div class="panel" id="selectedPreviewPanel">
-                <h3>👁️ Aperçu du modèle sélectionné</h3>
-                <p class="muted">Cet aperçu utilise le générateur réel du jeu. Il se met à jour pendant que tu modifies
-                    les paramètres ci-dessus.</p>
-                <div id="selectedModelPreview" class="selected-model-preview">
-                    <p class="muted">Sélectionne un modèle pour afficher son rendu.</p>
-                </div><button id="refreshModelPreview" type="button" class="secondary">Nouvel exemple</button>
-            </div>
+            
             <div class="settings-grid" id="catalogEditor"><label>Nom affiché<input id="modelLabel"
                         type="text"></label><label>Type technique<select id="modelType">
                         <option>choice</option>
