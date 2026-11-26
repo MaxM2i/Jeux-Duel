@@ -730,7 +730,7 @@
             const kind=ex.presentationId||'square-100',unitSize=kind==='square-100'?100:kind==='square-bar'?10:kind==='pie-chart'?Math.max(2,Math.min(8,Number(ex.touchParts)||8)):9;
             const target=Math.max(0,Math.round(Number(ex.touchTarget)||0)),units=Math.max(1,Math.ceil(target/unitSize)),total=units*unitSize,filled=editable?0:Math.min(total,target),unitLabel=touchUnitLabel(ex,kind);
             const title=kind==='square-100'?'Carré 100':kind==='square-bar'?'Carré barré':kind==='pie-chart'?'Camenbert':'Carré 9';
-            const rawTemplate=String(ex.contentTemplate||'{contentLabel}');const contentText=rawTemplate.replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g,(_,key)=>String(ex[key]??''));const content=`<div class="touch-content">${escapeHtml(contentText||ex.contentLabel||ex.expression||'')}</div>`;
+            const rawTemplate=String(ex.contentTemplate||'{contentLabel}');const contentText=rawTemplate.replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g,(_,key)=>String(ex[key]??''));const content=`<div class="touch-content">${escapeHtml(contentText||ex.contentLabel||ex.expression||'')}</div>`;const design=ex.modelDesign||{};const designStyle=`--touch-fill:${design.fillColor||'#20a9e9'};--touch-empty:${design.emptyColor||'#ffffff'};--touch-border:${design.borderColor||'#cbd5e1'};--touch-border-width:${Number(design.borderWidth??2)}px;--touch-gap:${Number(design.gap??2)}px;`;const size=Number(design.size||100);
             const cell=(index,cls='touch-cell')=>editable?`<button type="button" class="${cls} ${index<filled?'on':''}" data-touch-index="${index}" aria-label="Élément ${index+1}"></button>`:`<i class="${cls} ${index<filled?'on':''}"></i>`;
             let visual='';
             if(kind==='square-100'){
@@ -741,10 +741,10 @@
                visual=`<div class="touch-square-9" data-touch-kind="cells">${Array.from({length:9},(_,i)=>cell(i)).join('')}</div>`;
             }else{
                const parts=unitSize,segments=Array.from({length:parts},(_,i)=>`${i<filled?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`).join(',');
-               visual=`<div class="touch-pie-stack" data-touch-kind="pie">${Array.from({length:units},(_,u)=>{const start=u*parts,n=Math.max(0,Math.min(parts,filled-start));const stops=Array.from({length:parts},(_,i)=>`${i<n?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`).join(',');return `<div class="touch-pie" data-pie-unit="${u}" data-parts="${parts}" style="background:conic-gradient(${stops})"><span>${u+1}</span></div>`;}).join('')}</div>`;
+               visual=`<div class="touch-pie-stack" data-touch-kind="pie">${Array.from({length:units},(_,u)=>{const start=u*parts,n=Math.max(0,Math.min(parts,filled-start));const stops=Array.from({length:parts},(_,i)=>`${i<n?'var(--touch-fill,#3188f5)':'var(--touch-empty,#e7edf5)'} ${i/parts*100}% ${(i+1)/parts*100}%`).join(',');return `<div class="touch-pie" data-pie-unit="${u}" data-parts="${parts}" style="--touch-parts:${parts};background-image:repeating-conic-gradient(var(--touch-border,#9aa8bb) 0deg 1.5deg,transparent 1.5deg ${360/parts}deg),conic-gradient(${stops})"><span>${u+1}</span><i class="touch-pie-segment-lines" style="--touch-parts:${parts}"></i></div>`;}).join('')}</div>`;
             }
             const countText=editable?`0 / ${total} · ${unitLabel}`:'Combien d’unités sont représentées ?';
-            return `<section class="touch-model" data-touch-model="${kind}" data-unit-size="${unitSize}" data-unit-label="${escapeHtml(unitLabel)}"><small>${title} · ${editable?'glisse le doigt pour remplir':'modèle déjà rempli'}</small>${ex.contentSlot==='inside'?`<div class="touch-visual-wrap">${visual}${content}</div>`:ex.contentSlot==='hidden'?visual:content+visual}<div class="touch-count" aria-live="polite">${countText}</div></section>`;
+            return `<section class="touch-model" style="${designStyle}--touch-size:${size/100}" data-touch-model="${kind}" data-unit-size="${unitSize}" data-unit-label="${escapeHtml(unitLabel)}" data-touch-layout="${design.layout||'auto'}"><small>${title} · ${editable?'glisse le doigt pour remplir':'modèle déjà rempli'}</small>${ex.contentSlot==='inside'?`<div class="touch-visual-wrap">${visual}${content}</div>`:ex.contentSlot==='hidden'?visual:content+visual}<div class="touch-count" aria-live="polite">${countText}</div></section>`;
          }
          function bindTouchModel(host, onCount){
             const model=host.querySelector('[data-touch-model]');if(!model)return;
@@ -752,7 +752,7 @@
             const selected=new Set();let drawing=false,drawValue=true;const pies=[...model.querySelectorAll('.touch-pie')];
             const paint=()=>{
                model.querySelectorAll('[data-touch-index]').forEach(button=>{const on=selected.has(Number(button.dataset.touchIndex));button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on));});
-               pies.forEach((pie,u)=>{const parts=Number(pie.dataset.parts)||total,start=u*parts;const stops=Array.from({length:parts},(_,i)=>`${selected.has(start+i)?'#3188f5':'#e7edf5'} ${i/parts*100}% ${(i+1)/parts*100}%`);pie.style.background=`conic-gradient(${stops.join(',')})`;});
+               pies.forEach((pie,u)=>{const parts=Number(pie.dataset.parts)||total,start=u*parts;const stops=Array.from({length:parts},(_,i)=>`${selected.has(start+i)?'var(--touch-fill,#3188f5)':'var(--touch-empty,#e7edf5)'} ${i/parts*100}% ${(i+1)/parts*100}%`);pie.style.backgroundImage=`repeating-conic-gradient(var(--touch-border,#9aa8bb) 0deg 1.5deg,transparent 1.5deg ${360/parts}deg),conic-gradient(${stops.join(',')})`;});
                const count=model.querySelector('.touch-count');if(count)count.textContent=`${selected.size} / ${model.querySelectorAll('[data-touch-index]').length||total} · ${model.dataset.unitLabel||'unité'}`;
                onCount(selected.size);
             };

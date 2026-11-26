@@ -83,7 +83,7 @@
     const presentationId = compatiblePresentations.length ? pick(compatiblePresentations, rand) : (selectedModel?.presentationIds || [])[0] || null;
     const modelMin = Number.isFinite(Number(selectedModel?.numberMin)) ? Number(selectedModel.numberMin) : 1;
     const modelMax = Number.isFinite(Number(selectedModel?.numberMax)) ? Number(selectedModel.numberMax) : 10000;
-    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId, contentTemplate:selectedModel?.contentTemplate||'{contentLabel}', contentSlot:selectedModel?.contentSlot||'above' });
+    const tag = exercise => ({ ...exercise, modelId, categoryId, contentId, presentationId, contentTemplate:selectedModel?.contentTemplate||'{contentLabel}', contentSlot:selectedModel?.contentSlot||'above', modelDesign:selectedModel?.design||{} });
 
     // Contenus puissances et fractions : les présentations restent interchangeables.
     if (selectedModel?.type === 'exponent') {
@@ -104,7 +104,7 @@
       const interaction=selectedModel?.touchInteraction||'random';
       const fillMode = interaction==='fill' ? true : interaction==='read' ? false : rand(0,1)===0;
       let target, denominator, label, prompt, unit, contentLabel;
-      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?rand(2,8):9;
+      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?rand(2,8):8;
       if (contentId === 'ratio-proportion') {
         denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
         target=rand(1,capacity);unit=model==='square-bar'||model==='pie-chart'?10:1;

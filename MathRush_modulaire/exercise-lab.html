@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <title>MathRush — laboratoire d’exercices</title>
+    <title>MathRush — Labo</title>
     <link rel="stylesheet" href="assets/css/mathrush.css">
     <style>
         :root {
@@ -13,15 +13,15 @@
 
         body {
             margin: 0;
-            background: #f3f6ff;
-            color: #1d2947;
-            font-family: system-ui, sans-serif
+            background: var(--paper, #f3f6ff);
+            color: var(--ink, #1d2947);
+            font-family: Inter, system-ui, sans-serif
         }
 
         .lab {
-            max-width: 940px;
+            max-width: 1180px;
             margin: auto;
-            padding: 16px
+            padding: clamp(10px, 2vw, 24px)
         }
 
         .lab header {
@@ -44,11 +44,11 @@
         }
 
         .panel {
-            background: #fff;
-            border: 1px solid #dce3f2;
+            background: var(--panel, rgba(255, 255, 255, .94));
+            border: 1px solid var(--line, #dce3f2);
             border-radius: 18px;
-            padding: 16px;
-            margin: 14px 0;
+            padding: clamp(12px, 2vw, 20px);
+            margin: 12px 0;
             box-shadow: 0 8px 24px #1d294710
         }
 
@@ -273,6 +273,79 @@
                 position: static
             }
         }
+
+        .lab-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0
+        }
+
+        .lab-nav a {
+            padding: 9px 13px;
+            border-radius: 999px;
+            background: #eaf0ff;
+            color: #254a9c;
+            text-decoration: none;
+            font-weight: 850;
+            font-size: 13px
+        }
+
+        .choice-editor {
+            grid-column: 1/-1;
+            padding: 12px;
+            border: 1px solid #dce3f2;
+            border-radius: 14px;
+            background: #fff
+        }
+
+        .choice-editor>b {
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .choice-editor .marker-list {
+            max-height: 190px;
+            overflow: auto
+        }
+
+        .design-editor {
+            grid-column: 1/-1;
+            padding: 15px;
+            border: 1px solid #dce3f2;
+            border-radius: 16px;
+            background: #f8faff
+        }
+
+        .design-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px
+        }
+
+        .design-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 800
+        }
+
+        .design-grid input,
+        .design-grid select {
+            width: 100%;
+            min-height: 38px
+        }
+
+        .design-actions {
+            margin-top: 12px
+        }
+
+        @media(max-width:650px) {
+            .design-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr))
+            }
+        }
     </style>
     <style>
         .model-overview {
@@ -414,7 +487,7 @@
         .touch-preview-9 {
             display: grid;
             grid-template-columns: repeat(3, 28px);
-            gap: 2px;
+            gap: 4px;
             justify-content: center;
             margin: 10px auto
         }
@@ -427,8 +500,8 @@
 
         .touch-preview-bar {
             display: grid;
-            grid-template-columns: repeat(2, 45px);
-            gap: 1px;
+            grid-template-columns: repeat(2, 70px);
+            gap: 4px;
             justify-content: center;
             margin: 10px auto
         }
@@ -461,7 +534,6 @@
             max-width: 75%;
             padding: 4px 7px;
             border-radius: 8px;
-            border: 1px solid #000000;
             background: #ffffffdc;
             pointer-events: none
         }
@@ -476,8 +548,11 @@
 <body>
     <main class="lab">
         <header>
-            <h1>🧪 Laboratoire MathRush</h1>
-            <p>Teste chaque générateur indépendamment du jeu, sans modifier ta progression.</p>
+            <h1>🧪 Labo MathRush</h1>
+            <p>Configure les modèles visuels, leurs contenus compatibles et les catégories qui peuvent les utiliser. Les
+                essais ne modifient pas la progression.</p>
+            <nav class="lab-nav"><a href="#catalogPanel">Modèles</a><a href="#selectedPreviewPanel">Aperçu</a><a
+                    href="#cursorSettings">Curseur</a><a href="#diagnosticPanel">Diagnostic</a></nav>
             <div class="controls"><label>Type d’exercice<select id="mode"></select></label><label>Difficulté<select
                         id="difficulty"></select></label><label>Mode de jeu<select id="gameContext">
                         <option value="solo">Parcours solo</option>
@@ -557,10 +632,14 @@
                         min="0" max="6"></label><label>Niveau maximum (0 à 6)<input id="modelDifficultyMax"
                         type="number" min="0" max="6"></label>
             </div>
-            <label>Catégories mathématiques (IDs séparés par des virgules)<textarea id="modelCategoryIds" rows="2"
-                    placeholder="quick, percentages"></textarea></label>
-            <label>Générateurs de contenu (IDs séparés par des virgules)<textarea id="modelContentIds" rows="3"
-                    placeholder="basic-operation, percentage-of"></textarea></label>
+            <div class="choice-editor"><b>Catégories autorisées</b>
+                <div id="modelCategoryChoices" class="marker-list"></div><textarea id="modelCategoryIds" rows="2"
+                    hidden></textarea>
+            </div>
+            <div class="choice-editor"><b>Contenus autorisés</b>
+                <div id="modelContentChoices" class="marker-list"></div><textarea id="modelContentIds" rows="3"
+                    hidden></textarea>
+            </div>
             <label>Modèles de présentation (IDs séparés par des virgules)<textarea id="modelPresentationIds" rows="3"
                     placeholder="choice, table, cursor"></textarea></label><label>Texte affiché dans le modèle
                 (variables : {contentLabel}, {expression}, {answerLabel}, {categoryId})<input id="modelContentTemplate"
@@ -574,6 +653,27 @@
                     <option value="fill">À remplir au toucher</option>
                     <option value="read">Déjà rempli : trouver la valeur</option>
                 </select></label>
+            <div class="design-editor">
+                <h3>🎨 Design du modèle</h3>
+                <p class="muted">Ces réglages sont appliqués aux modèles tactiles et exportés avec le catalogue.</p>
+                <div class="design-grid"><label>Taille<input id="designSize" type="range" min="55" max="150"
+                            value="100"><output id="designSizeValue">100 %</output></label><label>Couleur remplie<input
+                            id="designFill" type="color" value="#20a9e9"></label><label>Couleur vide<input
+                            id="designEmpty" type="color" value="#ffffff"></label><label>Couleur bordure /
+                        séparation<input id="designBorder" type="color" value="#cbd5e1"></label><label>Épaisseur de
+                        bordure<input id="designBorderWidth" type="range" min="0" max="8" value="2"><output
+                            id="designBorderWidthValue">2 px</output></label><label>Épaisseur des espacements<input
+                            id="designGap" type="range" min="0" max="8" value="2"><output id="designGapValue">2
+                            px</output></label><label>Disposition<select id="designLayout">
+                            <option value="auto">Automatique</option>
+                            <option value="row">En ligne</option>
+                            <option value="column">En colonne</option>
+                            <option value="grid">En grille</option>
+                            <option value="stack">Superposée / décalée</option>
+                        </select></label></div>
+                <div class="design-actions"><button id="resetDesign" type="button" class="secondary">Réinitialiser le
+                        design</button></div>
+            </div>
             <p class="muted">Modes de calcul autorisés (compatibilité historique)</p>
             <div id="modelModes" class="marker-list"></div>
             <p class="muted">Modes de jeu autorisés</p>
@@ -641,7 +741,7 @@
                 <div class="controls"><button id="copyCode" type="button">Copier le code</button></div>
             </div>
         </section>
-        <section class="panel">
+        <section class="panel" id="diagnosticPanel">
             <h2>Objet généré (diagnostic)</h2>
             <pre id="raw" class="raw">Aucun exercice généré.</pre>
             <p class="muted">Ce laboratoire appelle les mêmes générateurs que le jeu. Le code exporté peut être intégré
@@ -682,9 +782,9 @@
 
             function syncRuntimeCatalog() { config.EXERCISE_MODELS.splice(0, config.EXERCISE_MODELS.length, ...JSON.parse(JSON.stringify(models))); }
             function refreshCatalogSelect() { const select = $('catalogModel'); select.innerHTML = ''; models.forEach(model => { const option = document.createElement('option'); option.value = model.id; option.textContent = (model.enabled === false ? '⏸ ' : '') + model.label; select.append(option) }); if (selectedModelId && modelById(selectedModelId)) select.value = selectedModelId; else selectedModelId = models[0]?.id || null; const overview = $('modelOverview'); overview.innerHTML = ''; models.forEach(model => { const card = document.createElement('button'); card.type = 'button'; card.className = 'model-overview-card' + (model.id === selectedModelId ? ' selected' : '') + (model.enabled === false ? ' disabled' : ''); const modes = model.modes.map(id => { const modeLabel = config.MODES.find(x => x.id === id)?.label || id; const rank = Number($('difficulty').value) || 0; const pool = models.filter(other => other.enabled !== false && other.weight > 0 && other.modes.includes(id) && (other.playModes || []).includes($('gameContext').value) && rank >= other.difficultyMin && rank <= other.difficultyMax); const total = pool.reduce((sum, other) => sum + other.weight, 0); const share = total && model.enabled !== false && (model.playModes || []).includes($('gameContext').value) && rank >= model.difficultyMin && rank <= model.difficultyMax ? Math.round(model.weight / total * 100) : 0; return `${modeLabel} (${share} % env.)` }).join(' · '); const playModes = (model.playModes || []).join(' · '); card.innerHTML = `<b>${model.label}</b><small>${model.enabled === false ? 'Désactivé' : 'Actif'} · poids ${model.weight} · niveaux ${model.difficultyMin}–${model.difficultyMax}</small><small>Calcul : ${modes}</small><small>Jeu : ${playModes}</small><small>Plage : ${model.numberMin} à ${model.numberMax}</small>`; card.onclick = () => { updateSelectedModel(); selectedModelId = model.id; renderCatalogEditor() }; overview.append(card) }); }
-            function renderCatalogEditor() { refreshCatalogSelect(); const m = modelById(selectedModelId); if (!m) { $('catalogEditor').hidden = true; return } $('catalogEditor').hidden = false; $('modelLabel').value = m.label; $('modelType').value = m.type; $('modelWeight').value = m.weight; $('modelNumberMin').value = m.numberMin; $('modelNumberMax').value = m.numberMax; $('modelDifficultyMin').value = m.difficultyMin; $('modelDifficultyMax').value = m.difficultyMax; $('modelEnabled').checked = m.enabled !== false; $('modelDescription').value = m.description || ''; $('modelCategoryIds').value = (m.categoryIds || m.modes || []).join(', '); $('modelContentIds').value = (m.contentIds || []).join(', '); $('modelPresentationIds').value = (m.presentationIds || []).join(', '); $('modelContentTemplate').value = m.contentTemplate || '{contentLabel}'; $('modelContentSlot').value = m.contentSlot || 'above'; $('modelTouchInteraction').value = m.touchInteraction || 'random'; $('modelModes').innerHTML = ''; config.MODES.filter(x => x.id !== 'mixed').forEach(mode => { const label = document.createElement('label'); label.className = 'inline-check'; const check = document.createElement('input'); check.type = 'checkbox'; check.value = mode.id; check.checked = m.modes.includes(mode.id); check.onchange = () => { m.modes = Array.from($('modelModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); renderSelectedModelPreview(); render() }; label.append(check, document.createTextNode(mode.label)); $('modelModes').append(label) }); $('modelPlayModes').innerHTML = '';[['solo', 'Parcours solo'], ['duel', 'Défi (2 joueurs)'], ['multiplayer', 'Multijoueur (3 à 8)'], ['gogo', 'Duo à gogo']].forEach(([id, labelText]) => { const label = document.createElement('label'); label.className = 'inline-check'; const check = document.createElement('input'); check.type = 'checkbox'; check.value = id; check.checked = (m.playModes || ['solo', 'duel', 'multiplayer', 'gogo']).includes(id); check.onchange = () => { m.playModes = Array.from($('modelPlayModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); renderSelectedModelPreview(); render() }; label.append(check, document.createTextNode(labelText)); $('modelPlayModes').append(label) }); renderSelectedModelPreview(); }
-            function updateSelectedModel() { const m = modelById(selectedModelId); if (!m) return; m.label = $('modelLabel').value.trim() || 'Modèle sans nom'; m.type = $('modelType').value; m.weight = Math.max(0, Number($('modelWeight').value) || 0); m.numberMin = Number($('modelNumberMin').value); m.numberMax = Number($('modelNumberMax').value); const diffMin = Number($('modelDifficultyMin').value), diffMax = Number($('modelDifficultyMax').value); m.difficultyMin = Math.max(0, Math.min(6, Number.isFinite(diffMin) ? diffMin : 0)); m.difficultyMax = Math.max(m.difficultyMin, Math.min(6, Number.isFinite(diffMax) ? diffMax : 6)); m.enabled = $('modelEnabled').checked; m.description = $('modelDescription').value; const parseIds = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean); m.categoryIds = parseIds('modelCategoryIds'); m.contentIds = parseIds('modelContentIds'); m.presentationIds = parseIds('modelPresentationIds'); m.contentTemplate = $('modelContentTemplate').value || '{contentLabel}'; m.contentSlot = $('modelContentSlot').value; m.touchInteraction = $('modelTouchInteraction').value; m.modes = m.categoryIds.slice(); m.modes = m.categoryIds.slice(); m.playModes = Array.from($('modelPlayModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); $('catalogModel').value = selectedModelId; renderSelectedModelPreview(); }
-            $('catalogModel').onchange = () => { const nextId = $('catalogModel').value; updateSelectedModel(); selectedModelId = nextId; renderCatalogEditor(); render() };['modelLabel', 'modelType', 'modelWeight', 'modelNumberMin', 'modelNumberMax', 'modelDifficultyMin', 'modelDifficultyMax', 'modelEnabled', 'modelDescription', 'modelCategoryIds', 'modelContentIds', 'modelPresentationIds', 'modelContentTemplate', 'modelContentSlot', 'modelTouchInteraction'].forEach(id => { const sync = () => { updateSelectedModel(); render() }; $(id).addEventListener('input', sync); $(id).addEventListener('change', sync) }); $('refreshModelPreview').onclick = () => renderSelectedModelPreview();
+            function renderCatalogEditor() { refreshCatalogSelect(); const m = modelById(selectedModelId); if (!m) { $('catalogEditor').hidden = true; return } $('catalogEditor').hidden = false; $('modelLabel').value = m.label; $('modelType').value = m.type; $('modelWeight').value = m.weight; $('modelNumberMin').value = m.numberMin; $('modelNumberMax').value = m.numberMax; $('modelDifficultyMin').value = m.difficultyMin; $('modelDifficultyMax').value = m.difficultyMax; $('modelEnabled').checked = m.enabled !== false; $('modelDescription').value = m.description || ''; $('modelCategoryIds').value = (m.categoryIds || m.modes || []).join(', '); $('modelContentIds').value = (m.contentIds || []).join(', '); $('modelPresentationIds').value = (m.presentationIds || []).join(', '); $('modelContentTemplate').value = m.contentTemplate || '{contentLabel}'; $('modelContentSlot').value = m.contentSlot || 'above'; $('modelTouchInteraction').value = m.touchInteraction || 'random'; const d = m.design || {}; $('designSize').value = d.size || 100; $('designSizeValue').textContent = (d.size || 100) + ' %'; $('designFill').value = d.fillColor || '#20a9e9'; $('designEmpty').value = d.emptyColor || '#ffffff'; $('designBorder').value = d.borderColor || '#cbd5e1'; $('designBorderWidth').value = d.borderWidth ?? 2; $('designBorderWidthValue').textContent = (d.borderWidth ?? 2) + ' px'; $('designGap').value = d.gap ?? 2; $('designGapValue').textContent = (d.gap ?? 2) + ' px'; $('designLayout').value = d.layout || 'auto'; const renderChecks = (hostId, items, selected) => { const host = $(hostId); host.innerHTML = ''; items.forEach(item => { const label = document.createElement('label'); label.className = 'inline-check'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = item.id; input.checked = selected.includes(item.id); input.onchange = () => { const values = Array.from(host.querySelectorAll('input:checked')).map(x => x.value); if (hostId === 'modelCategoryChoices') $('modelCategoryIds').value = values.join(', '); else $('modelContentIds').value = values.join(', '); updateSelectedModel(); render() }; label.append(input, document.createTextNode(item.label)); host.append(label) }) }; renderChecks('modelCategoryChoices', config.MATH_CATEGORIES.filter(x => !x.composite), m.categoryIds || m.modes || []); renderChecks('modelContentChoices', config.CONTENT_GENERATORS, m.contentIds || []); $('modelModes').innerHTML = ''; config.MODES.filter(x => x.id !== 'mixed').forEach(mode => { const label = document.createElement('label'); label.className = 'inline-check'; const check = document.createElement('input'); check.type = 'checkbox'; check.value = mode.id; check.checked = m.modes.includes(mode.id); check.onchange = () => { m.modes = Array.from($('modelModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); renderSelectedModelPreview(); render() }; label.append(check, document.createTextNode(mode.label)); $('modelModes').append(label) }); $('modelPlayModes').innerHTML = '';[['solo', 'Parcours solo'], ['duel', 'Défi (2 joueurs)'], ['multiplayer', 'Multijoueur (3 à 8)'], ['gogo', 'Duo à gogo']].forEach(([id, labelText]) => { const label = document.createElement('label'); label.className = 'inline-check'; const check = document.createElement('input'); check.type = 'checkbox'; check.value = id; check.checked = (m.playModes || ['solo', 'duel', 'multiplayer', 'gogo']).includes(id); check.onchange = () => { m.playModes = Array.from($('modelPlayModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); renderSelectedModelPreview(); render() }; label.append(check, document.createTextNode(labelText)); $('modelPlayModes').append(label) }); renderSelectedModelPreview(); }
+            function updateSelectedModel() { const m = modelById(selectedModelId); if (!m) return; m.label = $('modelLabel').value.trim() || 'Modèle sans nom'; m.type = $('modelType').value; m.weight = Math.max(0, Number($('modelWeight').value) || 0); m.numberMin = Number($('modelNumberMin').value); m.numberMax = Number($('modelNumberMax').value); const diffMin = Number($('modelDifficultyMin').value), diffMax = Number($('modelDifficultyMax').value); m.difficultyMin = Math.max(0, Math.min(6, Number.isFinite(diffMin) ? diffMin : 0)); m.difficultyMax = Math.max(m.difficultyMin, Math.min(6, Number.isFinite(diffMax) ? diffMax : 6)); m.enabled = $('modelEnabled').checked; m.description = $('modelDescription').value; const parseIds = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean); m.categoryIds = Array.from($('modelCategoryChoices').querySelectorAll('input:checked')).map(x => x.value); m.contentIds = Array.from($('modelContentChoices').querySelectorAll('input:checked')).map(x => x.value); m.presentationIds = parseIds('modelPresentationIds'); m.contentTemplate = $('modelContentTemplate').value || '{contentLabel}'; m.contentSlot = $('modelContentSlot').value; m.touchInteraction = $('modelTouchInteraction').value; m.design = { size: Number($('designSize').value), fillColor: $('designFill').value, emptyColor: $('designEmpty').value, borderColor: $('designBorder').value, borderWidth: Number($('designBorderWidth').value), gap: Number($('designGap').value), layout: $('designLayout').value }; m.modes = m.categoryIds.slice(); m.modes = m.categoryIds.slice(); m.playModes = Array.from($('modelPlayModes').querySelectorAll('input:checked')).map(x => x.value); syncRuntimeCatalog(); refreshCatalogSelect(); $('catalogModel').value = selectedModelId; renderSelectedModelPreview(); }
+            $('catalogModel').onchange = () => { const nextId = $('catalogModel').value; updateSelectedModel(); selectedModelId = nextId; renderCatalogEditor(); render() };['modelLabel', 'modelType', 'modelWeight', 'modelNumberMin', 'modelNumberMax', 'modelDifficultyMin', 'modelDifficultyMax', 'modelEnabled', 'modelDescription', 'modelCategoryIds', 'modelContentIds', 'modelPresentationIds', 'modelContentTemplate', 'modelContentSlot', 'modelTouchInteraction', 'designSize', 'designFill', 'designEmpty', 'designBorder', 'designBorderWidth', 'designGap', 'designLayout'].forEach(id => { const sync = () => { updateSelectedModel(); render() }; $(id).addEventListener('input', sync); $(id).addEventListener('change', sync) }); $('refreshModelPreview').onclick = () => renderSelectedModelPreview();['designSize', 'designGap', 'designBorderWidth'].forEach(id => $(id).addEventListener('input', () => { $($(id === 'designSize' ? 'designSizeValue' : id === 'designGap' ? 'designGapValue' : 'designBorderWidthValue')).textContent = $(id).value + (id === 'designSize' ? ' %' : ' px') })); $('resetDesign').onclick = () => { const defaults = { size: 100, fillColor: '#20a9e9', emptyColor: '#ffffff', borderColor: '#cbd5e1', gap: 2, layout: 'auto' }; $('designSize').value = defaults.size; $('designFill').value = defaults.fillColor; $('designEmpty').value = defaults.emptyColor; $('designBorder').value = defaults.borderColor; $('designBorderWidth').value = 2; $('designBorderWidthValue').textContent = '2 px'; $('designGap').value = defaults.gap; $('designLayout').value = defaults.layout; updateSelectedModel(); renderCatalogEditor() };
             $('duplicateModel').onclick = () => { updateSelectedModel(); const source = modelById(selectedModelId); if (!source) return; const copy = JSON.parse(JSON.stringify(source)); copy.id = source.id + '-variant-' + (models.filter(x => x.id.startsWith(source.id + '-variant-')).length + 1); copy.label = source.label + ' — variante'; copy.weight = 1; models.push(copy); syncRuntimeCatalog(); selectedModelId = copy.id; renderCatalogEditor(); render(); $('catalogStatus').textContent = 'Variante créée. Modifie ses paramètres puis exporte le catalogue.' };
             $('newModel').onclick = () => { const id = 'custom-model-' + (models.filter(x => x.id.startsWith('custom-model-')).length + 1); models.push({ id, label: 'Nouveau modèle', type: 'choice', modes: ['quick'], categoryIds: ['quick'], contentIds: ['basic-operation'], presentationIds: ['choice', 'boxes'], contentTemplate: '{contentLabel}', contentSlot: 'above', touchInteraction: 'random', playModes: ['solo', 'duel', 'multiplayer', 'gogo'], enabled: true, weight: 1, difficultyMin: 0, difficultyMax: 6, numberMin: 1, numberMax: 100, description: 'Décris ici le fonctionnement du modèle.' }); selectedModelId = id; syncRuntimeCatalog(); renderCatalogEditor(); render(); $('catalogStatus').textContent = 'Modèle ajouté. Un nouveau type nécessite aussi un générateur et un affichage dans le code du jeu.' };
             $('deleteModel').onclick = () => { if (models.length <= 1) return; models = models.filter(x => x.id !== selectedModelId); syncRuntimeCatalog(); selectedModelId = models[0].id; renderCatalogEditor(); render(); $('catalogStatus').textContent = 'Modèle retiré du catalogue. Exporte le code pour appliquer le changement.' };
@@ -699,7 +799,7 @@
             function renderMarkers() { const host = $('markerList'); host.innerHTML = ''; markers.forEach((value, index) => { const chip = document.createElement('div'); chip.className = 'marker-chip'; const input = document.createElement('input'); input.type = 'number'; input.value = value; input.setAttribute('aria-label', `Valeur du repère ${index + 1}`); input.oninput = () => { markers[index] = Number(input.value); renderTickPreview() }; const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'X'; remove.setAttribute('aria-label', 'Supprimer ce repère'); remove.onclick = () => { markers.splice(index, 1); renderMarkers(); applySettings() }; chip.append(input, remove); host.append(chip) }); renderTickPreview() }
             function renderTickPreview() { const m = modelFromInputs(), ticks = m.ticks.filter(v => v >= m.min && v <= m.max); $('previewTicks').innerHTML = ticks.map(v => `<span>${v}</span>`).join(''); $('labTicks').innerHTML = ticks.map(v => `<span>${v}</span>`).join('') }
             function applySettings() { const m = modelFromInputs(); if (!Number.isFinite(m.min) || !Number.isFinite(m.max) || m.max <= m.min) { $('result').textContent = 'La valeur maximale doit être supérieure à la minimale.'; $('result').className = 'status fail'; return false } const preview = $('cursorPreview'); preview.min = m.min; preview.max = m.max; preview.step = m.step || 1; preview.value = Math.min(m.max, Math.max(m.min, Number(preview.value) || m.startValue));[$('cursorPreview'), $('slider')].forEach(range => { range.style.setProperty('--lab-thumb', m.thumbSize + 'px'); range.style.setProperty('--lab-track', m.trackSize + 'px'); range.style.setProperty('--lab-color', m.color); range.style.accentColor = m.color }); if (lastExercise && ['commonSlider', 'slider', 'line'].includes(lastExercise.type)) { const ans = Number(lastExercise.ans), min = Math.min(m.min, ans), max = Math.max(m.max, ans); $('slider').min = min; $('slider').max = max; $('slider').step = m.step || lastExercise.step || 1; $('slider').value = Math.min(max, Math.max(min, Number($('slider').value) || m.startValue)); $('rangeValue').textContent = $('slider').value } $('thumbSizeLabel').textContent = m.thumbSize + ' px'; $('trackSizeLabel').textContent = m.trackSize + ' px'; $('cursorPreviewValue').textContent = m.showValue ? preview.value : ''; $('cursorPreviewValue').hidden = !m.showValue; renderTickPreview(); return true }
-            function touchPreviewHtml(ex) { const id = ex.presentationId || 'square-100', n = id === 'square-100' ? 100 : id === 'square-bar' ? 10 : id === 'pie-chart' ? 8 : 9, filled = Math.min(n, Number(ex.touchTarget) || 0), raw = String(ex.contentTemplate || '{contentLabel}').replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g, (_, key) => String(ex[key] ?? '')), label = raw.replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[c])), slot = ex.contentSlot || 'above', above = slot === 'above' ? `<strong>${label}</strong>` : '', inside = slot === 'inside' ? `<b class="touch-preview-inside">${label}</b>` : ''; if (id === 'pie-chart') return `<div class="touch-preview"><b>Camenbert</b>${above}<div class="touch-preview-pie" style="background:conic-gradient(#3188f5 0% ${filled / n * 100}%,#e7edf5 ${filled / n * 100}% 100%)">${inside}</div></div>`; const cls = id === 'square-100' ? 'touch-preview-100' : id === 'square-bar' ? 'touch-preview-bar' : 'touch-preview-9'; return `<div class="touch-preview"><b>${id === 'square-100' ? 'Carré 100' : id === 'square-bar' ? 'Carré barré' : 'Carré 9'}</b>${above}<div class="${cls} ${slot === 'inside' ? 'has-inside' : ''}">${Array.from({ length: n }, (_, i) => `<i class="${i < filled ? 'on' : ''}"></i>`).join('')}${inside}</div></div>`; }
+            function touchPreviewHtml(ex) { const design = ex.modelDesign || {}; const style = `--touch-fill:${design.fillColor || '#3188f5'};--touch-empty:${design.emptyColor || '#ffffff'};--touch-border:${design.borderColor || '#cbd5e1'};--touch-border-width:${Number(design.borderWidth ?? 2)}px;--touch-gap:${Number(design.gap ?? 2)}px;--touch-size:${Number(design.size || 100) / 100};`; const id = ex.presentationId || 'square-100', n = id === 'square-100' ? 100 : id === 'square-bar' ? 10 : id === 'pie-chart' ? 8 : 9, filled = Math.min(n, Number(ex.touchTarget) || 0), raw = String(ex.contentTemplate || '{contentLabel}').replace(/\{(contentLabel|expression|answerLabel|categoryId)\}/g, (_, key) => String(ex[key] ?? '')), label = raw.replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[c])), slot = ex.contentSlot || 'above', above = slot === 'above' ? `<strong>${label}</strong>` : '', inside = slot === 'inside' ? `<b class="touch-preview-inside">${label}</b>` : ''; if (id === 'pie-chart') return `<div class="touch-preview" style="${style}"><b>Camenbert</b>${above}<div class="touch-preview-pie" style="background:conic-gradient(var(--touch-fill) 0% ${filled / n * 100}%,var(--touch-empty) ${filled / n * 100}% 100%);border:var(--touch-border-width,2px) solid var(--touch-border);outline:1px solid var(--touch-border)">${inside}</div></div>`; const cls = id === 'square-100' ? 'touch-preview-100' : id === 'square-bar' ? 'touch-preview-bar' : 'touch-preview-9'; return `<div class="touch-preview" style="${style}"><b>${id === 'square-100' ? 'Carré 100' : id === 'square-bar' ? 'Carré barré' : 'Carré 9'}</b>${above}<div class="${cls} ${slot === 'inside' ? 'has-inside' : ''}">${Array.from({ length: n }, (_, i) => `<i class="${i < filled ? 'on' : ''}"></i>`).join('')}${inside}</div></div>`; }
             function render() {
                 const mode = $('mode').value, d = Number($('difficulty').value); let ex; try { ex = api.createSoloExercise(mode, d, rand, shuffle, $('gameContext').value) } catch (err) { $('result').textContent = 'Erreur générateur : ' + err.message; $('result').className = 'status fail'; return } lastExercise = ex; $('kind').textContent = 'Mode : ' + (config.MODES.find(x => x.id === mode)?.label || mode) + ' · Jeu : ' + $('gameContext').selectedOptions[0].textContent + ' · Difficulté : ' + config.DIFFICULTY[d].name + ' · Modèle : ' + (models.find(m => m.id === ex.modelId)?.label || ex.modelId || 'modèle natif') + ' · Type : ' + ex.type; $('prompt').textContent = ex.prompt || (ex.type === 'baseTen' ? `Choisis la représentation qui contient ${ex.ans} blocs bleus.` : ex.type === 'percent' ? `Calcule ${ex.pct}% de ${ex.base}` : ex.type === 'round' ? `Arrondis ${ex.number} à la ${ex.unit === 10 ? 'dizaine' : 'centaine'} la plus proche` : ex.type === 'factorTree' ? `Complète l'arbre de facteurs de ${ex.total}` : ex.type === 'ppcmChoice' ? `Quel est le PPCM de ${ex.a} et ${ex.b} ?` : ex.type === 'roundingTable' ? ex.prompt : ex.type === 'baseTenRounding' ? `Arrondis ${ex.number} à la centaine près.` : ex.type === 'missingBox' ? ex.prompt : ex.type === 'pattern' ? `Suite : ${ex.seq.join(' · ')} · ?` : ex.type === 'model' ? `Complète le modèle : ${ex.displayVals.join(' · ')} · ?` : ex.type === 'factors' ? `Facteurs de ${ex.a * ex.b * ex.c} : ?` : ex.type === 'equation' ? `Quelle expression donne ${ex.target} ?` : ex.prompt || `${ex.a ?? ''} ${ex.op ?? ''} ${ex.b ?? ''}`); $('visual').innerHTML = ex.visual || (ex.type === 'touchModel' ? touchPreviewHtml(ex) : ex.type === 'exponent' ? `<div class=\"prompt\">${ex.base}<sup>${ex.exponent}</sup> = ${ex.ans}</div>` : ex.type === 'factorTree' ? `<div class="factor-tree-visual"><div class="factor-node">${ex.total}</div><div class="factor-tree-branch"></div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${ex.right}</div></div><div class="factor-tree-branch short"></div><div class="factor-tree-row compact"><div class="factor-node">${ex.lowerA}</div><div class="factor-node">${ex.lowerB}</div></div></div>` : ex.type === 'roundingTable' ? `<div class="rounding-table"><div><b>Calcul</b><b>Résultat arrondi</b></div>${ex.rows.map((r, i) => `<div><span>${r.expression || r.number}</span><span>${i === 2 ? '?' : r.rounded}</span></div>`).join('')}</div>` : ex.type === 'baseTenRounding' ? `<div class="prompt">Nombre : ${ex.number}</div><div class="base-ten-rounding-preview">${[Math.floor(ex.number / 100) * 100, Math.ceil(ex.number / 100) * 100].map(v => `<div class="base-ten-rounding-card"><b>${v}</b><span>${Array.from({ length: Math.min(5, v / 100) }, () => '<i class="base-ten-hundred"></i>').join('')}</span></div>`).join('')}</div>` : ex.type === 'baseTen' ? `<div class="count-target">${ex.ans}</div>` : ex.type === 'ppcmChoice' ? `<div class="prompt">PPCM de ${ex.a} et ${ex.b}</div>` : ex.type === 'missingBox' ? `<div class="prompt">${ex.prompt}</div>` : ex.type === 'model' ? `<div class="model-grid">${ex.displayVals.map(v => `<div>${v}</div>`).join('')}<div class="missing-cell">?</div></div>` : ex.type === 'factors' ? `<div class="factor-tree-visual"><div class="factor-node">${ex.a * ex.b * ex.c}</div><div class="factor-tree-row"><div class="factor-node missing-cell">?</div><div class="factor-node">${ex.known.join(' × ')}</div></div></div>` : ex.type === 'equation' ? `<div class="prompt">${ex.target} = ?</div>` : ex.type === 'pattern' ? `<div class="prompt">${ex.seq.join(' · ')} · ?</div>` : ''); $('answers').innerHTML = ''; $('range').hidden = true; $('result').textContent = ''; $('result').className = 'status';
                 if (ex.opts) { ex.opts.forEach(v => { const b = document.createElement('button'); b.type = 'button'; if (ex.type === 'baseTen') { b.classList.add('count-block-choice'); b.innerHTML = `<span class="count-blocks" aria-label="${Number(v)} blocs bleus">${Array.from({ length: Number(v) }, () => '<i class=\"count-blue-block\"></i>').join('')}</span>`; } else { b.textContent = String(v); } b.onclick = () => { [...$('answers').children].forEach(x => x.classList.remove('selected')); b.classList.add('selected'); $('result').textContent = String(v) === String(ex.ans) ? '✓ Bonne réponse' : '✕ Réponse incorrecte'; $('result').className = 'status ' + (String(v) === String(ex.ans) ? 'pass' : 'fail') }; $('answers').append(b) }) }
