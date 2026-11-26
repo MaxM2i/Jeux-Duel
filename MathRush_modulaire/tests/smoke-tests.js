@@ -80,6 +80,28 @@ for (const [id,mode,type] of specialModels) {
   assert.ok(app.includes('touch-units-100')&&app.includes('touch-units-bar'),'unités multiples des modèles tactiles absentes');
 }
 
+
+// Régression critique : une opération de fractions doit toujours proposer sa vraie réponse.
+{
+  const touch=modelCatalog.find(model=>model.id==='fraction-touch-models');
+  const snapshot={weight:touch.weight,categoryIds:[...touch.categoryIds],modes:[...touch.modes],contentIds:[...touch.contentIds],presentationIds:[...touch.presentationIds],touchInteraction:touch.touchInteraction,design:{...(touch.design||{})}};
+  modelCatalog.forEach(model=>{model.weight=model.id==='fraction-touch-models'?1:0;});
+  touch.categoryIds=['fractions'];touch.modes=['fractions'];touch.contentIds=['fraction-operation'];touch.presentationIds=['square-9'];touch.touchInteraction='read';
+  for(let i=0;i<1500;i++){
+    const ex=context.window.MathRushExercises.createSoloExercise('fractions',3,rand,shuffle,'solo');
+    assert.equal(ex.type,'touchModel');
+    assert.ok(ex.opts.includes(ex.ans),`réponse ${ex.ans} absente des propositions ${ex.opts} pour ${ex.contentLabel}`);
+    assert.equal(ex.displayOpts[ex.opts.indexOf(ex.ans)],ex.answerLabel,'libellé affiché et valeur correcte désynchronisés');
+  }
+  touch.presentationIds=['pie-chart'];touch.design={pieParts:4};
+  for(let i=0;i<300;i++){
+    const ex=context.window.MathRushExercises.createSoloExercise('fractions',3,rand,shuffle,'solo');
+    assert.equal(ex.touchParts,4,'le nombre de parts du camembert doit respecter le réglage du Labo');
+    assert.ok(ex.opts.includes(ex.ans),'le camembert doit proposer la bonne réponse');
+  }
+  touch.weight=snapshot.weight;touch.categoryIds=snapshot.categoryIds;touch.modes=snapshot.modes;touch.contentIds=snapshot.contentIds;touch.presentationIds=snapshot.presentationIds;touch.touchInteraction=snapshot.touchInteraction;touch.design=snapshot.design;
+}
+
 // Les cases à compléter doivent produire une question adaptée à chaque catégorie compatible.
 {
   const weights=modelCatalog.map(model=>model.weight);
@@ -273,11 +295,15 @@ assert(cssSource.includes('#solo input[type=range].range') && cssSource.includes
 assert(appSource.includes('answerToastTimer=setTimeout(travel,3000)'), 'feedback visible 3000 ms');
 assert(appSource.includes('1050ms cubic-bezier'), 'animation feedback prolongée');
 
-assert.ok(fs.existsSync(`${__dirname}/../exercise-lab.html`), 'laboratoire indépendant des exercices absent');
-const labSource=fs.readFileSync(`${__dirname}/../exercise-lab.html`,'utf8');
+assert.ok(fs.existsSync(`${__dirname}/../labo.html`), 'nouveau fichier Labo absent');
+const labSource=fs.readFileSync(`${__dirname}/../labo.html`,'utf8');
+assert.ok(appSource.includes('const correct=String(answer)')&&appSource.includes('shuffle([correct,...uniqueDistractors.slice(0,3)])'),'le Défi doit toujours conserver la bonne réponse');
+assert.ok(appSource.includes('<svg class="touch-pie-segment-lines"')&&cssSource.includes('.touch-pie-segment-lines circle,.touch-pie-segment-lines line'),'séparations vectorielles du camembert absentes');
+
 assert.ok(labSource.includes('id="cursorSettings"') && labSource.includes('id="cursorColor"') && labSource.includes('id="cursorStep"'), 'panneau de réglage du curseur absent');
 assert.ok(!labSource.includes('customFieldsPreview') && !labSource.includes('addTextField'), 'ancien panneau de champs de texte encore présent');
 assert.ok(labSource.includes('id="addMarker"') && labSource.includes('id="clearMarkers"') && labSource.includes('id="cursorStart"'), 'édition des repères et de la position initiale absente');
+assert.ok(labSource.includes('id="modelPresentationChoices"') && labSource.includes('id="designPieParts"') && labSource.includes('id="designSeparator"'), 'éditeur direct des présentations et des camemberts absent');
 assert.ok(labSource.includes('id="catalogPanel"') && labSource.includes('id="modelOverview"') && labSource.includes('id="exportCatalog"') && labSource.includes('id="modelPlayModes"') && labSource.includes('id="testSelectedModel"') && labSource.includes('function syncRuntimeCatalog()'), 'catalogue éditable des modèles absent');
 assert.ok(labSource.includes('id="selectedModelPreview"') && labSource.includes('function renderSelectedModelPreview()') && labSource.includes('refreshModelPreview'), 'aperçu visuel vivant du modèle sélectionné absent');
 assert.ok(appSource.includes('function renderCursorScale(') && appSource.includes('left:${left}'), 'graduations du curseur non positionnées proportionnellement');

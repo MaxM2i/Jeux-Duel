@@ -104,7 +104,7 @@
       const interaction=selectedModel?.touchInteraction||'random';
       const fillMode = interaction==='fill' ? true : interaction==='read' ? false : rand(0,1)===0;
       let target, denominator, label, prompt, unit, contentLabel;
-      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?rand(2,8):8;
+      const capacity=model==='square-100'?200:model==='square-bar'?20:model==='pie-chart'?Math.max(2,Math.min(8,Number(selectedModel?.design?.pieParts)||rand(2,8))):8;
       if (contentId === 'ratio-proportion') {
         denominator=model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?capacity:9;
         target=rand(1,capacity);unit=model==='square-bar'||model==='pie-chart'?10:1;
@@ -182,7 +182,17 @@
       const answerText = formatTouchValue(target);
       const numericAnswer = target;
       const maxAnswer=model==='square-100'?200:model==='square-bar'?20:denominator;
-      const displayOpts = shuffle(unique([target,Math.max(0,target-1),Math.min(maxAnswer,target+1),Math.max(0,target-2),Math.min(maxAnswer,target+2),0,maxAnswer,Math.floor(maxAnswer/2)])).slice(0,4);
+      // La bonne réponse est toujours réservée avant de tirer les distracteurs.
+      // L'ancien shuffle(...).slice(0,4) pouvait éliminer la réponse correcte.
+      const distractorPool = unique([target-1,target+1,target-2,target+2,0,maxAnswer,Math.floor(maxAnswer/2)])
+        .filter(value => Number.isFinite(value) && value >= 0 && value <= maxAnswer && value !== target);
+      const distractors = shuffle(distractorPool).slice(0,3);
+      while (distractors.length < 3) {
+        const candidate = Math.max(0, Math.min(maxAnswer, target + distractors.length + 1));
+        if (candidate !== target && !distractors.includes(candidate)) distractors.push(candidate);
+        else break;
+      }
+      const displayOpts = shuffle([target, ...distractors]).slice(0,4);
       const opts = displayOpts;
       return tag({type:'touchModel',mode,ans:numericAnswer,opts,displayOpts:opts.map(formatTouchValue),touchTarget:target,touchScale:unit,touchDenominator:denominator,touchMode:fillMode?'fill':'read',touchInteraction:interaction,presentationId:model,touchParts:model==='pie-chart'?denominator:undefined,touchUnitSize:model==='square-100'?100:model==='square-bar'?10:model==='pie-chart'?denominator:9,contentLabel,answerLabel:answerText,prompt,label,expression:contentLabel});
     }
