@@ -24,3 +24,10 @@ Le fichier JSON est une sauvegarde lisible du catalogue édité.
 ## Modèles
 
 Les modèles présents dans la bibliothèque principale disposent d'un renderer dans le jeu. La section « Modèles proposés » présente des pistes de nouveaux rendus (boulier, cadre de dix, droite numérique, bandes de fractions, numération, tableau de multiplication, modèle en aire, plan cartésien avancé). Ils sont signalés comme prototypes tant que leur renderer et leur validation de réponse ne sont pas implémentés.
+
+
+## Combinaisons de contenus et arbres de décomposition
+
+Le modèle `rounding-table` est maintenant un tableau polyvalent : son contenu est sélectionné selon la catégorie active (calculs rapides/complexes, arrondis, pourcentages, PPCM/PGCD, multiplications/divisions, exposants, fractions ou coordonnées). Dans le Labo, la présentation `Tableau` permet d'autoriser ou de retirer les catégories et générateurs compatibles. Les éléments recherchés se règlent avec les cases de réponses disponibles.
+
+La présentation `Arbre de décomposition` expose trois variantes : multiplications, divisions et combinaison des deux. Le Labo règle la variante, le sens des flèches et le nœud masqué. Les exports JS/CSS du Labo doivent être copiés dans `assets/js/custom-models.js` et `assets/css/model-custom.css` pour être chargés au démarrage du jeu.

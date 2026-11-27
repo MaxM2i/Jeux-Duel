@@ -48,7 +48,7 @@
     {id:'common-divisor',label:'PGCD',categories:['common-multiples']},
     {id:'multiplication-product',label:'Produit',categories:['multiplication-division','quick']},
     {id:'exact-division',label:'Division exacte',categories:['multiplication-division','quick']},
-    {id:'factor-decomposition',label:'Décomposition en facteurs',categories:['common-multiples','multiplication-division']},
+    {id:'factor-decomposition',label:'Décomposition en facteurs',categories:['quick','common-multiples','multiplication-division']},
     {id:'equivalent-expression',label:'Expression équivalente',categories:['quick','complex','multiplication-division']},
     {id:'missing-elements',label:'Éléments manquants',categories:['quick','complex','rounding','percentages','multiplication-division','common-multiples']},
     {id:'power-operation',label:'Puissances et exposants',categories:['exponents']},
@@ -69,12 +69,17 @@
     {id:'square-100',label:'Carré 100'}, {id:'square-bar',label:'Carré barré'},
     {id:'pie-chart',label:'Camembert'}, {id:'square-9',label:'Carré 9'}
   ];
+  const FACTOR_TREE_VARIANTS = [
+    {id:'multiplication',label:'Décomposition par multiplications',description:'Un parent se décompose en facteurs, puis les facteurs peuvent être redécomposés.'},
+    {id:'division',label:'Décomposition par divisions',description:'Le nombre parent est retrouvé par divisions successives.'},
+    {id:'combined',label:'Multiplications et divisions combinées',description:'Branches descendantes et remontées possibles dans le même arbre.'}
+  ];
   const PRESENTATION_COMPATIBILITY = {
     'basic-operation':['choice','cursor','table','boxes','missing-boxes','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
     'multi-step-operation':['choice','table','boxes','missing-boxes','horizontal-operation','vertical-operation','square-100','square-bar','pie-chart','square-9'],
     'rounded-number':['choice','cursor','table','boxes','missing-boxes','blue-blocks'],
-    'point-read':['choice','coordinate-grid','boxes'], 'point-place':['coordinate-grid','cursor'],
-    'segment-distance':['coordinate-grid','boxes','choice'],
+    'point-read':['choice','coordinate-grid','boxes','table'], 'point-place':['coordinate-grid','cursor','table'],
+    'segment-distance':['coordinate-grid','boxes','choice','table'],
     'ratio-proportion':['table','boxes','blue-blocks','blue-white-grid','symbols','model-grid','square-100','square-bar','pie-chart','square-9'],
     'common-multiple':['choice','cursor','table','boxes','missing-boxes','factor-tree'],
     'common-divisor':['choice','cursor','table','boxes','missing-boxes','factor-tree'],
@@ -99,7 +104,7 @@
     { id:'complex-calculation', label:'Calcul en plusieurs étapes', type:'choice', modes:['complex','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:10000, description:'Respect des priorités opératoires.' , categoryIds:["complex"], contentIds:["multi-step-operation"], presentationIds:["choice", "table", "boxes", "missing-boxes"]},
     { id:'cursor-number-line', label:'Curseur sur règle graduée', type:'commonSlider', modes:['quick','rounding','common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:-1000, numberMax:10000, description:'Placer une valeur sur une droite avec bornes et repères.' , categoryIds:["quick", "rounding", "common-multiples"], contentIds:["basic-operation", "rounded-number", "common-multiple"], presentationIds:["cursor"]},
     { id:'rounding-choice', label:'Arrondi simple', type:'round', modes:['rounding','quick','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:5, difficultyMin:0, difficultyMax:6, numberMin:10, numberMax:100000, description:'Arrondir à la dizaine, centaine ou au millier.' , categoryIds:["rounding"], contentIds:["rounded-number"], presentationIds:["choice", "cursor"]},
-    { id:'rounding-table', label:'Tableau d’arrondis', type:'roundingTable', modes:['rounding','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:10, numberMax:100000, description:'Compléter la dernière case d’un tableau de calculs arrondis.' , categoryIds:["rounding"], contentIds:["rounded-number"], presentationIds:["table"]},
+    { id:'rounding-table', label:'Tableau de calculs polyvalent', type:'roundingTable', modes:['quick','complex','rounding','coordinates','percentages','common-multiples','multiplication-division','exponents','fractions','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:2, numberMax:100000, description:'Tableau visuel polyvalent : son contenu suit la catégorie sélectionnée.' , categoryIds:['quick','complex','rounding','coordinates','percentages','common-multiples','multiplication-division','exponents','fractions'], contentIds:['basic-operation','multi-step-operation','rounded-number','point-read','point-place','segment-distance','percentage-of','ratio-proportion','common-multiple','common-divisor','multiplication-product','exact-division','power-operation','fraction-of','fraction-equivalence','fraction-operation','decimal-value','number-value'], presentationIds:['table']},
     { id:'factor-tree', label:'Arbre de décomposition', type:'factorTree', modes:['quick','common-multiples','multiplication-division','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:3, difficultyMin:1, difficultyMax:6, numberMin:12, numberMax:5000, description:'Décomposer un nombre en facteurs et sous-facteurs.' , categoryIds:["quick", "common-multiples", "multiplication-division"], contentIds:["factor-decomposition"], presentationIds:["factor-tree"]},
     { id:'ppcm-choice', label:'PPCM — choix multiple', type:'ppcmChoice', modes:['common-multiples','mixed'], playModes:['solo','duel','multiplayer','gogo'], enabled:true, weight:4, difficultyMin:1, difficultyMax:6, numberMin:2, numberMax:30, description:'Trouver le plus petit commun multiple.' , categoryIds:["common-multiples"], contentIds:["common-multiple"], presentationIds:["choice"]},
     { id:'base-ten-blocks', label:'Associer un nombre à ses blocs bleus', type:'baseTen', modes:['quick','rounding','mixed'], playModes:['solo','duel','multiplayer'], enabled:true, weight:3, difficultyMin:0, difficultyMax:6, numberMin:1, numberMax:30, description:'Un nombre cible et deux propositions visuelles : choisir celle qui contient exactement autant de blocs bleus.' , categoryIds:["quick", "rounding", "percentages"], contentIds:["basic-operation", "ratio-proportion"], presentationIds:["blue-blocks", "blue-white-grid"]},
@@ -151,5 +156,5 @@
     { title: 'Défi', description: 'Résoudre des exercices plus exigeants' }
   ];
 
-  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISE_MODELS, MATH_CATEGORIES, CONTENT_GENERATORS, PRESENTATION_MODELS, PRESENTATION_COMPATIBILITY, PRESENTATION_DESIGNS: {}, PRESENTATION_RULES: {}, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
+  window.MathRushConfig = Object.freeze({ MODES, DIFFICULTY, TRACK_STEPS, GAME_RULES, EXERCISE_MODELS, MATH_CATEGORIES, CONTENT_GENERATORS, PRESENTATION_MODELS, PRESENTATION_COMPATIBILITY, FACTOR_TREE_VARIANTS, PRESENTATION_DESIGNS: {}, PRESENTATION_RULES: {}, CURSOR_MODEL, EXERCISES_PER_LEVEL: GAME_RULES.EXERCISES_PER_SESSION, LEVELS_PER_SECTION: GAME_RULES.LEVELS_PER_SECTION, SECTIONS: GAME_RULES.SECTIONS });
 })();

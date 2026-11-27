@@ -237,17 +237,73 @@
       const factors = [2,3,4,5,6,7,8]; let p=4,q=2,r=4,left=8,total=32;
       for(let attempt=0;attempt<80;attempt++){p=pick(factors,rand);q=pick(factors,rand);r=pick(factors,rand);left=p*q;total=left*r;if(total>=modelMin&&total<=modelMax)break;}
       if(total<modelMin||total>modelMax){p=4;q=2;r=4;left=8;total=32;}
-      return tag({ type:'factorTree', mode, total, left, right:r, lowerA:p, lowerB:q, ans:left, opts:shuffle(unique([left,left+2,Math.max(2,left-1),left+5])) });
+      const treeRule=window.MathRushConfig.PRESENTATION_RULES?.['factor-tree']||{};
+      const allowedVariants=treeRule.treeVariants?.length?treeRule.treeVariants:['multiplication','division','combined'];
+      const treeVariant=pick(allowedVariants,rand);
+      const arrowDirection=treeRule.arrowDirection||'down';
+      const missingTarget=treeRule.missingTarget||'left';
+      const ans=missingTarget==='right'?r:missingTarget==='lowerA'?p:missingTarget==='lowerB'?q:left;
+      const shownLeft=missingTarget==='left'?'?':left,shownRight=missingTarget==='right'?'?':r,shownA=missingTarget==='lowerA'?'?':p,shownB=missingTarget==='lowerB'?'?':q;
+      const treeParentEquation=treeVariant==='division'?`${total} ÷ ${shownRight} = ${shownLeft}`:`${total} = ${shownLeft} × ${shownRight}`;
+      const treeLowerEquation=treeVariant==='multiplication'?`${shownLeft} = ${shownA} × ${shownB}`:`${shownLeft} ÷ ${shownA} = ${shownB}`;
+      return tag({ type:'factorTree', mode, total, left, right:r, lowerA:p, lowerB:q, ans, treeVariant, arrowDirection, missingTarget, treeParentEquation, treeLowerEquation, opts:shuffle(unique([ans,ans+2,Math.max(2,ans-1),ans+5])) });
     }
     if (selectedModel?.type === 'ppcmChoice') {
       let a=2,b=3,ans=6;for(let attempt=0;attempt<80;attempt++){a=rand(2,rank<3?9:15);b=rand(2,rank<3?9:15);ans=lcm(a,b);if(ans>=modelMin&&ans<=modelMax)break;}
       return tag({ type:'ppcmChoice', mode, a, b, ans, opts:shuffle(unique([ans, ans+a, ans+b, Math.max(1,ans-gcd(a,b))])) });
     }
     if (selectedModel?.type === 'roundingTable') {
-      const unit=rank>=4?100:10,offsets=unit===10?[12,21,30]:[120,210,300];
-      const fixed=rand(2,8)*unit+unit*.6,rows=offsets.map(offset=>{const number=fixed+offset;const difference=number-fixed;return{number,fixed,expression:`${number} − ${fixed}`,difference,rounded:Math.round(difference/unit)*unit};});
-      const last=rows[2].rounded;
-      return tag({type:'roundingTable',mode,unit,rows,ans:last,opts:shuffle(unique([last,last+1,Math.max(0,last-unit),last+unit])),prompt:`Arrondis chaque résultat à la ${unit===10?'dizaine':'centaine'} près, puis fais l'opération.`});
+      let rows=[],tableHeaders=['Élément','Valeur'],ans,prompt;
+      const tableRule=window.MathRushConfig.PRESENTATION_RULES?.table||{};
+      const targetCompatibility={rounding:['result','operand'],fractions:['result','operand','fraction'],percentages:['result','operand'],exponents:['result','base','exponent'],coordinates:['result','operand'], 'common-multiples':['result','operand','operator'],'multiplication-division':['result','operand','operator'],quick:['result','operand','operator'],complex:['result','operand','operator']};
+      const requestedTargets=tableRule.answerTargets?.length?tableRule.answerTargets:['result'];
+      const contentTargetCompatibility={'decimal-value':['result'],'fraction-of':['result','fraction'],'fraction-equivalence':['result','operand'],'fraction-operation':['result','operand'],'ratio-proportion':['result','operand'],'power-operation':['result','base','exponent'],'point-read':['result','operand'],'point-place':['result','operand'],'segment-distance':['result']};
+      const allowedTargets=requestedTargets.filter(target=>(targetCompatibility[mode]||['result']).includes(target)&&(!contentTargetCompatibility[contentId]||contentTargetCompatibility[contentId].includes(target)));
+      const targetKind=pick(allowedTargets.length?allowedTargets:['result'],rand);
+      const makeChoices=(answer,step=1)=>shuffle(unique([answer,answer+step,Math.max(0,answer-step),answer+2*step]));
+      if(mode==='rounding'){
+        const unit=rank>=4?100:10,offsets=unit===10?[12,21,30]:[120,210,300],fixed=rand(2,8)*unit+unit*.6;
+        rows=offsets.map((offset,i)=>{const number=fixed+offset,difference=number-fixed,rounded=Math.round(difference/unit)*unit;return{number,fixed,expression:`${number} − ${fixed}`,difference,rounded,cells:[i===2&&targetKind==='operand'?`? − ${fixed}`:`${number} − ${fixed}`,i===2&&targetKind!=='operand'?'?':String(rounded)]};});ans=targetKind==='operand'?rows[2].number:rows[2].rounded;tableHeaders=['Calcul','Résultat arrondi'];prompt=`Arrondis chaque résultat à la ${unit===10?'dizaine':'centaine'} près, puis complète le tableau.`;
+      } else if(mode==='fractions'){
+        const den=pick([3,4,5,6,8,9,10],rand),a=rand(1,den-2),b=rand(1,den-a),newDen=den*2;
+        if(contentId==='fraction-equivalence'){
+          ans=targetKind==='operand'?a*2:a*2;rows=[{cells:[`${a}/${den}`,'Fraction initiale']},{cells:[`${newDen}`,'Nouveau dénominateur']},{cells:[`?/${newDen}`,'Fraction équivalente']}];prompt='Trouve le numérateur qui conserve la même valeur.';
+        } else if(contentId==='fraction-of'){
+          ans=`${a}/${den}`;rows=[{cells:[String(den),'Nombre de parts égales']},{cells:[String(a),'Parts sélectionnées']},{cells:['Fraction représentée','?']}];prompt='Lis le tableau et retrouve la fraction représentée.';
+        } else if(contentId==='decimal-value'){
+          const value=Number((a/den).toFixed(2));ans=value.toLocaleString('fr-FR');rows=[{cells:[`${a}/${den}`,'Fraction']},{cells:['Valeur décimale','?']},{cells:['Arrondi au centième','2 chiffres']}];prompt='Convertis la fraction en nombre décimal.';
+        } else {
+          const sum=a+b;ans=targetKind==='operand'?`${a}/${den}`:`${sum}/${den}`;rows=[{cells:[`${a}/${den}`,'Fraction de départ']},{cells:[`${b}/${den}`,'À ajouter']},{cells:[`${a}/${den} + ${b}/${den}`,'?']}];prompt='Additionne les fractions de même dénominateur.';
+        }
+        tableHeaders=['Fraction / opération','Information'];
+      } else if(mode==='percentages'){
+        const pct=pick([10,20,25,40,50,60,75],rand),base=pick([20,40,80,100,200],rand);
+        if(contentId==='ratio-proportion'){
+          const other=100-pct;ans=targetKind==='operand'?pct:`${pct}:${other}`;rows=[{cells:[targetKind==='operand'?'?':`${pct}%`,'Part A']},{cells:[`${other}%`,'Part B']},{cells:[targetKind==='operand'?`? : ${other}%`:'Rapport A : B','?']}];prompt='Retrouve le rapport entre les deux parts.';
+        } else {ans=targetKind==='operand'?pct:base*pct/100;rows=[{cells:[targetKind==='operand'?'?':`${pct}%`,'Pourcentage']},{cells:[String(base),'Valeur de référence']},{cells:[`${pct}% de ${base}`,'?']}];prompt='Utilise les données du tableau pour calculer la valeur manquante.';}
+        tableHeaders=['Donnée','Rôle'];
+      } else if(mode==='exponents'){
+        const base=rand(2,6),exp=rand(2,4);ans=targetKind==='base'?base:targetKind==='exponent'?exp:Math.pow(base,exp);rows=[{cells:[targetKind==='base'?'?':`${base}`, 'Base']},{cells:[targetKind==='exponent'?'?':`${exp}`,'Exposant']},{cells:[`${targetKind==='base'?'?':base}^${targetKind==='exponent'?'?':exp}`,'?']}];tableHeaders=['Élément','Valeur'];prompt='Complète la puissance présentée dans le tableau.';
+      } else if(mode==='coordinates'){
+        const x=rand(1,8),y=rand(1,8);ans=targetKind==='operand'?x:`(${x}; ${y})`;rows=[{cells:['Point A',`x = ${targetKind==='operand'?'?':x}`]},{cells:['Point A',`y = ${y}`]},{cells:['Coordonnées A','?']}];tableHeaders=['Repère','Information'];prompt='Retrouve les coordonnées du point à partir des valeurs du tableau.';
+      } else {
+        let a=rand(2,12),b=rand(2,12),op=pick(['+','−','×'],rand),value=op==='+'?a+b:op==='−'?Math.abs(a-b):a*b;
+        if(mode==='common-multiples'){
+          if(contentId==='common-multiple'){ans=lcm(a,b);op='PPCM';value=ans;}else{ans=gcd(a,b);op='PGCD';value=ans;}
+        } else if(mode==='multiplication-division'){
+          if(contentId==='exact-division'){const divisor=rand(2,9),quotient=rand(2,12);a=divisor*quotient;b=divisor;op='÷';ans=quotient;value=quotient;}else{op='×';value=a*b;ans=value;}
+        } else if(mode==='quick')ans=value;
+        else if(mode==='complex'){const c=rand(1,9);ans=value+c;op=`(${op}) puis + ${c}`;}
+        else ans=value;
+        if(targetKind==='operand')ans=a;
+        else if(targetKind==='operator')ans=op;
+        rows=[{cells:[targetKind==='operand'?'?':String(a),'Premier nombre']},{cells:[String(b),'Deuxième nombre']},{cells:[targetKind==='operator'?`${a} ? ${b}`:targetKind==='operand'?`? ${op} ${b}`:`${a} ${op} ${b}`,'?']}];tableHeaders=['Calcul / donnée','Étape'];prompt='Lis les éléments du tableau et trouve la valeur demandée.';
+      }
+      const step=typeof ans==='number'?Math.max(1,Math.round(Math.abs(ans)*.1)):1;
+      const stringDistractors=contentId==='decimal-value'?['0,25','0,5','0,75']:mode==='fractions'&&String(ans).includes('/')?[`${Math.max(0,Number(ans.split('/')[0])-1)}/${ans.split('/')[1]}`,`1/${ans.split('/')[1]}`,`2/${ans.split('/')[1]}`]:mode==='coordinates'?['(1; 1)','(2; 2)','(3; 3)']:mode==='percentages'&&String(ans).includes(':')?['1:1','2:1','3:2']:mode==='percentages'?['0%','10%','20%']:['+','−','×','÷','1','2','3'];
+      const opts=typeof ans==='number'?makeChoices(ans,step):shuffle(unique([ans,...stringDistractors]));
+      const visual=mode==='coordinates'?`<div class=\"coordinate-grid\" style=\"--coord-x:${typeof ans==='string'?Number(ans.match(/\\d+/)?.[0]||3)*10:30}%;--coord-y:35%\"><i class=\"coordinate-point\"></i></div>`:undefined;
+      return tag({type:'roundingTable',mode,unit:mode==='rounding'?(rank>=4?100:10):undefined,rows,tableHeaders,ans,opts,prompt,tableContentId:contentId,targetKind,visual});
     }
     if (selectedModel?.type === 'baseTen') {
       // Association visuelle : le nombre cible est affiché, le joueur choisit

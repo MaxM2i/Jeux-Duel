@@ -1650,3 +1650,20 @@
 
 /* Ombres réglables depuis le Labo visuel */
 .touch-model{box-shadow:var(--touch-shadow,none)}
+
+/* Variantes d'arbres : le sens des flèches fait partie du modèle visuel. */
+.factor-tree-visual.arrow-up .factor-tree-branch{transform:rotate(180deg);transform-origin:center;}
+.factor-tree-visual.arrow-both .factor-tree-branch{border-top-style:double;border-top-width:6px;}
+.factor-tree-visual.tree-division .tree-operation-label{color:#2563eb;}
+.factor-tree-visual.tree-combined .tree-operation-label{color:#0f766e;}
+.factor-tree-visual .tree-operation-label{font-size:11px;font-weight:850;color:#64748b;}
+
+.factor-tree-visual .factor-tree-branch::after{content:'▼';display:block;position:relative;top:8px;text-align:center;font-size:12px;line-height:12px;color:var(--touch-border,#64748b);}
+.factor-tree-visual.arrow-up .factor-tree-branch::after{content:'▲';}
+.factor-tree-visual.arrow-both .factor-tree-branch::after{content:'↕';}
+.factor-tree-visual.tree-division .factor-tree-branch::after{color:#2563eb;}
+.factor-tree-visual.tree-combined .factor-tree-branch::after{color:#0f766e;}
+
+.factor-tree-visual .tree-equation{font-size:11px;font-weight:850;color:#64748b;background:#f8fafc;border-radius:8px;padding:3px 7px;}
+.factor-tree-visual.tree-division .tree-equation{color:#1d4ed8;}
+.factor-tree-visual.tree-combined .tree-equation{color:#0f766e;}
